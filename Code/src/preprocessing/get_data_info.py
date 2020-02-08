@@ -23,8 +23,8 @@ def generate_data_info(csv_fn):
                           header=None, names=['body_part','patientID','study'], \
                           sep='/', usecols=[2,3,4])
     df = pd.concat([df_info, df_fn], axis=1)
-    # remove MURA-v1.1
-    df.filename = df.filename.apply(lambda s: s[10:])
+    # remove MURA-v1.1/train or MURA-v1.1/valid
+    df.filename = df.filename.apply(lambda s: s[16:])
     # remove XR_
     df.body_part = df.body_part.apply(lambda s: s[3:])
     # create the label : 1 if positive, else 0
@@ -48,5 +48,5 @@ def generate_data_info(csv_fn):
 # %%
 df1 = generate_data_info(DATA_PATH+'RAW/train_image_paths.csv')
 df2 = generate_data_info(DATA_PATH+'RAW/valid_image_paths.csv')
-df = pd.concat([df1,df2], axis=0)
+df = pd.concat([df1,df2], axis=0).reset_index()
 df.to_csv(DATA_PATH+'data_info.csv')
