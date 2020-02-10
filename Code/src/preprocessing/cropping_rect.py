@@ -1,6 +1,6 @@
 import numpy as np
 import cv2 as cv
-#import imutils
+import imutils
 import os
 import sys
 from glob import glob
@@ -13,9 +13,11 @@ IN_DATA_PATH = '../../../data/RAW/'
 OUT_DATA_PATH = '../../../data/PROCESSED/'
 
 def angle_cos(p0, p1, p2):
+    """
+
+    """
     d1, d2 = (p0 - p1).astype('float'), (p2 - p1).astype('float')
     return abs(np.dot(d1, d2) / np.sqrt(np.dot(d1, d1) * np.dot(d2, d2)))
-
 
 def find_squares(img, min_area=50000, max_skew=0.45):
     """
@@ -53,6 +55,9 @@ def find_squares(img, min_area=50000, max_skew=0.45):
 
 
 def crop_squares(squares, img):
+    """
+
+    """
     rect = cv.minAreaRect(squares[0])
     box = cv.boxPoints(rect)
     box = np.int0(box)
