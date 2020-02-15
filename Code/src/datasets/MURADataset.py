@@ -5,60 +5,94 @@ import torch
 import torchvision.transforms as TF
 from torch.utils import data
 from sklearn.model_selection import train_test_split
+from prettytable import PrettyTable
 
-from transforms import HistEqualization, AutoContrast, ResizeMax, PadToSquare, MinMaxNormalization
+import transforms as tf
 
+# %%
 class MURA_Dataset(data.Dataset):
     """
-
+    Implementation of a torch.utils.data.Dataset for the MURA-dataset that can
+    handle the loading of a mask and semi.supervized labels.
     """
-    def __init__(self, sample_df, data_path, load_semilabels=True):
+    def __init__(self, sample_df, data_path, load_semilabels=True, load_mask=True):
         """
-
+        Constructor of the dataset.
+        ----------
+        INPUT
+            |---- sample_df (pandas.DataFrame) the dataframe containing the
+            |           samples' filenames, labels, (semi-labels and mask-filename).
+            |---- data_path (str) the path to the data filenames specified in the sample_df
+            |---- load_semilabels (bool) whether to load the semi-supervized labels.
+            |---- load_mask (bool) whether to load the mask.
         """
         data.Dataset.__init__(self)
         self.sample_df = sample_df
         self.data_path = data_path
         self.load_semilabels = load_semilabels
-        self.transform = TF.Compose([TF.Grayscale(), \
-                                     AutoContrast(cutoff=1), \
-                                     TF.RandomHorizontalFlip(p=0.5), \
-                                     TF.RandomVerticalFlip(p=0.5), \
-                                     TF.ColorJitter(brightness=0.2, contrast=0, saturation=0, hue=0), \
-                                     TF.RandomAffine(0, scale=(0.8,1.2)), \
-                                     TF.RandomRotation((-20,20)), \
-                                     ResizeMax(512), \
-                                     PadToSquare(), \
-                                     MinMaxNormalization(), \
-                                     TF.ToTensor()])
+        self.load_mask = load_mask
+        self.transform = tf.Compose(tf.Grayscale(), \
+                                    tf.AutoContrast(cutoff=1), \
+                                    tf.RandomHorizontalFlip(p=0.5), \
+                                    tf.RandomVerticalFlip(p=0.5), \
+                                    tf.RandomBrightness(lower=0.8, upper=1.2), \
+                                    tf.RandomScaling(scale_range=(0.8,1.2)), \
+                                    tf.RandomRotation(degree_range=(-20,20)), \
+                                    tf.ResizeMax(512), \
+                                    tf.PadToSquare(), \
+                                    tf.MinMaxNormalization(), \
+                                    tf.ToTorchTensor())
 
     def __len__(self):
         """
-
+        Get the number of samples in the dataset.
+        ----------
+        INPUT
+            |---- None
+        OUTPUT
+            |---- len (int) the number of samples.
         """
         return self.sample_df.shape[0]
 
     def __getitem__(self, idx):
         """
-        
+        Get an item from the dataset.
+        ----------
+        INPUT
+            |---- idx (int) the index of the sample to get (i.e. row of the
+            |           self.sample_df get).
+        OUTPUT
+            |---- image (torch.Tensor) the image with online transformations.
+            |---- label (torch.Tensor) the label (normal vs abnormal)
+            |---- (mask) (torch.Tensor) the mask with online transfromations.
+            |---- (semi_label) (torch.Tensor) the semi-supervised labels (normal-known,
+            |           abnormal-known or unknown)
         """
-        # load image, label
-        im = Image.open(self.data_path + df.loc[idx,'filename'])#skimage.io.imread(self.data_path + self.sample_df.loc[idx,'filename'])
+        item = None
+        im = Image.open(self.data_path + df.loc[idx,'filename'])
+        # load label
         label = torch.tensor(self.sample_df.loc[idx,'abnormal_XR'])
-        # apply given transform
-        im = self.transform(im)
-
+        # load mask
+        if self.load_mask:
+            mask = Image.open(self.data_path + df.loc[idx,'mask_filename'])
+            # apply given transform
+            im, mask = self.transform(im, mask)
+            item = [im, label, mask]
+        else:
+            # apply given transform
+            im, _ = self.transform(im)
+            item = [im, label]
+        # load semi-label
         if self.load_semilabels:
             semi_label = torch.tensor(self.sample_df.loc[idx, 'semi_label'])
-            return im, label, semi_label
-        else:
-            return im, label
+            item.append(semi_label)
 
+        return item
 
 class MURA_TrainValidTestSplitter:
     """
-    --> init : creat object
-    --> split_data : generate the subseet with the semi-supervised labels
+    A train-validation-test splitter for the MURA-dataset splitting at the level
+    of patient's bodypart to avoid test leakage.
     """
     def __init__(self, data_info, train_frac=0.5,
                  ratio_known_normal=0.0, ratio_known_abnormal=0.0, random_state=42):
@@ -88,7 +122,7 @@ class MURA_TrainValidTestSplitter:
         self.ratio_known_abnormal = ratio_known_abnormal
         self.random_state = random_state
 
-    def split_data(self):
+    def split_data(self, verbose=False):
         """
         Split the MURA dataset into a train, validation and test sets. To avoid
         test leakage, the split is made at the level of patients bodypart (all
@@ -105,7 +139,7 @@ class MURA_TrainValidTestSplitter:
         -1 = known abnormal
         ----------
         INPUT
-            |---- None
+            |---- verbose (bool) whether to display a summary at the end
         OUTPUT
             |---- None
         """
@@ -184,6 +218,9 @@ class MURA_TrainValidTestSplitter:
         self.subsets['train'] = train_df.sample(frac=1).reset_index(drop=True)
         self.subsets['valid'] = valid_df.sample(frac=1).reset_index(drop=True)
         self.subsets['test'] = test_df.sample(frac=1).reset_index(drop=True)
+        # Print summary
+        if verbose:
+            self.print_stat()
 
     def generate_semisupervized_label(self, idx_known, idx_unknown):
         """
@@ -226,10 +263,25 @@ class MURA_TrainValidTestSplitter:
 
     def print_stat(self):
         """
-
+        Display a summary table of the splitting with the number and fractions of
+        normal and abnormal, as well as the number and fraction of semisupervized
+        labels.
+        ----------
+        INPUT
+            |---- None
+        OUTPUT
+            |---- None
         """
-        # TO DO print a summary of the split
-
+        summary = PrettyTable(["Set", "Name", "Number [-]", "Fraction [%]"])
+        summary.align = 'l'
+        for name, df in self.subsets.items():
+            summary.add_row([name, 'Normal', df[df.abnormal_XR == 0].shape[0], '{:.2%}'.format(df[df.abnormal_XR == 0].shape[0] / df.shape[0])])
+            summary.add_row([name, 'Abnormal', df[df.abnormal_XR == 1].shape[0], '{:.2%}'.format(df[df.abnormal_XR == 1].shape[0] / df.shape[0])])
+            summary.add_row([name, 'Normal known', df[df.semi_label == 1].shape[0], '{:.2%}'.format(df[df.semi_label == 1].shape[0] / df.shape[0])])
+            summary.add_row([name, 'Abnormal known', df[df.semi_label == -1].shape[0], '{:.2%}'.format(df[df.semi_label == -1].shape[0] / df.shape[0])])
+            summary.add_row([name, 'Unknown', df[df.semi_label == 0].shape[0], '{:.2%}'.format(df[df.semi_label == 0].shape[0] / df.shape[0])])
+            if name != 'test' : summary.add_row(['----']*4)
+        print(summary)
 
 # %% ###########################################################################
 ################################ EXAMPLE OF USAGE ##############################
@@ -241,13 +293,13 @@ df = pd.read_csv(DATA_PATH+'data_info.csv')
 df = df.drop(df.columns[0], axis=1)
 
 spliter = MURA_TrainValidTestSplitter(df, train_frac=0.5, ratio_known_normal=0.05, ratio_known_abnormal=0.05)
-spliter.split_data()
+spliter.split_data(verbose=True)
 
 train_df = spliter.get_subset('train')
 valid_df = spliter.get_subset('valid')
 test_df = spliter.get_subset('test')
 
-datasetMURA = MURA_Dataset(train_df, data_path=DATA_PATH+'PROCESSED/')
+datasetMURA = MURA_Dataset(train_df, data_path=DATA_PATH+'PROCESSED/', load_mask=False, load_semilabels=True)
 image_test, label, semi_label = datasetMURA.__getitem__(12)
 
 fig, ax = plt.subplots(1,1,figsize=(8,8))
