@@ -1,3 +1,4 @@
+from prettytable import PrettyTable
 
 def print_progessbar(N, Max, Name='', Size=10, end_char=''):
     """
@@ -42,3 +43,13 @@ def print_param_summary(**params):
             else :
                 print('| '.ljust(max_len)+f'| {subvalue}'.ljust(max_len_val)+'|')
     print('-'*(max_len+max_len_val+1))
+
+def print_summary_from_dict(d, index_header=' '):
+    """
+
+    """
+    summary = PrettyTable([index_header] + list(list(d.values())[0].keys()))
+    for key, val in d.items():
+        summary.add_row([key] + list(val.values()))
+
+    print(summary)

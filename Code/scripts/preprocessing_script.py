@@ -3,10 +3,11 @@ import sys
 from glob import glob
 import warnings
 import pandas as pd
+import numpy as np
 import skimage
 
 sys.path.append('../')
-from src.utils.utils import print_progessbar, print_param_summary
+from src.utils.utils import print_progessbar, print_summary_from_dict
 from src.preprocessing.cropping_rect import find_squares, crop_squares
 from src.preprocessing.segmentation import find_best_mask
 
@@ -26,10 +27,11 @@ def main():
     # add cropped and low_contrast columns of zeros
     df_info['uncropped'] = 0
     df_info['low_contrast'] = 0
+    df_info['inverted'] = 0
     df_info['mask_filename'] = ''
     # the min area per body part
-    min_areas = {'Hand':50000, 'Elbow':50000, 'Finger':30000, 'Forearm':50000, \
-                 'Humerus':50000, 'Shoulder':50000, 'Wrist':50000}
+    min_areas = {'Hand':60000, 'Elbow':60000, 'Finger':25000, 'Forearm':60000, \
+                 'Humerus':60000, 'Shoulder':70000, 'Wrist':30000}
     # iterate body part
     for bpdir in glob(IN_DATA_PATH + '/*/'):
         bpname = bpdir.split("/")[-2][3:].title()
@@ -64,22 +66,23 @@ def main():
                     else:
                         uncropped_img += 1
                         df_info.loc[df_info.filename == '/'.join(fn.split('/')[-4:]), 'uncropped'] = 1
-                    # save image if image is not low contrast (i.e. only black)
-                    with warnings.catch_warnings():
-                        warnings.simplefilter("ignore")
-                        skimage.io.imsave(write_dir + "/" + os.path.basename(fn), img)
+                    # save image if image and check if not low contrast (i.e. only black)
+                    skimage.io.imsave(write_dir + "/" + os.path.basename(fn), img, check_contrast=False)
                     # add info to dataframe
                     if skimage.exposure.is_low_contrast(img):
                         low_contrast += 1
                         df_info.loc[df_info.filename == '/'.join(fn.split('/')[-4:]), 'low_contrast'] = 1
 
                     ##################### Segmentation #########################
+                    # invert bright image
+                    if img.mean() > 125:
+                        img = np.invert(img)
+                        df_info.loc[df_info.filename == '/'.join(fn.split('/')[-4:]), 'inverted'] = 1
+                    # get best mask
                     mask = find_best_mask(img)
                     # save mask
-                    with warnings.catch_warnings():
-                        warnings.simplefilter("ignore")
-                        skimage.io.imsave(write_dir + "/" + 'mask_' + os.path.basename(fn), mask)
-                        df_info.loc[df_info.filename == '/'.join(fn.split('/')[-4:]), 'mask_filename'] = '/'.join(fn.split('/')[-4:-1]) + 'mask_' + os.path.basename(fn)
+                    skimage.io.imsave(write_dir + "/" + 'mask_' + os.path.basename(fn), skimage.img_as_ubyte(mask), check_contrast=False)
+                    df_info.loc[df_info.filename == '/'.join(fn.split('/')[-4:]), 'mask_filename'] = '/'.join(fn.split('/')[-4:-1]) + '/mask_' + os.path.basename(fn)
 
             print_progessbar(i, n_dir, Name='|------ Patients', Size=50)
             if not has_img: missing_patients += 1
@@ -88,10 +91,9 @@ def main():
                            'missing patient':missing_patients, 'uncropped images':uncropped_img, \
                            'low contrast image':low_contrast}
         print('')
-    print_param_summary(**summary)
+    print_summary_from_dict(summary)
     # save the updated data_info
     df_info.to_csv(DATAINFO_PATH + 'data_info.csv')
 
 if __name__ == '__main__':
-    print(__doc__)
     main()
