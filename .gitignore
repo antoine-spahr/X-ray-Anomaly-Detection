@@ -130,4 +130,5 @@ dmypy.json
 
 # Other files/folder
 data/*
+!data/*data_info.csv
 .DS_Store
