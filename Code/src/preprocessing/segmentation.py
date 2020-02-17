@@ -145,7 +145,7 @@ def find_best_mask(img, tol_factor=0.1, search_res=0.1, search_range=(0.2,1)):
 # %% ###########################################################################
 ################################################################################
 ################################################################################
-#
+
 # IN_DATA_PATH = '../../../data/RAW/'
 # OUT_DATA_PATH = '../../../data/PROCESSED/'
 # DATAINFO_PATH = '../../../data/'
@@ -204,7 +204,6 @@ def find_best_mask(img, tol_factor=0.1, search_res=0.1, search_range=(0.2,1)):
 #
 # # %% ##########
 # import time
-# import cv2
 # IN_DATA_PATH = '../../../data/RAW/'
 # OUT_DATA_PATH = '../../../data/PROCESSED/'
 # DATAINFO_PATH = '../../../data/'
