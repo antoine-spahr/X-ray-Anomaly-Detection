@@ -6,7 +6,7 @@ import time
 import logging
 from sklearn.metrics import roc_auc_score
 
-from MaskedMSELoss import MaskedMSELoss
+from .CustomLosses import MaskedMSELoss
 
 class AutoEncoderTrainer:
     """

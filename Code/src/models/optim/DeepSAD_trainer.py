@@ -6,7 +6,7 @@ import time
 import logging
 from sklearn.metrics import roc_auc_score
 
-from DeepSADLoss import DeepSADLoss
+from .CustomLosses import DeepSADLoss
 
 class DeepSADTrainer:
     """

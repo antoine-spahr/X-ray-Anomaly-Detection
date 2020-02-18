@@ -5,13 +5,22 @@ import torchvision.models.utils
 
 class ResidualBlock(nn.Module):
     """
-
+    Residual Block for the ResNet18 (without bottleneck).
     """
     def __init__(self, in_channel, out_channel, stride=1, downsample=None):
         """
          in ->[Conv3x3]->[BN]->[ReLU]->[Conv3x3]->[BN]-> + -> out
             |_______________[downsample]_________________|
-
+        ----------
+        INPUT
+            |---- in_channel (int) the number of input channels.
+            |---- out_channel (int) the number of output channels.
+            |---- stride (int) the stride for the first 3x3 convolution. Larger
+            |           than one produces a size reduction of the input.
+            |---- downsample (nn.Module) the downsampling module to use in order
+            |           to get similar shaped residuals.
+        OUTPUT
+            |---- None
         """
         nn.Module.__init__(self)
         self.conv1 = nn.Conv2d(in_channel, out_channel, kernel_size=3, stride=stride, \
@@ -25,7 +34,14 @@ class ResidualBlock(nn.Module):
 
     def forward(self, x):
         """
-
+        Forward pass of the Residual Block.
+        ----------
+        INPUT
+            |---- x (torch.Tensor) the input tensor (B x C x H x W) with C = in_channel
+        OUTPUT
+            |---- out (torch.Tensor) the output tensor (B x C x H' x W') with
+            |           C = out_channel. H and W are changed if the stride is
+            |           bigger than one.
         """
         identity = x
         # convolution n°1
@@ -247,7 +263,6 @@ class AE_ResNet18(nn.Module):
         embedding = self.encoder(input)
         output = self.decoder(embedding)
         return output
-
 
 # %%
 from torchsummary import summary
