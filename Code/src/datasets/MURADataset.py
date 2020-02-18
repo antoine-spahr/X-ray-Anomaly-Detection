@@ -9,7 +9,6 @@ from prettytable import PrettyTable
 
 import transforms as tf
 
-# %%
 class MURA_Dataset(data.Dataset):
     """
     Implementation of a torch.utils.data.Dataset for the MURA-dataset that can
@@ -68,26 +67,45 @@ class MURA_Dataset(data.Dataset):
             |---- (semi_label) (torch.Tensor) the semi-supervised labels (normal-known,
             |           abnormal-known or unknown)
         """
-        item = None
+        # item = None
+        # im = Image.open(self.data_path + df.loc[idx,'filename'])
+        # # load label
+        # label = torch.tensor(self.sample_df.loc[idx,'abnormal_XR'])
+        # # load mask
+        # if self.load_mask:
+        #     mask = Image.open(self.data_path + df.loc[idx,'mask_filename'])
+        #     # apply given transform
+        #     im, mask = self.transform(im, mask)
+        #     item = [im, label, mask]
+        # else:
+        #     # apply given transform
+        #     im, _ = self.transform(im)
+        #     item = [im, label]
+        # # load semi-label
+        # if self.load_semilabels:
+        #     semi_label = torch.tensor(self.sample_df.loc[idx, 'semi_label'])
+        #     item.append(semi_label)
+        #
+        # return item + [idx]
+
         im = Image.open(self.data_path + df.loc[idx,'filename'])
         # load label
         label = torch.tensor(self.sample_df.loc[idx,'abnormal_XR'])
         # load mask
         if self.load_mask:
             mask = Image.open(self.data_path + df.loc[idx,'mask_filename'])
-            # apply given transform
-            im, mask = self.transform(im, mask)
-            item = [im, label, mask]
         else:
-            # apply given transform
-            im, _ = self.transform(im)
-            item = [im, label]
+            mask = None
+
         # load semi-label
         if self.load_semilabels:
             semi_label = torch.tensor(self.sample_df.loc[idx, 'semi_label'])
-            item.append(semi_label)
+        else:
+            semi_label = None
 
-        return item
+        im, mask = self.transform(im, mask)
+
+        return im, label, mask, semi_label, torch.tensor(idx)
 
 class MURA_TrainValidTestSplitter:
     """
@@ -300,10 +318,9 @@ valid_df = spliter.get_subset('valid')
 test_df = spliter.get_subset('test')
 
 datasetMURA = MURA_Dataset(train_df, data_path=DATA_PATH+'PROCESSED/', load_mask=True, load_semilabels=True)
-image_test, label, mask, semi_label = datasetMURA.__getitem__(12)
-
+image_test, label, mask, semi_label, idx = datasetMURA.__getitem__(6543)
 
 fig, ax = plt.subplots(1,1,figsize=(8,8))
 ax.set_title('Transformed sample from the MURA dataset')
-ax.imshow(mask[0,:,:], cmap='Greys_r')
+ax.imshow(image_test[0,:,:], cmap='Greys_r')
 plt.show()

@@ -193,8 +193,9 @@ class MinMaxNormalization:
         arr = np.array(image).astype('float')
         arr = (arr - arr.min()) / (arr.max() - arr.min())
         arr = (self.vmax - self.vmin) * arr + self.vmin
-
-        return arr, np.array(mask)
+        if mask:
+            mask = np.array(mask)
+        return arr, mask
 
 class RandomHorizontalFlip:
     """
@@ -395,7 +396,7 @@ class ToTorchTensor:
             |---- mask (torch.Tensor) the converted mask.
         """
         image = TF.ToTensor()(image)
-        if not mask is None:
+        if mask is not None:
             mask = TF.ToTensor()(mask)
         return image, mask
 

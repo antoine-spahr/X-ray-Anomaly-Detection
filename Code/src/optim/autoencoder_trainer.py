@@ -6,7 +6,7 @@ import time
 import logging
 from sklearn.metrics import roc_auc_score
 
-import MaskedMSELoss
+from MaskedMSELoss import MaskedMSELoss
 
 class AutoEncoderTrainer:
     """
@@ -60,7 +60,7 @@ class AutoEncoderTrainer:
                                         shuffle=True, num_worker=self.n_jobs_dataloader)
 
         # MSE loss without reduction --> MSE loss for each output pixels
-        criterion = nn.MaskedMSELoss()
+        criterion = MaskedMSELoss()
 
         # set to device
         ae_net = ae_net.to(self.device)
@@ -73,7 +73,7 @@ class AutoEncoderTrainer:
         scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestone=self.lr_milestone, gamma=0.1)
 
         # Training
-        logger.info('Start Training of the AutoEncoder.')
+        logger.info('>>> Start Training of the AutoEncoder.')
         start_time = time.time()
         # set the network in train mode
         ae_net.train()
@@ -89,7 +89,7 @@ class AutoEncoderTrainer:
             epoch_start_time = time.time()
 
             for data in train_loader:
-                input, _, mask, _ = data
+                input, _, mask, _, _ = data
                 # put inputs to device
                 input, mask = input.to(self.device), mask.to(self.device)
 
@@ -112,8 +112,8 @@ class AutoEncoderTrainer:
 
         # End training
         self.train_time = time.time() - start_time
-        logger.info(f'Training of AutoEncoder Time: {self.train_time:.3f} [s]')
-        logger.info('Finished AutoEncoder Training.')
+        logger.info(f'>>> Training of AutoEncoder Time: {self.train_time:.3f} [s]')
+        logger.info('>>> Finished AutoEncoder Training.')
 
         return ae_net
 
@@ -125,7 +125,7 @@ class AutoEncoderTrainer:
             |---- dataset (torch.utils.data.Dataset) the dataset on which the
             |           network is tested. It must return an image and a mask
             |           of where the loss is to be computed.
-            |---- ae_net (nn.Module) The autoencoder to train.
+            |---- ae_net (nn.Module) The autoencoder network to test.
         OUTPUT
             |---- None
         """
@@ -136,41 +136,44 @@ class AutoEncoderTrainer:
                                         shuffle=True, num_worker=self.n_jobs_dataloader)
 
         # MSE loss without reduction --> MSE loss for each output pixels
-        criterion = nn.MaskedMSELoss(reduction='none')
+        criterion = MaskedMSELoss(reduction='none')
 
         # set to device
         ae_net = ae_net.to(self.device)
         criterion = criterion.to(self.device)
 
         # Testing
-        logger.info('Start Testing of the AutoEncoder.')
+        logger.info('>>> Start Testing of the AutoEncoder.')
         epoch_loss = 0.0
         n_batch = 0
         start_time = time.time()
-        label_score = []
+        idx_label_score = []
         # put network in evaluation mode
         ae_net.eval()
-        for data in test_loader:
-            input, label, mask, _ = data
-            # put inputs to device
-            input, label, mask = input.to(self.device), label.to(self.device), mask.to(self.device)
+        with torch.no_grad():
+            for data in test_loader:
+                input, label, mask, _, idx = data
+                # put inputs to device
+                input, label = input.to(self.device), label.to(self.device)
+                mask, idx = mask.to(self.device), idx.to(self.device)
 
-            rec = ae_net(input)
-            rec_loss = criterion(rec, input, mask)
-            score = torch.mean(rec_loss, dim=tuple(range(1, rec.dim()))) # mean over all dimension per batch
+                rec = ae_net(input)
+                rec_loss = criterion(rec, input, mask)
+                score = torch.mean(rec_loss, dim=tuple(range(1, rec.dim()))) # mean over all dimension per batch
 
-            # append scores and label
-            label_score += list(zip(label.cpu().data.numpy().to_list(),
-                                    score.cpu().data.numpy().to_list()))
-            # overall batch loss
-            loss = torch.sum(rec_loss) / torch.sum(mask)
-            epoch_loss += loss.item()
-            n_batch += 1
+                # append scores and label
+                label_score += list(zip(idx.cpu().data.numpy().to_list(),
+                                        label.cpu().data.numpy().to_list(),
+                                        score.cpu().data.numpy().to_list()))
+                # overall batch loss
+                loss = torch.sum(rec_loss) / torch.sum(mask)
+                epoch_loss += loss.item()
+                n_batch += 1
 
         self.test_time = time.time() - start_time
 
         # Compute AUC : if AE is good a high reconstruction loss highlights the presence of an anomaly on the image
-        label, score = zip(*label_score)
+        _, label, score = zip(*label_score)
         label, score = np.array(label), np.array(score)
         self.test_auc = roc_auc_score(label, score)
 
@@ -178,4 +181,4 @@ class AutoEncoderTrainer:
         logger.info(f'>>> Test Time: {self.test_time:.3f} [s]')
         logger.info(f'>>> Test Loss: {epoch_loss / n_batch:.6f}')
         logger.info(f'>>> Test AUC: {self.test_auc:.3%}')
-        logger.info('Finished Testing the AutoEncoder.')
+        logger.info('>>> Finished Testing the AutoEncoder.')
