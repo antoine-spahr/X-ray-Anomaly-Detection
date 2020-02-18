@@ -299,10 +299,11 @@ train_df = spliter.get_subset('train')
 valid_df = spliter.get_subset('valid')
 test_df = spliter.get_subset('test')
 
-datasetMURA = MURA_Dataset(train_df, data_path=DATA_PATH+'PROCESSED/', load_mask=False, load_semilabels=True)
-image_test, label, semi_label = datasetMURA.__getitem__(12)
+datasetMURA = MURA_Dataset(train_df, data_path=DATA_PATH+'PROCESSED/', load_mask=True, load_semilabels=True)
+image_test, label, mask, semi_label = datasetMURA.__getitem__(12)
+
 
 fig, ax = plt.subplots(1,1,figsize=(8,8))
 ax.set_title('Transformed sample from the MURA dataset')
-ax.imshow(image_test[0,:,:], cmap='Greys_r')
+ax.imshow(mask[0,:,:], cmap='Greys_r')
 plt.show()

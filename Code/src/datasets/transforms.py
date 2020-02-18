@@ -395,7 +395,7 @@ class ToTorchTensor:
             |---- mask (torch.Tensor) the converted mask.
         """
         image = TF.ToTensor()(image)
-        if mask:
+        if not mask is None:
             mask = TF.ToTensor()(mask)
         return image, mask
 
