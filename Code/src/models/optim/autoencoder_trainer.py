@@ -103,7 +103,7 @@ class AutoEncoderTrainer:
                 n_batch += 1
 
                 if self.print_batch_progress:
-                    print_progessbar(b, train_loader.__len__(), Name='Batch', Size=20)
+                    print_progessbar(b, train_loader.__len__(), Name=''*12+'Batch', Size=20)
 
             # epoch statistic
             epoch_train_time = time.time() - epoch_start_time
@@ -155,7 +155,7 @@ class AutoEncoderTrainer:
         idx_label_score = []
         # put network in evaluation mode
         ae_net.eval()
-        
+
         with torch.no_grad():
             for b, data in enumerate(test_loader):
                 input, label, mask, _, idx = data
@@ -177,7 +177,7 @@ class AutoEncoderTrainer:
                 n_batch += 1
 
                 if self.print_batch_progress:
-                    print_progessbar(b, test_loader.__len__(), Name='Batch', Size=20)
+                    print_progessbar(b, test_loader.__len__(), Name=''*12+'Batch', Size=20)
 
         self.test_time = time.time() - start_time
 

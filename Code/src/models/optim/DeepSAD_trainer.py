@@ -123,7 +123,7 @@ class DeepSADTrainer:
                 n_batch += 1
 
                 if self.print_batch_progress:
-                    print_progessbar(b, train_loader.__len__(), Name='Batch', Size=20)
+                    print_progessbar(b, train_loader.__len__(), Name=''*12+'Batch', Size=20)
 
             # log the epoch statistics
             epoch_train_time = time.time() - epoch_start_time
@@ -195,7 +195,7 @@ class DeepSADTrainer:
                 n_batch += 1
 
                 if self.print_batch_progress:
-                    print_progessbar(b, test_loader.__len__(), Name='Batch', Size=20)
+                    print_progessbar(b, test_loader.__len__(), Name=''*12+'Batch', Size=20)
 
         self.test_time = time.time() - start_time
         self.test_scores = idx_label_score
@@ -238,7 +238,7 @@ class DeepSADTrainer:
                 c += torch.sum(output, dim=0)
 
                 if self.print_batch_progress:
-                    print_progessbar(b, loader.__len__(), Name='Batch', Size=20)
+                    print_progessbar(b, loader.__len__(), Name=''*12+'Batch', Size=20)
 
         # take the mean of accumulated c
         c /= n_sample
