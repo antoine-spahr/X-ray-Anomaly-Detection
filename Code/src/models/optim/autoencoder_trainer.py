@@ -6,14 +6,15 @@ import time
 import logging
 from sklearn.metrics import roc_auc_score
 
-from .CustomLosses import MaskedMSELoss
+from src.models.optim.CustomLosses import MaskedMSELoss
+from src.utils.utils import print_progessbar
 
 class AutoEncoderTrainer:
     """
     Trainer for the AutoEncoder.
     """
     def __init__(self, lr=0.0001, n_epoch=150, lr_milestone=(), batch_size=64,
-                 weight_decay=1e-6, device='cuda', n_jobs_dataloader=0):
+                 weight_decay=1e-6, device='cuda', n_jobs_dataloader=0, print_batch_progress=False):
         """
         Constructor of the AutoEncoder trainer.
         ----------
@@ -36,6 +37,7 @@ class AutoEncoderTrainer:
         self.weight_decay = weight_decay
         self.device = device
         self.n_jobs_dataloader = n_jobs_dataloader
+        self.print_batch_progress = print_batch_progress
         # output attributes
         self.train_time = None
         self.test_auc = None
@@ -57,7 +59,7 @@ class AutoEncoderTrainer:
 
         # make train dataloader using image and mask
         train_loader = torch.utils.data.DataLoader(dataset, batch_size=self.batch_size, \
-                                        shuffle=True, num_worker=self.n_jobs_dataloader)
+                                        shuffle=True, num_workers=self.n_jobs_dataloader)
 
         # MSE loss without reduction --> MSE loss for each output pixels
         criterion = MaskedMSELoss()
@@ -70,7 +72,7 @@ class AutoEncoderTrainer:
         optimizer = optim.Adam(ae_net.parameters(), lr=self.lr, weight_decay=self.weight_decay)
 
         # set the learning rate scheduler (multiple phase learning)
-        scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestone=self.lr_milestone, gamma=0.1)
+        scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=self.lr_milestone, gamma=0.1)
 
         # Training
         logger.info('>>> Start Training of the AutoEncoder.')
@@ -79,19 +81,14 @@ class AutoEncoderTrainer:
         ae_net.train()
 
         for epoch in range(self.n_epoch):
-            # apply the scheduler step
-            scheduler.step()
-            if epoch in self.lr_milestone:
-                logger.info('>>> LR Scheduler : new learning rate %g' % float(scheduler.get_lr()[0]))
-
             epoch_loss = 0.0
             n_batch = 0
             epoch_start_time = time.time()
 
-            for data in train_loader:
+            for b, data in enumerate(train_loader):
                 input, _, mask, _, _ = data
                 # put inputs to device
-                input, mask = input.to(self.device), mask.to(self.device)
+                input, mask = input.to(self.device).float(), mask.to(self.device)
 
                 # zero the network gradients
                 optimizer.zero_grad()
@@ -105,15 +102,23 @@ class AutoEncoderTrainer:
                 epoch_loss += loss.item()
                 n_batch += 1
 
+                if self.print_batch_progress:
+                    print_progessbar(b, train_loader.__len__(), Name='Batch', Size=20)
+
             # epoch statistic
             epoch_train_time = time.time() - epoch_start_time
             logger.info(f'| Epoch: {epoch + 1:03}/{self.n_epoch:03} | Train Time: {epoch_train_time:.3f} [s] '
                         f'| Train Loss: {epoch_loss / n_batch:.6f} |')
 
+            # apply the scheduler step
+            scheduler.step()
+            if epoch in self.lr_milestone:
+                logger.info('>>> LR Scheduler : new learning rate %g' % float(scheduler.get_lr()[0]))
+
         # End training
         self.train_time = time.time() - start_time
         logger.info(f'>>> Training of AutoEncoder Time: {self.train_time:.3f} [s]')
-        logger.info('>>> Finished AutoEncoder Training.')
+        logger.info('>>> Finished AutoEncoder Training.\n')
 
         return ae_net
 
@@ -133,7 +138,7 @@ class AutoEncoderTrainer:
 
         # make test dataloader using image and mask
         test_loader = torch.utils.data.DataLoader(dataset, batch_size=self.batch_size, \
-                                        shuffle=True, num_worker=self.n_jobs_dataloader)
+                                        shuffle=True, num_workers=self.n_jobs_dataloader)
 
         # MSE loss without reduction --> MSE loss for each output pixels
         criterion = MaskedMSELoss(reduction='none')
@@ -150,11 +155,12 @@ class AutoEncoderTrainer:
         idx_label_score = []
         # put network in evaluation mode
         ae_net.eval()
+        
         with torch.no_grad():
-            for data in test_loader:
+            for b, data in enumerate(test_loader):
                 input, label, mask, _, idx = data
                 # put inputs to device
-                input, label = input.to(self.device), label.to(self.device)
+                input, label = input.to(self.device).float(), label.to(self.device)
                 mask, idx = mask.to(self.device), idx.to(self.device)
 
                 rec = ae_net(input)
@@ -162,18 +168,21 @@ class AutoEncoderTrainer:
                 score = torch.mean(rec_loss, dim=tuple(range(1, rec.dim()))) # mean over all dimension per batch
 
                 # append scores and label
-                label_score += list(zip(idx.cpu().data.numpy().to_list(),
-                                        label.cpu().data.numpy().to_list(),
-                                        score.cpu().data.numpy().to_list()))
+                idx_label_score += list(zip(idx.cpu().data.numpy().tolist(),
+                                            label.cpu().data.numpy().tolist(),
+                                            score.cpu().data.numpy().tolist()))
                 # overall batch loss
                 loss = torch.sum(rec_loss) / torch.sum(mask)
                 epoch_loss += loss.item()
                 n_batch += 1
 
+                if self.print_batch_progress:
+                    print_progessbar(b, test_loader.__len__(), Name='Batch', Size=20)
+
         self.test_time = time.time() - start_time
 
         # Compute AUC : if AE is good a high reconstruction loss highlights the presence of an anomaly on the image
-        _, label, score = zip(*label_score)
+        _, label, score = zip(*idx_label_score)
         label, score = np.array(label), np.array(score)
         self.test_auc = roc_auc_score(label, score)
 
@@ -181,4 +190,4 @@ class AutoEncoderTrainer:
         logger.info(f'>>> Test Time: {self.test_time:.3f} [s]')
         logger.info(f'>>> Test Loss: {epoch_loss / n_batch:.6f}')
         logger.info(f'>>> Test AUC: {self.test_auc:.3%}')
-        logger.info('>>> Finished Testing the AutoEncoder.')
+        logger.info('>>> Finished Testing the AutoEncoder.\n')

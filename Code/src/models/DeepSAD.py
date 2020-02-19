@@ -2,14 +2,14 @@ import torch
 import json
 import sys
 
-from optim.autoencoder_trainer import AutoEncoderTrainer
-from optim.DeepSAD_trainer import DeepSADTrainer
+from src.models.optim.autoencoder_trainer import AutoEncoderTrainer
+from src.models.optim.DeepSAD_trainer import DeepSADTrainer
 
 class DeepSAD:
     """
 
     """
-    def __init__(self, net, eta=1.0, ae_net=None):
+    def __init__(self, net, ae_net=None, eta=1.0):
         """
 
         """
@@ -36,24 +36,26 @@ class DeepSAD:
         }
 
     def train(self, dataset, lr=0.0001, n_epoch=150, lr_milestone=(), batch_size=64,
-              weight_decay=1e-6, device='cuda', n_jobs_dataloader=0):
+              weight_decay=1e-6, device='cuda', n_jobs_dataloader=0, print_batch_progress=False):
         """
 
         """
         self.trainer = DeepSADTrainer(self.c, self.eta, lr=lr, n_epoch=n_epoch, lr_milestone=lr_milestone,
                                       batch_size=batch_size, weight_decay=weight_decay, device=device,
-                                      n_jobs_dataloader=n_jobs_dataloader)
+                                      n_jobs_dataloader=n_jobs_dataloader, print_batch_progress=print_batch_progress)
         # train deepSAD
         self.net = self.trainer.train(dataset, self.net)
         self.results['train_time'] = self.trainer.train_time
-        self.c = self.trainer.c.cpu().data.numpy().to_list()
+        self.c = self.trainer.c.cpu().data.numpy().tolist()
 
-    def test(self, dataset, device='cuda', n_jobs_dataloader=0):
+    def test(self, dataset, device='cuda', n_jobs_dataloader=0, print_batch_progress=False):
         """
 
         """
         if self.trainer is None:
-            self.trainer = DeepSADTrainer(self.c, self.eta, device=device, n_jobs_dataloader=n_jobs_dataloader)
+            self.trainer = DeepSADTrainer(self.c, self.eta, device=device,
+                                          n_jobs_dataloader=n_jobs_dataloader,
+                                          print_batch_progress=print_batch_progress)
 
         self.trainer.test(dataset, self.net)
         # recover restults
@@ -62,13 +64,13 @@ class DeepSAD:
         self.results['test_scores'] = self.trainer.test_scores
 
     def pretrain(self, train_dataset, test_dataset, lr=0.0001, n_epoch=150, lr_milestone=(),
-                 batch_size=64, weight_decay=1e-6, device='cuda', n_jobs_dataloader=0):
+                 batch_size=64, weight_decay=1e-6, device='cuda', n_jobs_dataloader=0, print_batch_progress=False):
         """
 
         """
         self.ae_trainer = AutoEncoderTrainer(lr=lr, n_epoch=n_epoch, lr_milestone=lr_milestone,
                                       batch_size=batch_size, weight_decay=weight_decay, device=device,
-                                      n_jobs_dataloader=n_jobs_dataloader)
+                                      n_jobs_dataloader=n_jobs_dataloader, print_batch_progress=print_batch_progress)
         # Train AE
         self.ae_net = self.ae_trainer.train(train_dataset, self.ae_net)
         self.ae_results['train_time'] = self.ae_trainer.train_time
@@ -88,7 +90,7 @@ class DeepSAD:
         net_dict = self.net.state_dict()
         ae_net_dict = self.ae_net.state_dict()
         # filter elements of the AE out to keep only those matching DeepSAD's one
-        ae_net_dict = {k, v for k, v in ae_net_dict.items() if k in net_dict}
+        ae_net_dict = {k: v for k, v in ae_net_dict.items() if k in net_dict}
         # Update the DeepSAD state dict
         net_dict.update(ae_net_dict)
         self.net.load_state_dict(net_dict)
@@ -122,7 +124,7 @@ class DeepSAD:
 
         """
         with open(export_json_path, 'w') as f:
-            json.dump(self.results, fp)
+            json.dump(self.results, f)
 
 
     def save_ae_results(self, export_json_path):
@@ -130,4 +132,4 @@ class DeepSAD:
 
         """
         with open(export_json_path, 'w') as f:
-            json.dump(self.ae_results, fp)
+            json.dump(self.ae_results, f)

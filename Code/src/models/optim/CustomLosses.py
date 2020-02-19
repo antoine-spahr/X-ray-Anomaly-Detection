@@ -31,7 +31,7 @@ class MaskedMSELoss(nn.Module):
             |---- loss (torch.Tensor) the masked MSE loss.
         """
         # compute loss where mask = 1
-        loss = nn.criterion(input * mask, target * mask)
+        loss = self.criterion(input * mask, target * mask)
         if self.reduction == 'mean':
             loss = torch.sum(loss) / torch.sum(mask)
         return loss
@@ -55,11 +55,12 @@ class DeepSADLoss(nn.Module):
         OUTPUT
             |---- None
         """
+        nn.Module.__init__(self)
         self.c = c
         self.eta = eta
         self.eps = 0.1
 
-    def forward(input, semi_target):
+    def forward(self, input, semi_target):
         """
         Forward pass of the DeepSAD loss.
         ----------
