@@ -32,6 +32,12 @@ class Grayscale:
         """
         return PIL.ImageOps.grayscale(image), mask
 
+    def __str__(self):
+        """
+        Transform printing format
+        """
+        return "Grayscale()"
+
 class HistEqualization:
     """
     Apply an histogram equalization algorithm to the image, and passes the mask.
@@ -58,6 +64,12 @@ class HistEqualization:
             |---- mask (PIL.Image) the mask.
         """
         return PIL.ImageOps.equalize(image), mask
+
+    def __str__(self):
+        """
+        Transform printing format
+        """
+        return "HistEqualization()"
 
 class AutoContrast:
     """
@@ -87,6 +99,12 @@ class AutoContrast:
             |---- mask (PIL.Image) the mask.
         """
         return PIL.ImageOps.autocontrast(image, cutoff=self.cutoff), mask
+
+    def __str__(self):
+        """
+        Transform printing format
+        """
+        return f"AutoContrast(cutoff={self.cutoff})"
 
 class ResizeMax:
     """
@@ -126,6 +144,12 @@ class ResizeMax:
 
         return image, mask
 
+    def __str__(self):
+        """
+        Transform printing format
+        """
+        return f"ResizeMax(max_len={self.max_len})"
+
 class PadToSquare:
     """
     Pad the image (and mask) to a square, with value zero
@@ -162,6 +186,12 @@ class PadToSquare:
 
         return image, mask
 
+    def __str__(self):
+        """
+        Transform printing format
+        """
+        return "PadToSquare()"
+
 class MinMaxNormalization:
     """
     Normalized (Min-Max) the image.
@@ -197,6 +227,12 @@ class MinMaxNormalization:
             mask = np.array(mask)
         return arr, mask
 
+    def __str__(self):
+        """
+        Transform printing format
+        """
+        return f"MinMaxNormalization(vmin={self.vmin}, vmax={self.vmax})"
+
 class RandomHorizontalFlip:
     """
     Randomly flip horizontally the image (and mask).
@@ -230,6 +266,12 @@ class RandomHorizontalFlip:
 
         return image, mask
 
+    def __str__(self):
+        """
+        Transform printing format
+        """
+        return f"RandomHorizontalFlip(p={self.p})"
+
 class RandomVerticalFlip:
     """
     Randomly flip vertically the image (and mask).
@@ -262,6 +304,12 @@ class RandomVerticalFlip:
                 mask = mask.transpose(PIL.Image.FLIP_TOP_BOTTOM)
 
         return image, mask
+
+    def __str__(self):
+        """
+        Transform printing format
+        """
+        return f"RandomVerticalFlip(p={self.p})"
 
 class RandomRotation:
     """
@@ -298,6 +346,12 @@ class RandomRotation:
             mask = mask.rotate(angle, resample=self.resample)
 
         return image, mask
+
+    def __str__(self):
+        """
+        Transform printing format
+        """
+        return f"RandomRotation(degree_range={self.degree_range})"
 
 class RandomScaling:
     """
@@ -336,6 +390,12 @@ class RandomScaling:
 
         return image, mask
 
+    def __str__(self):
+        """
+        Transform printing format
+        """
+        return f"RandomScaling(scale_range={self.scale_range})"
+
 class RandomBrightness:
     """
     Randomly chang the image brightness (and passes the mask).
@@ -369,6 +429,12 @@ class RandomBrightness:
         image = enhancer.enhance(factor)
         return image, mask
 
+    def __str__(self):
+        """
+        Transform printing format
+        """
+        return f"RandomBrightness(lower={self.lower}, upper={self.upper})"
+
 
 class ToTorchTensor:
     """
@@ -399,6 +465,12 @@ class ToTorchTensor:
         if mask is not None:
             mask = TF.ToTensor()(mask)
         return image, mask
+
+    def __str__(self):
+        """
+        Transform printing format
+        """
+        return "ToTorchTensor()"
 
 class Compose:
     """
@@ -431,3 +503,9 @@ class Compose:
             image, mask = f(image, mask)
 
         return image, mask
+
+    def __str__(self):
+        """
+        Transform printing format
+        """
+        return '    ' + '\n -> '.join([str(t) for t in self.transformations])

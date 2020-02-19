@@ -15,9 +15,12 @@ def print_progessbar(N, Max, Name='', Size=10, end_char=''):
     OUTPUT
         |---- None
     """
-    print(f'\r{Name} {N+1:03d}/{Max:03d}'.ljust(26) \
+    print(f'\r{Name} {N+1:03d}/{Max:03d}'.ljust(len(Name) + 10) \
         + f'[{"#"*int(Size*(N+1)/Max)}'.ljust(Size+1) + f'] {(int(100*(N+1)/Max))}%'.ljust(6), \
         end=end_char)
+
+    if N+1 == Max:
+        print('')
 
 def print_param_summary(**params):
     """

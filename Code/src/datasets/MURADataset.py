@@ -7,7 +7,8 @@ from torch.utils import data
 from sklearn.model_selection import train_test_split
 from prettytable import PrettyTable
 
-import transforms as tf
+#import src.datasets.transforms as tf
+from . import transforms as tf
 
 class MURA_Dataset(data.Dataset):
     """
@@ -88,12 +89,12 @@ class MURA_Dataset(data.Dataset):
         #
         # return item + [idx]
 
-        im = Image.open(self.data_path + df.loc[idx,'filename'])
+        im = Image.open(self.data_path + self.sample_df.loc[idx,'filename'])
         # load label
         label = torch.tensor(self.sample_df.loc[idx,'abnormal_XR'])
         # load mask
         if self.load_mask:
-            mask = Image.open(self.data_path + df.loc[idx,'mask_filename'])
+            mask = Image.open(self.data_path + self.sample_df.loc[idx,'mask_filename'])
         else:
             mask = None
 
@@ -279,7 +280,7 @@ class MURA_TrainValidTestSplitter:
         assert name in ['train', 'valid', 'test'], f'Invalid dataset name! {name} has been provided but must be one of [train, valid, test]'
         return self.subsets[name]
 
-    def print_stat(self):
+    def print_stat(self, returnTable=False):
         """
         Display a summary table of the splitting with the number and fractions of
         normal and abnormal, as well as the number and fraction of semisupervized
@@ -299,28 +300,32 @@ class MURA_TrainValidTestSplitter:
             summary.add_row([name, 'Abnormal known', df[df.semi_label == -1].shape[0], '{:.2%}'.format(df[df.semi_label == -1].shape[0] / df.shape[0])])
             summary.add_row([name, 'Unknown', df[df.semi_label == 0].shape[0], '{:.2%}'.format(df[df.semi_label == 0].shape[0] / df.shape[0])])
             if name != 'test' : summary.add_row(['----']*4)
-        print(summary)
+        if returnTable:
+            return summary
+        else:
+            print(summary)
 
 # %% ###########################################################################
 ################################ EXAMPLE OF USAGE ##############################
 ################################################################################
-import matplotlib.pyplot as plt
-
-DATA_PATH = '../../../data/'
-df = pd.read_csv(DATA_PATH+'data_info.csv')
-df = df.drop(df.columns[0], axis=1)
-
-spliter = MURA_TrainValidTestSplitter(df, train_frac=0.5, ratio_known_normal=0.05, ratio_known_abnormal=0.05)
-spliter.split_data(verbose=True)
-
-train_df = spliter.get_subset('train')
-valid_df = spliter.get_subset('valid')
-test_df = spliter.get_subset('test')
-
-datasetMURA = MURA_Dataset(train_df, data_path=DATA_PATH+'PROCESSED/', load_mask=True, load_semilabels=True)
-image_test, label, mask, semi_label, idx = datasetMURA.__getitem__(6543)
-
-fig, ax = plt.subplots(1,1,figsize=(8,8))
-ax.set_title('Transformed sample from the MURA dataset')
-ax.imshow(image_test[0,:,:], cmap='Greys_r')
-plt.show()
+# import matplotlib.pyplot as plt
+# from src.datasets.MURADataset import MURA_TrainValidTestSplitter, MURA_Dataset
+#
+# DATA_PATH = '../../../data/'
+# df = pd.read_csv(DATA_PATH+'data_info.csv')
+# df = df.drop(df.columns[0], axis=1)
+#
+# spliter = MURA_TrainValidTestSplitter(df, train_frac=0.5, ratio_known_normal=0.05, ratio_known_abnormal=0.05)
+# spliter.split_data(verbose=True)
+#
+# train_df = spliter.get_subset('train')
+# valid_df = spliter.get_subset('valid')
+# test_df = spliter.get_subset('test')
+#
+# datasetMURA = MURA_Dataset(train_df, data_path=DATA_PATH+'PROCESSED/', load_mask=True, load_semilabels=True)
+# image_test, label, mask, semi_label, idx = datasetMURA.__getitem__(6543)
+#
+# fig, ax = plt.subplots(1,1,figsize=(8,8))
+# ax.set_title('Transformed sample from the MURA dataset')
+# ax.imshow(image_test[0,:,:], cmap='Greys_r')
+# plt.show()
