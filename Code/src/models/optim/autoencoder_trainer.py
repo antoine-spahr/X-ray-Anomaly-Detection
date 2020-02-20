@@ -40,6 +40,7 @@ class AutoEncoderTrainer:
         self.print_batch_progress = print_batch_progress
         # output attributes
         self.train_time = None
+        self.train_loss = None
         self.test_auc = None
         self.test_time = None
 
@@ -77,6 +78,7 @@ class AutoEncoderTrainer:
         # Training
         logger.info('>>> Start Training of the AutoEncoder.')
         start_time = time.time()
+        epoch_loss_list = []
         # set the network in train mode
         ae_net.train()
 
@@ -103,12 +105,14 @@ class AutoEncoderTrainer:
                 n_batch += 1
 
                 if self.print_batch_progress:
-                    print_progessbar(b, train_loader.__len__(), Name=''*12+'Batch', Size=20)
+                    print_progessbar(b, train_loader.__len__(), Name='\t\tBatch', Size=20)
 
             # epoch statistic
             epoch_train_time = time.time() - epoch_start_time
             logger.info(f'| Epoch: {epoch + 1:03}/{self.n_epoch:03} | Train Time: {epoch_train_time:.3f} [s] '
                         f'| Train Loss: {epoch_loss / n_batch:.6f} |')
+
+            epoch_loss_list += [[epoch+1, epoch_loss/n_batch]]
 
             # apply the scheduler step
             scheduler.step()
@@ -116,6 +120,7 @@ class AutoEncoderTrainer:
                 logger.info('>>> LR Scheduler : new learning rate %g' % float(scheduler.get_lr()[0]))
 
         # End training
+        self.train_loss = epoch_loss_list
         self.train_time = time.time() - start_time
         logger.info(f'>>> Training of AutoEncoder Time: {self.train_time:.3f} [s]')
         logger.info('>>> Finished AutoEncoder Training.\n')
@@ -177,7 +182,7 @@ class AutoEncoderTrainer:
                 n_batch += 1
 
                 if self.print_batch_progress:
-                    print_progessbar(b, test_loader.__len__(), Name=''*12+'Batch', Size=20)
+                    print_progessbar(b, test_loader.__len__(), Name='\t\tBatch', Size=20)
 
         self.test_time = time.time() - start_time
 

@@ -287,9 +287,9 @@ class MURA_TrainValidTestSplitter:
         labels.
         ----------
         INPUT
-            |---- None
+            |---- returnTable (bool) whether to return table as a string.
         OUTPUT
-            |---- None
+            |---- (summary) (str) the table as a string if returnTable = True.
         """
         summary = PrettyTable(["Set", "Name", "Number [-]", "Fraction [%]"])
         summary.align = 'l'
@@ -304,28 +304,3 @@ class MURA_TrainValidTestSplitter:
             return summary
         else:
             print(summary)
-
-# %% ###########################################################################
-################################ EXAMPLE OF USAGE ##############################
-################################################################################
-# import matplotlib.pyplot as plt
-# from src.datasets.MURADataset import MURA_TrainValidTestSplitter, MURA_Dataset
-#
-# DATA_PATH = '../../../data/'
-# df = pd.read_csv(DATA_PATH+'data_info.csv')
-# df = df.drop(df.columns[0], axis=1)
-#
-# spliter = MURA_TrainValidTestSplitter(df, train_frac=0.5, ratio_known_normal=0.05, ratio_known_abnormal=0.05)
-# spliter.split_data(verbose=True)
-#
-# train_df = spliter.get_subset('train')
-# valid_df = spliter.get_subset('valid')
-# test_df = spliter.get_subset('test')
-#
-# datasetMURA = MURA_Dataset(train_df, data_path=DATA_PATH+'PROCESSED/', load_mask=True, load_semilabels=True)
-# image_test, label, mask, semi_label, idx = datasetMURA.__getitem__(6543)
-#
-# fig, ax = plt.subplots(1,1,figsize=(8,8))
-# ax.set_title('Transformed sample from the MURA dataset')
-# ax.imshow(image_test[0,:,:], cmap='Greys_r')
-# plt.show()

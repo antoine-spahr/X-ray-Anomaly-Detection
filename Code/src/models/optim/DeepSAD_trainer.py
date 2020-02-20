@@ -51,6 +51,7 @@ class DeepSADTrainer:
 
         # Results
         self.train_time = None
+        self.train_loss = None
         self.test_auc = None
         self.test_time = None
         self.test_scores = None
@@ -94,6 +95,7 @@ class DeepSADTrainer:
         # Start training
         logger.info('>>> Start Training of the DeepSAD.')
         start_time = time.time()
+        epoch_loss_list = []
         # set network in train mode
         net.train()
 
@@ -109,13 +111,9 @@ class DeepSADTrainer:
                 input, semi_label = input.to(self.device).float(), semi_label.to(self.device)
                 # zero the network's gradients
                 optimizer.zero_grad()
-
                 # optimize by backpropagation
                 output = net(input)
-                #loss = criterion(output, semi_label)
-                dist = torch.sum((output - self.c) ** 2, dim=1)
-                losses = torch.where(semi_label == 0, dist, self.eta * ((dist + self.eps) ** semi_label.float()))
-                loss = torch.mean(losses)
+                loss = criterion(output, semi_label)
                 loss.backward()
                 optimizer.step()
 
@@ -123,12 +121,14 @@ class DeepSADTrainer:
                 n_batch += 1
 
                 if self.print_batch_progress:
-                    print_progessbar(b, train_loader.__len__(), Name=''*12+'Batch', Size=20)
+                    print_progessbar(b, train_loader.__len__(), Name='\t\tBatch', Size=20)
 
             # log the epoch statistics
             epoch_train_time = time.time() - epoch_start_time
             logger.info(f'| Epoch: {epoch + 1:03}/{self.n_epoch:03} | Train Time: {epoch_train_time:.3f} [s] '
                         f'| Train Loss: {epoch_loss / n_batch:.6f} |')
+
+            epoch_loss_list += [[epoch+1, epoch_loss/n_batch]]
 
             # update scheduler
             scheduler.step()
@@ -136,6 +136,7 @@ class DeepSADTrainer:
                 logger.info('>>> LR Scheduler : new learning rate %g' % float(scheduler.get_lr()[0]))
 
         # End training
+        self.train_loss = epoch_loss_list
         self.train_time = time.time() - start_time
         logger.info(f'>>> Training of DeepSAD Time: {self.train_time:.3f} [s]')
         logger.info('>>> Finished DeepSAD Training.\n')
@@ -195,7 +196,7 @@ class DeepSADTrainer:
                 n_batch += 1
 
                 if self.print_batch_progress:
-                    print_progessbar(b, test_loader.__len__(), Name=''*12+'Batch', Size=20)
+                    print_progessbar(b, test_loader.__len__(), Name='\t\tBatch', Size=20)
 
         self.test_time = time.time() - start_time
         self.test_scores = idx_label_score
@@ -238,7 +239,7 @@ class DeepSADTrainer:
                 c += torch.sum(output, dim=0)
 
                 if self.print_batch_progress:
-                    print_progessbar(b, loader.__len__(), Name=''*12+'Batch', Size=20)
+                    print_progessbar(b, loader.__len__(), Name='\t\tBatch', Size=20)
 
         # take the mean of accumulated c
         c /= n_sample

@@ -1,6 +1,5 @@
 import torch
 import torch.cuda
-import torchsummary
 import logging
 import numpy as np
 import pandas as pd
@@ -13,9 +12,7 @@ sys.path.append('../')
 from src.datasets.MURADataset import MURA_TrainValidTestSplitter, MURA_Dataset
 from src.models.DeepSAD import DeepSAD
 from src.models.networks.AE_ResNet18_net import ResNet18_Encoder, AE_ResNet18
-
-# TO DO :
-# 1) save epoch_loss (and ROC_AUC ?) at each epoch
+from src.utils.utils import summary_string
 
 ################################################################################
 #                                Settings                                      #
@@ -48,15 +45,15 @@ ae_batch_size = 16#32
 
 # Training
 lr = 1e-4
-lr_milestone = [0]#[399]
-n_epoch = 2#600
+lr_milestone = [1]#[399]
+n_epoch = 3#600
 weight_decay = 1e-6
-pretrain = False
+pretrain = True
 model_path_to_load = None
 
 ae_lr = 1e-4
-ae_lr_milestone = [0]#[399]
-ae_n_epoch = 2#1000
+ae_lr_milestone = [1]#[399]
+ae_n_epoch = 3#1000
 ae_weight_decay = 1e-6
 
 # Network
@@ -74,7 +71,12 @@ Note = None
 
 def main():
     """
-
+    Train a DeepSAD model following Lukas Ruff et al. (2019) work and code structure
+    adapted to the MURA dataset (preprocessing inspired from the work of Davletshina
+    et al. (2020)). The DeepSAD network structure is a ResNet18 Encoder. The Encoder
+    is pretrained via Autoencoder training. The Autoencoder itself is initialized
+    with weights trained on ImageNet. The ROC AUC is reported on the test and
+    validation set.
     """
     # initialize logger
     logging.basicConfig(level=logging.INFO)
@@ -88,6 +90,7 @@ def main():
     logger.addHandler(file_handler)
 
     # print path
+    logger.info('Brief summary of experiment : \n' + main.__doc__)
     if Note is not None: logger.info(Note + '\n')
     logger.info(f'Log file : {log_file}')
     logger.info(f'Data path : {DATA_PATH}')
@@ -151,7 +154,7 @@ def main():
     logger.info(f'Embedding dimension : {embed_dim}')
     logger.info(f'Autoencoder pretrained on ImageNet : {ae_pretrain}')
     logger.info(f'DeepSAD eta : {eta}')
-    #logger.info('Autoencoder architecture: \n' + torchsummary.summary(ae_net, (1, 512, 512), device=device) + '\n')
+    logger.info('Autoencoder architecture: \n' + summary_string(ae_net, (1, 512, 512), device=device) + '\n')
 
     if model_path_to_load:
         deepSAD.load_model(model_path_to_load, load_ae=True, map_location=device)
@@ -194,47 +197,15 @@ def main():
     deepSAD.test(valid_dataset, device=device, n_jobs_dataloader=n_jobs_dataloader,
                  print_batch_progress=print_batch_progress)
     deepSAD.save_results(OUTPUT_PATH + 'results/DeepSAD_valid_results.json')
-    logger.info('Validation results saved at ' + OUTPUT_PATH + 'results/DeepSAD_valid_results.json')
+    logger.info('Validation results saved at ' + OUTPUT_PATH + 'results/DeepSAD_valid_results.json' + '\n')
     # test DeepSAD
     deepSAD.test(test_dataset, device=device, n_jobs_dataloader=n_jobs_dataloader,
                  print_batch_progress=print_batch_progress)
     deepSAD.save_results(OUTPUT_PATH + 'results/DeepSAD_test_results.json')
-    logger.info('Test results saved at ' + OUTPUT_PATH + 'results/DeepSAD_test_results.json')
+    logger.info('Test results saved at ' + OUTPUT_PATH + 'results/DeepSAD_test_results.json' + '\n')
     # save model
     deepSAD.save_model(OUTPUT_PATH + 'model/deepSAD_model.pt')
     logger.info('Model saved at ' + OUTPUT_PATH + 'model/deepSAD_model.pt')
 
 if __name__ == '__main__':
     main()
-
-#%%
-# import matplotlib.pyplot as plt
-# from src.datasets.MURADataset import MURA_TrainValidTestSplitter, MURA_Dataset
-# from src.models.networks.AE_ResNet18_net import ResNet18_Encoder
-#
-# DATA_PATH = '../../data/'
-# df = pd.read_csv(DATA_PATH+'data_info.csv')
-# df = df.drop(df.columns[0], axis=1)
-# df = df[df.low_contrast == 0]
-#
-# spliter = MURA_TrainValidTestSplitter(df, train_frac=0.5, ratio_known_normal=0.05, ratio_known_abnormal=0.05)
-# spliter.split_data(verbose=True)
-#
-# train_df = spliter.get_subset('train')
-# valid_df = spliter.get_subset('valid')
-# test_df = spliter.get_subset('test')
-#
-# datasetMURA = MURA_Dataset(train_df, data_path=DATA_PATH+'PROCESSED/', load_mask=True, load_semilabels=True)
-# image_test, label, mask, semi_label, idx = datasetMURA.__getitem__(6543)
-#
-# print(datasetMURA.transform)
-#
-# net = ResNet18_Encoder(embed_dim=256, pretrained=True)
-#
-# torch.unsqueeze(image_test, dim=0).dtype
-# net(torch.unsqueeze(image_test, dim=0))
-#
-# fig, ax = plt.subplots(1,1,figsize=(8,8))
-# ax.set_title('Transformed sample from the MURA dataset')
-# ax.imshow(image_test[0,:,:], cmap='Greys_r')
-# plt.show()
