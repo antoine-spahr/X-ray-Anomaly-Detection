@@ -131,4 +131,6 @@ dmypy.json
 # Other files/folder
 data/*
 !data/*data_info.csv
+Code/playground.py
+# Outputs/*.pt
 .DS_Store

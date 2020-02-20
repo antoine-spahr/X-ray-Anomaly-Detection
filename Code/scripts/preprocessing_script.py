@@ -1,7 +1,6 @@
 import os
 import sys
 from glob import glob
-#import warnings
 import pandas as pd
 import numpy as np
 import skimage
@@ -11,13 +10,24 @@ from src.utils.utils import print_progessbar, print_summary_from_dict
 from src.preprocessing.cropping_rect import find_squares, crop_squares
 from src.preprocessing.segmentation import find_best_mask
 
+# TO DO :
+# 1) perform a logging and save it in PROCESSED folder
+# 2) save output summary as JSON in PROCESSED folder
+
 IN_DATA_PATH = '../../data/RAW/'
 OUT_DATA_PATH = '../../data/PROCESSED/'
 DATAINFO_PATH = '../../data/'
 
 def main():
     """
-
+    Offline prerocessing of the MURA images.
+    1) the X-ray image is first cropped from the whole image by rectangle detection.
+       And keep information on the dataframe about images that have not been
+       cropped or that result in a low contrast image (black image)
+    2) the X-ray's body part mask is generated. Some images are on a white
+       background, and they are thus inverted if the average of the images is
+       larger than 125 (inverted images are marked in the dataframe)
+    Processed images and mask are saved at the given OUT_DATA_PATH
     """
     print('-'*100 + '\n' + 'PREPROCESSING'.center(100) + '\n' + '-'*100)
     summary = {}

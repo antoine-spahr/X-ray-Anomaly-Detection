@@ -192,7 +192,7 @@ class MURA_TrainValidTestSplitter:
         # split the rest equally in the validation and test set
         valid_idx_abnormal, test_idx_abnormal = train_test_split(remain, test_size=0.5, random_state=self.random_state)
         # split the mixt between test and validation and consider them as abnormal patients bodypart
-        valid_idx_mixt, test_idx_mixt = train_test_split(idx_list_mixt, test_size=0.5, random_state=42)
+        valid_idx_mixt, test_idx_mixt = train_test_split(idx_list_mixt, test_size=0.5, random_state=self.random_state)
         valid_idx_abnormal += valid_idx_mixt
         test_idx_abnormal += test_idx_mixt
         # get the known and unknown index for each sets
