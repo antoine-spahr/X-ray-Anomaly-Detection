@@ -1,22 +1,30 @@
 import numpy as np
 import pandas as pd
-import os
-import sys
 
 import matplotlib
 import matplotlib.pyplot as plt
-
-import src.preprocessing.segmentation as seg
-import src.preprocessing.cropping_rect as croprect
-import src.datasets.MURADataset as MURA
-import src.models.DeepSAD as DeepSAD
-import src.models.networks.AE_ResNet18_net as aenet
 
 DATA_PATH = r'../data/'
 OUTPUT_PATH = r'../Outputs/'
 FIGURE_PATH = r'../Figures/'
 FIG_RES = 200 # dpi
 transparent = False
+
+def human_format(num, pos=None):
+    """
+    Format large number using a human interpretable unit (kilo, mega, ...).
+    ----------
+    INPUT
+        |---- num (int) -> the number to reformat
+    OUTPUT
+        |---- num (str) -> the reformated number
+    """
+    magnitude = 0
+    while abs(num) >= 1000:
+        magnitude += 1
+        num /= 1000.0
+
+    return '%.0f%s' % (num, ['', 'K', 'M', 'G', 'T', 'P'][magnitude])
 
 # %% Load info
 ################################################################################
@@ -81,6 +89,7 @@ axp.legend(handles[::-1], labels[::-1], loc='upper left', ncol=1, fontsize=12, f
 axp.spines['right'].set_visible(False)
 axp.spines['top'].set_visible(False)
 axp.tick_params(axis='both', labelsize=12)
+axp.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(human_format))
 #===============================================================================
 # Overall plot
 axp_all = fig.add_subplot(gs[1,0])
@@ -96,6 +105,7 @@ axp_all.set_xlabel('Overall number of patients [-]', fontsize=12)
 axp_all.spines['right'].set_visible(False)
 axp_all.spines['top'].set_visible(False)
 axp_all.tick_params(axis='both', labelsize=12)
+axp_all.xaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(human_format))
 axp_all.set_ylim([-0.5,0.5])
 #===============================================================================
 # stacked bar plot per image
@@ -115,6 +125,7 @@ axxr.legend(handles[::-1], labels[::-1], loc='upper left', ncol=1, fontsize=12, 
 axxr.spines['right'].set_visible(False)
 axxr.spines['top'].set_visible(False)
 axxr.tick_params(axis='both', labelsize=12)
+axxr.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(human_format))
 #===============================================================================
 # Overall plot
 axxr_all = fig.add_subplot(gs[1,1])
@@ -128,6 +139,7 @@ axxr_all.set_xlabel('Overall number of Xrays images [-]', fontsize=12)
 axxr_all.spines['right'].set_visible(False)
 axxr_all.spines['top'].set_visible(False)
 axxr_all.tick_params(axis='both', labelsize=12)
+axxr_all.xaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(human_format))
 axxr_all.set_ylim([-0.5,0.5])
 #===============================================================================
 fig.savefig(FIGURE_PATH+'data_repartition.png', dpi=FIG_RES, bbox_inches='tight')

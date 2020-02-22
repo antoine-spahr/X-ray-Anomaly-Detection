@@ -132,5 +132,5 @@ dmypy.json
 data/*
 !data/*data_info.csv
 Code/playground.py
-# Outputs/*.pt
+Outputs/**/*.pt      # ignore large .pt files 
 .DS_Store
