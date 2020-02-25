@@ -72,7 +72,7 @@ class UpResidualBlock(nn.Module):
             |---- in_channel (int) the number of input channels.
             |---- out_channel (int) the number of output channels.
             |---- stride (int) the stride for the first 3x3 convolution. Larger
-            |           than one produces a size reduction of the input.
+            |           than one produces a size augmentation of the input.
             |---- downsample (nn.Module) the downsampling module to use in order
             |           to get similar shaped residuals.
         OUTPUT
@@ -87,8 +87,12 @@ class UpResidualBlock(nn.Module):
             self.conv2 = nn.Conv2d(out_channel, out_channel, kernel_size=3, stride=1, \
                                    bias=False, padding=1, dilation=1)
         else:
-            self.conv2 = nn.ConvTranspose2d(out_channel, out_channel, kernel_size=3, \
-                                            stride=stride, bias=False, padding=1, output_padding=1)
+            # self.conv2 = nn.ConvTranspose2d(out_channel, out_channel, kernel_size=3, \
+            #                                 stride=stride, bias=False, padding=1, output_padding=1)
+            self.conv2 = nn.Sequential(nn.Upsample(mode='bilinear', scale_factor=2, align_corners=True),
+                                       nn.Conv2d(out_channel, out_channel, kernel_size=1, stride=1, \
+                                                 bias=False, dilation=1))
+
         self.bn2 = nn.BatchNorm2d(out_channel)
         self.upsample = upsample
 
@@ -277,7 +281,10 @@ class ResNet18_Decoder(nn.Module):
         self.uplayer2 = self._make_layer(block, 128, layers[1], stride=2)
         self.uplayer3 = self._make_layer(block, 64, layers[2], stride=2)
         self.uplayer4 = self._make_layer(block, 64, layers[3], stride=2)
-        self.uplayer_final = nn.ConvTranspose2d(64, output_channel, kernel_size=1, stride=2, bias=False, output_padding=1)
+        #self.uplayer_final = nn.ConvTranspose2d(64, output_channel, kernel_size=1, stride=2, bias=False, output_padding=1)
+        self.uplayer_final = nn.Sequential(nn.Upsample(mode='bilinear', scale_factor=2, align_corners=True),
+                                           nn.Conv2d(64, output_channel, kernel_size=1, stride=1, bias=False))
+        self.final_activation = nn.Tanh()
 
     def _make_layer(self, block, out_channel, n_blocks, stride=1):
         """
@@ -297,9 +304,10 @@ class ResNet18_Decoder(nn.Module):
         upsample = None
         # define upsample if larger stride or different channels at output to get similar residual
         if stride != 1 or self.in_channel != out_channel:
-            # TO CHECK --> ConvTranspose (kernel_size of 1 with no padding or kernel_size of 3 with padding=1 ??)
             upsample = nn.Sequential(
-                nn.ConvTranspose2d(self.in_channel, out_channel, kernel_size=1, stride=stride, bias=False, output_padding=1),
+                #nn.ConvTranspose2d(self.in_channel, out_channel, kernel_size=1, stride=stride, bias=False, output_padding=1),
+                nn.Upsample(mode='bilinear', scale_factor=2, align_corners=True),
+                nn.Conv2d(self.in_channel, out_channel, kernel_size=1, stride=1, bias=False),
                 nn.BatchNorm2d(out_channel)
             )
         layer = []
@@ -329,6 +337,7 @@ class ResNet18_Decoder(nn.Module):
         x = self.uplayer3(x)
         x = self.uplayer4(x)
         x = self.uplayer_final(x)
+        x = self.final_activation(x)
         return x
 
 class AE_ResNet18(nn.Module):
@@ -369,12 +378,10 @@ class AE_ResNet18(nn.Module):
         return rec
 
 # # %%
-#from torchsummary import summary, summary_string
 # import torchsummary
 # m = ResNet18_Encoder(embed_dim=128, pretrained=True)
-# x = torchsummary.summary_string(m, (1,512,512))
 
-# # m = ResNet18_Decoder(embed_dim=128, output_channel=1)
-# # summary(m, (1,128))
+# m = ResNet18_Decoder(embed_dim=128, output_channel=1)
+# torchsummary.summary(m, (1,128))
 # m = AE_ResNet18(embed_dim=256, pretrain_ResNetEnc=True, output_channel=1)
-# summary(m, (1,512,512))
+# torchsummary.summary(m, (1,512,512))
