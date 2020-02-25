@@ -2,12 +2,14 @@ import numpy as np
 import pandas as pd
 import matplotlib
 import matplotlib.pyplot as plt
+import sys
+sys.path.append('../')
 
 import src.datasets.MURADataset as MURA
 
-DATA_PATH = r'../data/'
-OUTPUT_PATH = r'../Outputs/'
-FIGURE_PATH = r'../Figures/'
+DATA_PATH = r'../../data/'
+OUTPUT_PATH = r'../../Outputs/'
+FIGURE_PATH = r'../../Figures/'
 FIG_RES = 200 # dpi
 transparent = False
 

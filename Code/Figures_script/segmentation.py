@@ -7,9 +7,9 @@ import matplotlib.pyplot as plt
 
 #import src.preprocessing.segmentation as seg
 
-DATA_PATH = r'../data/'
-OUTPUT_PATH = r'../Outputs/'
-FIGURE_PATH = r'../Figures/'
+DATA_PATH = r'../../data/'
+OUTPUT_PATH = r'../../Outputs/'
+FIGURE_PATH = r'../../Figures/'
 FIG_RES = 200 # dpi
 transparent = True
 save_fig = True
@@ -26,11 +26,11 @@ bodypart = list(df2.body_part)
 ################################################################################
 m_color, m_alpha = 'limegreen', 0.25
 
-fig, axs = plt.subplots(4, 4, figsize=(18,18))
+fig, axs = plt.subplots(4, 4, figsize=(13,13))
 if transparent: fig.set_alpha(0)
 for f, fm, bp, ax in zip(fn, fn_mask, bodypart, axs.reshape(-1)):
     ax.set_axis_off()
-    ax.set_title(bp.title())
+    ax.set_title(bp.title(), fontsize=12)
     img, mask = imread(DATA_PATH+'PROCESSED/'+f), imread(DATA_PATH+'PROCESSED/'+fm)
     m = np.ma.masked_where(mask == 0, mask)
     ax.imshow(img, cmap='Greys_r')#, vmin=0, vmax=1)

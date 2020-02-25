@@ -4,9 +4,9 @@ import pandas as pd
 import matplotlib
 import matplotlib.pyplot as plt
 
-DATA_PATH = r'../data/'
-OUTPUT_PATH = r'../Outputs/'
-FIGURE_PATH = r'../Figures/'
+DATA_PATH = r'../../data/'
+OUTPUT_PATH = r'../../Outputs/'
+FIGURE_PATH = r'../../Figures/'
 FIG_RES = 200 # dpi
 transparent = False
 
@@ -52,9 +52,9 @@ abnormal_xr_count = np.array(df_xr.loc[df_xr.abnormal_XR == 1, 'patientID'])
 # %% get overall numbers
 ################################################################################
 df_patient = df.groupby(['body_part', 'patientID']).mean()
-patient_normal = df_patient.patient_any_abnormal.value_counts()[0.0]
-patient_mixt = df_patient.patient_any_abnormal.value_counts()[0.5]
-patient_abnormal = df_patient.patient_any_abnormal.value_counts()[1.0]
+patient_normal = df_patient.body_part_abnormal.value_counts()[0.0]
+patient_mixt = df_patient.body_part_abnormal.value_counts()[0.5]
+patient_abnormal = df_patient.body_part_abnormal.value_counts()[1.0]
 xr_normal = df.abnormal_XR.value_counts()[0]
 xr_abnormal = df.abnormal_XR.value_counts()[1]
 
@@ -66,7 +66,7 @@ colors1 = ['gainsboro', 'silver', 'gray']
 colors2 = ['gainsboro', 'gray']
 
 #fig, axs = plt.subplots(2,2,figsize=(14,7), gridspec_kw={'height_ratios':[0.85, 0.15]})
-fig = plt.figure(figsize=(18,7))
+fig = plt.figure(figsize=(16,8))
 if transparent: fig.patch.set_alpha(0) # transparent background
 gs = fig.add_gridspec(2, 2, wspace=0.3, hspace=0.1, height_ratios=[0.85, 0.15])
 #===============================================================================
@@ -90,6 +90,7 @@ axp.spines['right'].set_visible(False)
 axp.spines['top'].set_visible(False)
 axp.tick_params(axis='both', labelsize=12)
 axp.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(human_format))
+axp.text(0, 1.02, 'A', fontsize=20, fontweight='bold', transform=axp.transAxes)
 #===============================================================================
 # Overall plot
 axp_all = fig.add_subplot(gs[1,0])
@@ -126,6 +127,7 @@ axxr.spines['right'].set_visible(False)
 axxr.spines['top'].set_visible(False)
 axxr.tick_params(axis='both', labelsize=12)
 axxr.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(human_format))
+axxr.text(0, 1.02, 'B', fontsize=20, fontweight='bold', transform=axxr.transAxes)
 #===============================================================================
 # Overall plot
 axxr_all = fig.add_subplot(gs[1,1])
