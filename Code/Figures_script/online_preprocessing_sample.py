@@ -24,9 +24,10 @@ spliter = MURA.MURA_TrainValidTestSplitter(df, train_frac=0.5, ratio_known_norma
 spliter.split_data(verbose=True)
 
 train_df = spliter.get_subset('train')
+test_df = spliter.get_subset('test')
 
 # %% make dataset
-dataset = MURA.MURA_Dataset(train_df, DATA_PATH+'PROCESSED/')
+dataset = MURA.MURA_Dataset(test_df, DATA_PATH+'PROCESSED/', output_size=512)
 
 # %% figures
 ################################################################################

@@ -15,7 +15,8 @@ class MURA_Dataset(data.Dataset):
     Implementation of a torch.utils.data.Dataset for the MURA-dataset that can
     handle the loading of a mask and semi.supervized labels.
     """
-    def __init__(self, sample_df, data_path, load_semilabels=True, load_mask=True):
+    def __init__(self, sample_df, data_path, load_semilabels=True, load_mask=True,
+                 output_size=512):
         """
         Constructor of the dataset.
         ----------
@@ -25,6 +26,7 @@ class MURA_Dataset(data.Dataset):
             |---- data_path (str) the path to the data filenames specified in the sample_df
             |---- load_semilabels (bool) whether to load the semi-supervized labels.
             |---- load_mask (bool) whether to load the mask.
+            |---- output_size (int) the size of the output squared image.
         """
         data.Dataset.__init__(self)
         self.sample_df = sample_df
@@ -38,7 +40,7 @@ class MURA_Dataset(data.Dataset):
                                     tf.RandomBrightness(lower=0.8, upper=1.2), \
                                     tf.RandomScaling(scale_range=(0.8,1.2)), \
                                     tf.RandomRotation(degree_range=(-20,20)), \
-                                    tf.ResizeMax(512), \
+                                    tf.ResizeMax(output_size), \
                                     tf.PadToSquare(), \
                                     tf.MinMaxNormalization(), \
                                     tf.ToTorchTensor())
