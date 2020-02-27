@@ -144,5 +144,5 @@ axxr_all.tick_params(axis='both', labelsize=12)
 axxr_all.xaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(human_format))
 axxr_all.set_ylim([-0.5,0.5])
 #===============================================================================
-fig.savefig(FIGURE_PATH+'data_repartition.png', dpi=FIG_RES, bbox_inches='tight')
+fig.savefig(FIGURE_PATH+'data_repartition.pdf', dpi=FIG_RES, bbox_inches='tight')
 plt.show()

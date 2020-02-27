@@ -271,5 +271,5 @@ lgd = ax.legend(handles[::-1], labels[::-1], loc='lower left', ncol=1, fontsize=
 if transparent:
     ax.patch.set_alpha(0)
     ax_bis.patch.set_alpha(0)
-fig.savefig(FIGURE_PATH+'semisupervized_data_split_summary.png', dpi=FIG_RES, bbox_inches='tight', bbox_extra_artist=(lgd,))
+fig.savefig(FIGURE_PATH+'unsupervized_data_split_summary.pdf', dpi=FIG_RES, bbox_inches='tight', bbox_extra_artist=(lgd,))
 plt.show()

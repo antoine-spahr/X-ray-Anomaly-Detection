@@ -59,5 +59,5 @@ axs[1].set_title('Extracted images')
 axs[1].set_axis_off()
 fig.tight_layout()
 
-if save_fig: fig.savefig(FIGURE_PATH+'rect_cropping_sample.png', dpi=FIG_RES, bbox_inches='tight', bbox_extra_artist=(lgd,))
+if save_fig: fig.savefig(FIGURE_PATH+'rect_cropping_sample.pdf', dpi=FIG_RES, bbox_inches='tight', bbox_extra_artist=(lgd,))
 plt.show()
