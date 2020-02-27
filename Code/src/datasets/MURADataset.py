@@ -236,9 +236,9 @@ class MURA_TrainValidTestSplitter:
         valid_df = self.generate_semisupervized_label(valid_idx_known, valid_idx_unknown)
         test_df = self.generate_semisupervized_label(test_idx_known, test_idx_unknown)
         # shuffle the dataframes
-        self.subsets['train'] = train_df.sample(frac=1).reset_index(drop=True)
-        self.subsets['valid'] = valid_df.sample(frac=1).reset_index(drop=True)
-        self.subsets['test'] = test_df.sample(frac=1).reset_index(drop=True)
+        self.subsets['train'] = train_df.sample(frac=1, random_state=self.random_state).reset_index(drop=True)
+        self.subsets['valid'] = valid_df.sample(frac=1, random_state=self.random_state).reset_index(drop=True)
+        self.subsets['test'] = test_df.sample(frac=1, random_state=self.random_state).reset_index(drop=True)
         # Print summary
         if verbose:
             self.print_stat()

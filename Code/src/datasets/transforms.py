@@ -134,7 +134,10 @@ class ResizeMax:
             |---- mask (PIL.Image) the resized mask.
         """
         s = image.size
-        max_dim, min_dim = np.argmax(s), np.argmin(s)
+        if s[0] != s[1]:
+            max_dim, min_dim = np.argmax(s), np.argmin(s)
+        else:
+            max_dim, min_dim = 0, 1
         aspect_ratio = s[max_dim]/s[min_dim]
         new_s = list(s)
         new_s[max_dim], new_s[min_dim] = self.max_len, int(self.max_len/aspect_ratio)
