@@ -129,8 +129,12 @@ dmypy.json
 .pyre/
 
 # Other files/folder
+# ignore data but keep the csv info file
 data/*
 !data/*data_info.csv
 Code/playground.py
-Outputs/**/*.pt      # ignore large .pt files 
+
+# ignore large .pt files
+Outputs/**/*.pt
+
 .DS_Store

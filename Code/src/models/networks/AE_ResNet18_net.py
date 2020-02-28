@@ -254,7 +254,7 @@ class ResNet18_Decoder(nn.Module):
     """
     Combine multiple Up Residual Blocks to form a ResNet18 like decoder.
     """
-    def __init__(self, layers=[2, 2, 2, 2], embed_dim=128, output_channel=3):#, output_size=(512, 512)):
+    def __init__(self, layers=[2, 2, 2, 2], embed_dim=128, output_size=(3, 512, 512)):
         """
         Build the ResNet18-like decoder. The decoder is composed of a Linear layer.
         The linear layer is interpolated (bilinear) to 512x16x16 which is then
@@ -268,13 +268,14 @@ class ResNet18_Decoder(nn.Module):
             |           layer. The length of the list represents the number of layers.
             |---- embed_dim (int) the embeding dimension of the decoder (input
             |           of the first nn.Linear modules)
-            |---- output_channel (int) the number of channels of the output image.
+            |---- output_size (tuple) the decoder output size. (C x H x W)
         OUTPUT
             |---- None
         """
         nn.Module.__init__(self)
         block = UpResidualBlock
         self.embed_dim = embed_dim
+        self.interp_dim = (output_size[1]//(2**(len(layers)+1)), output_size[2]//(2**(len(layers)+1)))
         self.fc = nn.Linear(self.embed_dim, 512)
         self.in_channel = 512
         self.uplayer1 = self._make_layer(block, 256, layers[0], stride=2)
@@ -283,7 +284,7 @@ class ResNet18_Decoder(nn.Module):
         self.uplayer4 = self._make_layer(block, 64, layers[3], stride=2)
         #self.uplayer_final = nn.ConvTranspose2d(64, output_channel, kernel_size=1, stride=2, bias=False, output_padding=1)
         self.uplayer_final = nn.Sequential(nn.Upsample(mode='bilinear', scale_factor=2, align_corners=True),
-                                           nn.Conv2d(64, output_channel, kernel_size=1, stride=1, bias=False))
+                                           nn.Conv2d(64, output_size[0], kernel_size=1, stride=1, bias=False))
         self.final_activation = nn.Tanh()
 
     def _make_layer(self, block, out_channel, n_blocks, stride=1):
@@ -331,7 +332,7 @@ class ResNet18_Decoder(nn.Module):
         """
         x = self.fc(x)
         x = x.view(-1, 512, 1, 1)
-        x = F.interpolate(x, size=(16,16), mode='bilinear', align_corners=False)
+        x = F.interpolate(x, size=self.interp_dim, mode='bilinear', align_corners=False)
         x = self.uplayer1(x)
         x = self.uplayer2(x)
         x = self.uplayer3(x)
@@ -345,7 +346,7 @@ class AE_ResNet18(nn.Module):
     Autoencoder based on the ResNet18. The Encoder is a ResNet18 up to the
     average pooling layer, and the decoder is a mirrored ResNet18.
     """
-    def __init__(self, embed_dim=128, pretrain_ResNetEnc=False, output_channel=3):
+    def __init__(self, embed_dim=128, pretrain_ResNetEnc=False, output_size=(3, 512, 512), return_embed=False):
         """
         Build the ResNet18 Autoencoder with the provided embeding dimension.
         The Encoder can be initialized with weights pretrained on ImageNet.
@@ -355,13 +356,15 @@ class AE_ResNet18(nn.Module):
             |---- pretrain_ResNetEnc (bool) whether to use pretrained weights on
             |           ImageNet for the encoder initialization.
             |---- output_channel (int) the number of channel of the reconstructed image.
+            |---- return_embed (bool) whether to return the embedding in the forward
         OUTPUT
             |---- None
         """
         nn.Module.__init__(self)
         self.embed_dim = embed_dim
+        self.return_embed = return_embed
         self.encoder = ResNet18_Encoder(embed_dim=self.embed_dim, pretrained=pretrain_ResNetEnc)
-        self.decoder = ResNet18_Decoder(embed_dim=self.embed_dim, output_channel=output_channel)
+        self.decoder = ResNet18_Decoder(embed_dim=self.embed_dim, output_size=output_size)
 
     def forward(self, input):
         """
@@ -375,13 +378,21 @@ class AE_ResNet18(nn.Module):
         """
         embedding = self.encoder(input)
         rec = self.decoder(embedding)
-        return rec
+        if self.return_embed:
+            return rec, embedding
+        else:
+            return rec
 
 # # %%
 # import torchsummary
-# m = ResNet18_Encoder(embed_dim=128, pretrained=True)
-
-# m = ResNet18_Decoder(embed_dim=128, output_channel=1)
-# torchsummary.summary(m, (1,128))
-# m = AE_ResNet18(embed_dim=256, pretrain_ResNetEnc=True, output_channel=1)
-# torchsummary.summary(m, (1,512,512))
+# from src.utils.utils import summary_string
+#
+#
+# #m = ResNet18_Encoder(embed_dim=128, pretrained=True)
+# #
+# #m = ResNet18_Decoder(embed_dim=128, output_size=(1, 256, 256))
+# # # torchsummary.summary(m, (1,128))
+# m = AE_ResNet18(embed_dim=256, pretrain_ResNetEnc=False, output_size=(1,256,256), return_embed=True)
+# s = summary_string(m, (1,256,256), device='cpu')
+# print(s)
+# torchsummary.summary(m, (1,256,256), device='cpu')
