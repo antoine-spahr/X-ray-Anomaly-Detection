@@ -4,10 +4,10 @@ import torch.optim as optim
 import numpy as np
 import time
 import logging
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_auc_score, f1_score
 
 from src.models.optim.CustomLosses import DeepSADLoss
-from src.utils.utils import print_progessbar
+from src.utils.utils import print_progessbar, get_best_threshold
 
 class DeepSADTrainer:
     """
@@ -29,6 +29,8 @@ class DeepSADTrainer:
             |---- weight_decay (float) the weight_decay for the Adam optimizer.
             |---- device (str) the device to work on ('cpu' or 'cuda').
             |---- n_jobs_dataloader (int) number of workers for the dataloader.
+            |---- print_batch_progress (bool) whether to dispay the batch
+            |           progress bar.
         OUTPUT
             |---- None
         """
@@ -52,9 +54,19 @@ class DeepSADTrainer:
         # Results
         self.train_time = None
         self.train_loss = None
+
+        self.valid_auc = None
+        self.valid_f1 = None
+        self.valid_time = None
+        self.valid_scores = None
+
         self.test_auc = None
+        self.test_f1 = None
         self.test_time = None
         self.test_scores = None
+
+        # threshold to define anomalous
+        self.scores_threhold = None
 
     def train(self, dataset, net):
         """
@@ -93,7 +105,7 @@ class DeepSADTrainer:
         scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=self.lr_milestone, gamma=0.1)
 
         # Start training
-        logger.info('>>> Start Training of the DeepSAD.')
+        logger.info('>>> Start Training the DeepSAD.')
         start_time = time.time()
         epoch_loss_list = []
         # set network in train mode
@@ -143,6 +155,79 @@ class DeepSADTrainer:
 
         return net
 
+    def validate(self, dataset, net):
+        """
+        Validate the DeepSAD network on the provided dataset and find the best
+        threshold on the score to maximize the f1-score.
+        ----------
+        INPUT
+            |---- dataset (torch.utils.data.Dataset) the dataset on which the
+            |           network is validated. It must return an image and
+            |           semi-supervized labels.
+            |---- net (nn.Module) The DeepSAD network to validate.
+        OUTPUT
+            |---- None
+        """
+        logger = logging.getLogger()
+
+        # make the train dataloader
+        valid_loader = torch.utils.data.DataLoader(dataset, batch_size=self.batch_size, \
+                                                  shuffle=True, num_workers=self.n_jobs_dataloader)
+
+        # put net to device
+        net = net.to(self.device)
+
+        criterion = DeepSADLoss(self.c, self.eta, eps=self.eps)
+
+        # Testing
+        logger.info('>>> Start Validating the DeepSAD')
+        epoch_loss = 0.0
+        n_batch = 0
+        start_time = time.time()
+        idx_label_score = []
+        # set the network in evaluation mode
+        net.eval()
+
+        with torch.no_grad():
+            for b, data in enumerate(valid_loader):
+                input, label, _, semi_label, idx = data
+                # put inputs to device
+                input, label = input.to(self.device).float(), label.to(self.device)
+                semi_label, idx = semi_label.to(self.device), idx.to(self.device)
+
+                # compute output loss
+                output = net(input)
+                loss = criterion(output, semi_label)
+                score = torch.sum((output - self.c) ** 2, dim=1) # score is the distance (large distances highlight anomalies)
+
+                # append scores and label
+                idx_label_score += list(zip(idx.cpu().data.numpy().tolist(),
+                                            label.cpu().data.numpy().tolist(),
+                                            score.cpu().data.numpy().tolist()))
+
+                epoch_loss += loss.item()
+                n_batch += 1
+
+                if self.print_batch_progress:
+                    print_progessbar(b, valid_loader.__len__(), Name='\t\tBatch', Size=20)
+
+        self.valid_time = time.time() - start_time
+        self.valid_scores = idx_label_score
+
+        # Compute AUC : if DeepSAD is good a high distance highlights the presence of an anomaly on the image
+        _, label, score = zip(*idx_label_score)
+        label, score = np.array(label), np.array(score)
+        self.valid_auc = roc_auc_score(label, score)
+        self.scores_threhold, self.valid_f1 = get_best_threshold(score, label, metric=f1_score)
+
+        # add info to logger
+        logger.info(f'>>> Validation Time: {self.valid_time:.3f} [s]')
+        logger.info(f'>>> Validation Loss: {epoch_loss / n_batch:.6f}')
+        logger.info(f'>>> Validation AUC: {self.valid_auc:.3%}')
+        logger.info(f'>>> Best Threshold maximizing the F1-score: {self.scores_threhold:.3f}')
+        logger.info(f'>>> Best Validation F1-score: {self.valid_f1:.3%}')
+        logger.info('>>> Finished Validating the DeepSAD.\n')
+
     def test(self, dataset, net):
         """
         Test the DeepSAD network on the provided dataset.
@@ -167,7 +252,7 @@ class DeepSADTrainer:
         criterion = DeepSADLoss(self.c, self.eta, eps=self.eps)
 
         # Testing
-        logger.info('>>> Start Testing of the DeepSAD')
+        logger.info('>>> Start Testing the DeepSAD')
         epoch_loss = 0.0
         n_batch = 0
         start_time = time.time()
@@ -201,15 +286,17 @@ class DeepSADTrainer:
         self.test_time = time.time() - start_time
         self.test_scores = idx_label_score
 
-        # Compute AUC : if AE is good a high reconstruction loss highlights the presence of an anomaly on the image
+        # Compute AUC : if DeepSAD is good a high distance highlights the presence of an anomaly on the image
         _, label, score = zip(*idx_label_score)
         label, score = np.array(label), np.array(score)
         self.test_auc = roc_auc_score(label, score)
+        self.test_f1 = f1_score(label, np.where(score > self.scores_threhold, 1, 0))
 
         # add info to logger
         logger.info(f'>>> Test Time: {self.test_time:.3f} [s]')
         logger.info(f'>>> Test Loss: {epoch_loss / n_batch:.6f}')
         logger.info(f'>>> Test AUC: {self.test_auc:.3%}')
+        logger.info(f'>>> Test F1-score: {self.test_f1:.3%}')
         logger.info('>>> Finished Testing the DeepSAD.\n')
 
     def initialize_hypersphere_center(self, loader, net, eps=0.1):

@@ -34,19 +34,46 @@ class DeepSAD:
         self.ae_net = ae_net
         self.ae_trainer = None
 
+        # Dict to store all the results : reconstruction and embedding
         self.results = {
-            'train_time': None,
-            'train_loss': None,
-            'test_auc': None,
-            'test_time': None,
-            'test_scores': None,
-        }
-
-        self.ae_results = {
-            'train_time': None,
-            'train_loss': None,
-            'test_auc': None,
-            'test_time': None
+            'reconstruction':{
+                'train':{
+                    'time': None,
+                    'loss': None
+                },
+                'scores_threshold':None,
+                'valid':{
+                    'time':None,
+                    'auc':None,
+                    'f1':None,
+                    'scores':None
+                },
+                'test':{
+                    'time':None,
+                    'auc':None,
+                    'f1':None,
+                    'scores':None
+                }
+            },
+            'embedding':{
+                'train':{
+                    'time': None,
+                    'loss': None
+                },
+                'scores_threshold':None,
+                'valid':{
+                    'time':None,
+                    'auc':None,
+                    'f1':None,
+                    'scores':None
+                },
+                'test':{
+                    'time':None,
+                    'auc':None,
+                    'f1':None,
+                    'scores':None
+                }
+            }
         }
 
     def train(self, dataset, lr=0.0001, n_epoch=150, lr_milestone=(), batch_size=64,
@@ -74,16 +101,44 @@ class DeepSAD:
         # train deepSAD
         self.net = self.trainer.train(dataset, self.net)
         # get results and parameters
-        self.results['train_time'] = self.trainer.train_time
-        self.results['train_loss'] = self.trainer.train_loss
+        self.results['embedding']['train']['time'] = self.trainer.train_time
+        self.results['embedding']['train']['loss'] = self.trainer.train_loss
         self.c = self.trainer.c.cpu().data.numpy().tolist()
+
+    def validate(self, dataset, device='cuda', n_jobs_dataloader=0, print_batch_progress=False):
+        """
+        Validate the DeepSAD model on the provided dataset with the provided
+        parameters and find the best threshold ons scores that maximize the
+        F1-score.
+        ----------
+        INPUT
+            |---- dataset (pytorch Dataset) the dataset on which to validate the DeepSAD.
+            |           Must return (input, label, mask, semi_label, idx).
+            |---- device (str) the device to work on ('cpu' or 'cuda').
+            |---- n_jobs_dataloader (int) number of workers for the dataloader.
+            |---- print_batch_progress (bool) whether to display a progress bar.
+        OUTPUT
+            |---- None
+        """
+        if self.trainer is None:
+            self.trainer = DeepSADTrainer(self.c, self.eta, device=device,
+                                          n_jobs_dataloader=n_jobs_dataloader,
+                                          print_batch_progress=print_batch_progress)
+
+        self.trainer.validate(dataset, self.net)
+        # recover restults
+        self.results['embedding']['scores_threshold'] = self.trainer.scores_threhold
+        self.results['embedding']['valid']['time'] = self.trainer.valid_time
+        self.results['embedding']['valid']['auc'] = self.trainer.valid_auc
+        self.results['embedding']['valid']['f1'] = self.trainer.valid_f1
+        self.results['embedding']['valid']['scores'] = self.trainer.valid_scores
 
     def test(self, dataset, device='cuda', n_jobs_dataloader=0, print_batch_progress=False):
         """
         Test the DeepSAD model on the provided dataset with the provided parameters.
         ----------
         INPUT
-            |---- dataset (pytorch Dataset) the dataset on which to train the DeepSAD.
+            |---- dataset (pytorch Dataset) the dataset on which to test the DeepSAD.
             |           Must return (input, label, mask, semi_label, idx).
             |---- device (str) the device to work on ('cpu' or 'cuda').
             |---- n_jobs_dataloader (int) number of workers for the dataloader.
@@ -98,11 +153,12 @@ class DeepSAD:
 
         self.trainer.test(dataset, self.net)
         # recover restults
-        self.results['test_time'] = self.trainer.test_time
-        self.results['test_auc'] = self.trainer.test_auc
-        self.results['test_scores'] = self.trainer.test_scores
+        self.results['embedding']['test']['time'] = self.trainer.test_time
+        self.results['embedding']['test']['auc'] = self.trainer.test_auc
+        self.results['embedding']['test']['f1'] = self.trainer.test_f1
+        self.results['embedding']['test']['scores'] = self.trainer.test_scores
 
-    def pretrain(self, train_dataset, test_dataset, lr=0.0001, n_epoch=150, lr_milestone=(),
+    def pretrain(self, train_dataset, valid_dataset, test_dataset, lr=0.0001, n_epoch=150, lr_milestone=(),
                  batch_size=64, weight_decay=1e-6, device='cuda', n_jobs_dataloader=0, print_batch_progress=False):
         """
         Pretrain the DeepSAD model through the training of an Autoencoder on the
@@ -131,13 +187,24 @@ class DeepSAD:
                                       n_jobs_dataloader=n_jobs_dataloader, print_batch_progress=print_batch_progress)
         # Train AE
         self.ae_net = self.ae_trainer.train(train_dataset, self.ae_net)
-        self.ae_results['train_time'] = self.ae_trainer.train_time
-        self.ae_results['train_loss'] = self.ae_trainer.train_loss
+        self.results['reconstruction']['train']['time'] = self.ae_trainer.train_time
+        self.results['reconstruction']['train']['loss'] = self.ae_trainer.train_loss
+
+        # Validate AE
+        self.ae_trainer.validate(valid_dataset, self.ae_net)
+        #self.scores_threhold_rec = self.ae_trainer.scores_threhold # get best threshold for max F1-score
+        self.results['reconstruction']['scores_threshold'] = self.ae_trainer.scores_threhold
+        self.results['reconstruction']['valid']['time'] = self.ae_trainer.valid_time
+        self.results['reconstruction']['valid']['auc'] = self.ae_trainer.valid_auc
+        self.results['reconstruction']['valid']['f1'] = self.ae_trainer.valid_f1
+        self.results['reconstruction']['valid']['scores'] = self.ae_trainer.valid_scores
 
         # Test AE
         self.ae_trainer.test(test_dataset, self.ae_net)
-        self.ae_results['test_time'] = self.ae_trainer.test_time
-        self.ae_results['test_auc'] = self.ae_trainer.test_auc
+        self.results['reconstruction']['test']['time'] = self.ae_trainer.test_time
+        self.results['reconstruction']['test']['auc'] = self.ae_trainer.test_auc
+        self.results['reconstruction']['test']['f1'] = self.ae_trainer.test_f1
+        self.results['reconstruction']['test']['scores'] = self.ae_trainer.test_scores
 
         # Initialize DeepSAD model with Encoder's weights
         self.init_network_weights_from_pretrain()
@@ -159,7 +226,6 @@ class DeepSAD:
         net_dict.update(ae_net_dict)
         self.net.load_state_dict(net_dict)
 
-
     def save_model(self, export_path, save_ae=True):
         """
         Save the model (hypersphere center, DeepSAD state dict, (Autoencoder
@@ -173,12 +239,13 @@ class DeepSAD:
         """
         net_dict = self.net.state_dict()
         ae_net_dict = self.ae_net.state_dict() if save_ae else None
+        #ae_threshold = self.scores_threhold_rec if save_ae else None
 
         torch.save({'c': self.c,
                     'net_dict': net_dict,
                     'ae_net_dict': ae_net_dict}, export_path)
 
-    def load_model(self, model_path, load_ae=False, map_location='cpu'):
+    def load_model(self, model_path, load_ae=True, map_location='cpu'):
         """
         Load the model (hypersphere center, DeepSAD state dict, (Autoencoder
         state dict) from the provided path.
@@ -210,16 +277,3 @@ class DeepSAD:
         """
         with open(export_json_path, 'w') as f:
             json.dump(self.results, f)
-
-
-    def save_ae_results(self, export_json_path):
-        """
-        Save the Autoencoder results (train time, test time, test AUC) as json.
-        ----------
-        INPUT
-            |---- export_json_path (str) the json filename where to save.
-        OUTPUT
-            |---- None
-        """
-        with open(export_json_path, 'w') as f:
-            json.dump(self.ae_results, f)

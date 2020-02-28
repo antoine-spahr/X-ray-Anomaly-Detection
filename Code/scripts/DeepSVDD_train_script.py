@@ -18,7 +18,7 @@ from src.utils.utils import summary_string
 #                                Settings                                      #
 ################################################################################
 # Import Export
-Experiment_Name = 'DeepSAD_'
+Experiment_Name = 'DeepSVDD_'
 DATA_PATH = r'../../data/PROCESSED/'
 DATA_INFO_PATH = r'../../data/data_info.csv'
 OUTPUT_PATH = r'../../Outputs/' + Experiment_Name + datetime.today().strftime('%Y_%m_%d_%Hh%M')+'/'
@@ -36,8 +36,8 @@ print_batch_progress = True
 
 # Datasets
 train_frac = 0.5
-ratio_known_normal = 0.05
-ratio_known_abnormal = 0.05
+ratio_known_normal = 0.00 # no known samples in training and only normal samples
+ratio_known_abnormal = 0.00
 n_jobs_dataloader = 8
 batch_size = 16
 img_size = 512
@@ -59,7 +59,7 @@ ae_n_epoch = 100
 ae_weight_decay = 1e-6
 
 # Network
-eta = 1.0 # <<<<< change to zero to get DeepSVDD (only unsupervized)
+eta = 0.0 # only unsupervized
 embed_dim = 256
 ae_pretrain = False
 ae_out_size = (1, img_size, img_size)
@@ -73,13 +73,15 @@ Note = None
 
 def main(seed_i):
     """
-    Train a DeepSAD model following Lukas Ruff et al. (2019) work and code structure
-    adapted to the MURA dataset (preprocessing inspired from the work of Davletshina
-    et al. (2020)). The DeepSAD network structure is a ResNet18 Encoder. The Encoder
-    is pretrained via Autoencoder training. The Autoencoder itself is not initialized
-    with weights trained on ImageNet. The best threshold on the scores is defined
-    using the validation set as the one maximizing the F1-score. The ROC AUC is
-    reported on the test and validation set.
+    Train a DeepSVDD model following Lukas Ruff et al. (2018) work and code structure
+    of their work on DeepSAD (2019) adapted to the MURA dataset (preprocessing
+    inspired from the work of Davletshina et al. (2020)). The DeepSAD network
+    structure is a ResNet18 Encoder. The Encoder is pretrained via Autoencoder
+    training. The Autoencoder itself is not initialized with weights trained on
+    ImageNet. The best threshold on the scores is defined using the validation
+    set as the one maximizing the F1-score. The ROC AUC is reported on the test
+    and validation set. This experiment is an unsupervized version of the DeepSAD
+    (i.e. without known samples).
     """
     # initialize logger
     logging.basicConfig(level=logging.INFO)
@@ -112,7 +114,7 @@ def main(seed_i):
     df_info = df_info[df_info.low_contrast == 0]
 
     # Train Validation Test Split
-    spliter = MURA_TrainValidTestSplitter(df_info.sample(n=128, random_state=seeds[seed_i]), train_frac=train_frac,
+    spliter = MURA_TrainValidTestSplitter(df_info, train_frac=train_frac,
                                           ratio_known_normal=ratio_known_normal,
                                           ratio_known_abnormal=ratio_known_abnormal, random_state=42)
     spliter.split_data(verbose=False)
@@ -144,11 +146,10 @@ def main(seed_i):
     # set number of thread
     if n_thread > 0:
         torch.set_num_threads(n_thread)
-
     # print info in logger
     logger.info(f'Device : {device}')
     logger.info(f'Number of thread : {n_thread}')
-    logger.info(f'Number of dataloader worker for DeepSAD : {n_jobs_dataloader}')
+    logger.info(f'Number of dataloader worker for DeepSVDD : {n_jobs_dataloader}')
     logger.info(f'Autoencoder number of dataloader worker : {ae_n_jobs_dataloader}' + '\n')
 
     ######################### Networks Initialization ##########################
@@ -165,7 +166,7 @@ def main(seed_i):
     logger.info(f'Encoder : {net.__class__.__name__}')
     logger.info(f'Embedding dimension : {embed_dim}')
     logger.info(f'Autoencoder pretrained on ImageNet : {ae_pretrain}')
-    logger.info(f'DeepSAD eta : {eta}')
+    logger.info(f'DeepSVDD eta : {eta}')
     logger.info('Autoencoder architecture: \n' + summary_string(ae_net, (1, img_size, img_size), device=str(device)) + '\n')
 
     if model_path_to_load:
@@ -173,7 +174,7 @@ def main(seed_i):
         logger.info(f'Model Loaded from {model_path_to_load}' + '\n')
 
     ############################## Pretraining #################################
-    logger.info(f'Pretraining DeepSAD via Autoencoder : {pretrain}')
+    logger.info(f'Pretraining DeepSVDD via Autoencoder : {pretrain}')
     if pretrain:
         # add parameter info
         logger.info(f'Autoencoder number of epoch : {ae_n_epoch}')
@@ -191,13 +192,13 @@ def main(seed_i):
 
     ################################ Training ##################################
     # add parameter info
-    logger.info(f'DeepSAD number of epoch : {n_epoch}')
-    logger.info(f'DeepSAD learning rate : {lr}')
-    logger.info(f'DeepSAD learning rate milestone : {lr_milestone}')
-    logger.info(f'DeepSAD weight_decay : {weight_decay}')
-    logger.info(f'DeepSAD optimizer : Adam')
-    logger.info(f'DeepSAD batch_size {batch_size}')
-    logger.info(f'DeepSAD number of dataloader worker : {n_jobs_dataloader}' + '\n')
+    logger.info(f'DeepSVDD number of epoch : {n_epoch}')
+    logger.info(f'DeepSVDD learning rate : {lr}')
+    logger.info(f'DeepSVDD learning rate milestone : {lr_milestone}')
+    logger.info(f'DeepSVDD weight_decay : {weight_decay}')
+    logger.info(f'DeepSVDD optimizer : Adam')
+    logger.info(f'DeepSVDD batch_size {batch_size}')
+    logger.info(f'DeepSVDD number of dataloader worker : {n_jobs_dataloader}' + '\n')
 
     # train DeepSAD
     deepSAD.train(train_dataset, lr=lr, n_epoch=n_epoch, lr_milestone=lr_milestone,
@@ -214,11 +215,11 @@ def main(seed_i):
                  print_batch_progress=print_batch_progress)
 
     # save results
-    deepSAD.save_results(OUTPUT_PATH + f'results/DeepSAD_results_{seed_i+1}.json')
-    logger.info('Test results saved at ' + OUTPUT_PATH + f'results/DeepSAD_results_{seed_i+1}.json' + '\n')
+    deepSAD.save_results(OUTPUT_PATH + f'results/DeepSVDD_results_{seed_i+1}.json')
+    logger.info('Test results saved at ' + OUTPUT_PATH + f'results/DeepSVDD_results_{seed_i+1}.json' + '\n')
     # save model
-    deepSAD.save_model(OUTPUT_PATH + f'model/DeepSAD_model_{seed_i+1}.pt')
-    logger.info('Model saved at ' + OUTPUT_PATH + f'model/DeepSAD_model_{seed_i+1}.pt')
+    deepSAD.save_model(OUTPUT_PATH + f'model/DeepSVDD_model_{seed_i+1}.pt')
+    logger.info('Model saved at ' + OUTPUT_PATH + f'model/DeepSVDD_model_{seed_i+1}.pt')
 
 if __name__ == '__main__':
     # train for each seeds

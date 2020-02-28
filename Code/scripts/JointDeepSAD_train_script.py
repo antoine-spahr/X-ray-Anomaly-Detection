@@ -10,15 +10,15 @@ import sys
 sys.path.append('../')
 
 from src.datasets.MURADataset import MURA_TrainValidTestSplitter, MURA_Dataset
-from src.models.DeepSAD import DeepSAD
-from src.models.networks.AE_ResNet18_net import ResNet18_Encoder, AE_ResNet18
+from src.models.JointDeepSAD import JointDeepSAD
+from src.models.networks.AE_ResNet18_net import AE_ResNet18
 from src.utils.utils import summary_string
 
 ################################################################################
 #                                Settings                                      #
 ################################################################################
 # Import Export
-Experiment_Name = 'DeepSAD_'
+Experiment_Name = 'JointDeepSAD_'
 DATA_PATH = r'../../data/PROCESSED/'
 DATA_INFO_PATH = r'../../data/data_info.csv'
 OUTPUT_PATH = r'../../Outputs/' + Experiment_Name + datetime.today().strftime('%Y_%m_%d_%Hh%M')+'/'
@@ -42,21 +42,13 @@ n_jobs_dataloader = 8
 batch_size = 16
 img_size = 512
 
-ae_n_jobs_dataloader = 8
-ae_batch_size = 16
-
 # Training
 lr = 1e-4
 lr_milestone = [59]
 n_epoch = 100
 weight_decay = 1e-6
-pretrain = True
+criterion_weight = (0.5, 0.5)
 model_path_to_load = None
-
-ae_lr = 1e-4
-ae_lr_milestone = [59]
-ae_n_epoch = 100
-ae_weight_decay = 1e-6
 
 # Network
 eta = 1.0 # <<<<< change to zero to get DeepSVDD (only unsupervized)
@@ -73,18 +65,21 @@ Note = None
 
 def main(seed_i):
     """
-    Train a DeepSAD model following Lukas Ruff et al. (2019) work and code structure
-    adapted to the MURA dataset (preprocessing inspired from the work of Davletshina
-    et al. (2020)). The DeepSAD network structure is a ResNet18 Encoder. The Encoder
-    is pretrained via Autoencoder training. The Autoencoder itself is not initialized
-    with weights trained on ImageNet. The best threshold on the scores is defined
-    using the validation set as the one maximizing the F1-score. The ROC AUC is
-    reported on the test and validation set.
+    Train jointly the AutoEncoder and the DeepSAD model following Lukas Ruff et
+    al. (2019) work adapted to the MURA dataset (preprocessing inspired from the
+    work of Davletshina et al. (2020)). The network structure is a ResNet18
+    AutoEncoder. The network is trained with two loss functions: a masked MSE
+    loss for the reconstruction and the DeepSAD loss on the embedding. The
+    Encoder is not initialized with weights trained on ImageNet (but it's possible).
+    The thresholds on scores (AE scores and DeepSAD scores) are selected on the
+    validation set as the one maximiing the F1-scores. The ROC AUC is reported
+    on the test and validation set.
     """
     # initialize logger
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger()
     try:
+        print(logger.handlers)
         logger.handlers[1].stream.close()
         logger.removeHandler(logger.handlers[1])
     except IndexError:
@@ -112,7 +107,7 @@ def main(seed_i):
     df_info = df_info[df_info.low_contrast == 0]
 
     # Train Validation Test Split
-    spliter = MURA_TrainValidTestSplitter(df_info.sample(n=128, random_state=seeds[seed_i]), train_frac=train_frac,
+    spliter = MURA_TrainValidTestSplitter(df_info, train_frac=train_frac,
                                           ratio_known_normal=ratio_known_normal,
                                           ratio_known_abnormal=ratio_known_abnormal, random_state=42)
     spliter.split_data(verbose=False)
@@ -120,9 +115,12 @@ def main(seed_i):
     valid_df = spliter.get_subset('valid')
     test_df = spliter.get_subset('test')
     # make datasets
-    train_dataset = MURA_Dataset(train_df, data_path=DATA_PATH, load_mask=True, load_semilabels=True, output_size=img_size)
-    valid_dataset = MURA_Dataset(valid_df, data_path=DATA_PATH, load_mask=True, load_semilabels=True, output_size=img_size)
-    test_dataset = MURA_Dataset(test_df, data_path=DATA_PATH, load_mask=True, load_semilabels=True, output_size=img_size)
+    train_dataset = MURA_Dataset(train_df, data_path=DATA_PATH, load_mask=True,
+                                 load_semilabels=True, output_size=img_size)
+    valid_dataset = MURA_Dataset(valid_df, data_path=DATA_PATH, load_mask=True,
+                                 load_semilabels=True, output_size=img_size)
+    test_dataset = MURA_Dataset(test_df, data_path=DATA_PATH, load_mask=True,
+                                load_semilabels=True, output_size=img_size)
     # print info to logger
     logger.info(f'Train fraction : {train_frac:.0%}')
     logger.info(f'Fraction knonw normal : {ratio_known_normal:.0%}')
@@ -144,81 +142,60 @@ def main(seed_i):
     # set number of thread
     if n_thread > 0:
         torch.set_num_threads(n_thread)
-
     # print info in logger
     logger.info(f'Device : {device}')
     logger.info(f'Number of thread : {n_thread}')
-    logger.info(f'Number of dataloader worker for DeepSAD : {n_jobs_dataloader}')
-    logger.info(f'Autoencoder number of dataloader worker : {ae_n_jobs_dataloader}' + '\n')
+    logger.info(f'Number of dataloader worker for Joint DeepSAD : {n_jobs_dataloader}' + '\n')
 
     ######################### Networks Initialization ##########################
-    ae_net = AE_ResNet18(embed_dim=embed_dim, pretrain_ResNetEnc=ae_pretrain,
-                         output_size=ae_out_size)
-    ae_net = ae_net.to(device)
-    net = ResNet18_Encoder(embed_dim=embed_dim, pretrained=False)
+    net = AE_ResNet18(embed_dim=embed_dim, pretrain_ResNetEnc=ae_pretrain,
+                      output_size=ae_out_size, return_embed=True)
     net = net.to(device)
 
     # initialization of the Model
-    deepSAD = DeepSAD(net, ae_net=ae_net, eta=eta)
+    jointDeepSAD = JointDeepSAD(net, eta=eta)
     # add info to logger
-    logger.info(f'Autoencoder : {ae_net.__class__.__name__}')
-    logger.info(f'Encoder : {net.__class__.__name__}')
+    logger.info(f'Network : {net.__class__.__name__}')
     logger.info(f'Embedding dimension : {embed_dim}')
     logger.info(f'Autoencoder pretrained on ImageNet : {ae_pretrain}')
     logger.info(f'DeepSAD eta : {eta}')
-    logger.info('Autoencoder architecture: \n' + summary_string(ae_net, (1, img_size, img_size), device=str(device)) + '\n')
+    logger.info('Autoencoder architecture: \n' + summary_string(net, (1, img_size, img_size), device=str(device)) + '\n')
 
     if model_path_to_load:
-        deepSAD.load_model(model_path_to_load, load_ae=True, map_location=device)
+        jointDeepSAD.load_model(model_path_to_load, map_location=device)
         logger.info(f'Model Loaded from {model_path_to_load}' + '\n')
-
-    ############################## Pretraining #################################
-    logger.info(f'Pretraining DeepSAD via Autoencoder : {pretrain}')
-    if pretrain:
-        # add parameter info
-        logger.info(f'Autoencoder number of epoch : {ae_n_epoch}')
-        logger.info(f'Autoencoder learning rate : {ae_lr}')
-        logger.info(f'Autoencoder learning rate milestone : {ae_lr_milestone}')
-        logger.info(f'Autoencoder weight_decay : {ae_weight_decay}')
-        logger.info(f'Autoencoder optimizer : Adam')
-        logger.info(f'Autoencoder batch_size {ae_batch_size}' + '\n')
-        # train AE
-        deepSAD.pretrain(train_dataset, valid_dataset, test_dataset, lr=ae_lr,
-                         n_epoch=ae_n_epoch, lr_milestone=ae_lr_milestone,
-                         batch_size=ae_batch_size, weight_decay=ae_weight_decay,
-                         device=device, n_jobs_dataloader=ae_n_jobs_dataloader,
-                         print_batch_progress=print_batch_progress)
 
     ################################ Training ##################################
     # add parameter info
-    logger.info(f'DeepSAD number of epoch : {n_epoch}')
-    logger.info(f'DeepSAD learning rate : {lr}')
-    logger.info(f'DeepSAD learning rate milestone : {lr_milestone}')
-    logger.info(f'DeepSAD weight_decay : {weight_decay}')
-    logger.info(f'DeepSAD optimizer : Adam')
-    logger.info(f'DeepSAD batch_size {batch_size}')
-    logger.info(f'DeepSAD number of dataloader worker : {n_jobs_dataloader}' + '\n')
+    logger.info(f'Joint DeepSAD number of epoch : {n_epoch}')
+    logger.info(f'Joint DeepSAD learning rate : {lr}')
+    logger.info(f'Joint DeepSAD learning rate milestone : {lr_milestone}')
+    logger.info(f'Joint DeepSAD weight_decay : {weight_decay}')
+    logger.info(f'Joint DeepSAD optimizer : Adam')
+    logger.info(f'Joint DeepSAD batch_size {batch_size}')
+    logger.info(f'Joint DeepSAD number of dataloader worker : {n_jobs_dataloader}')
+    logger.info(f'Joint DeepSAD criterion weighting : {criterion_weight[0]} Masked MSE + {criterion_weight[1]} DeepSAD loss' + '\n')
 
     # train DeepSAD
-    deepSAD.train(train_dataset, lr=lr, n_epoch=n_epoch, lr_milestone=lr_milestone,
+    jointDeepSAD.train(train_dataset, lr=lr, n_epoch=n_epoch, lr_milestone=lr_milestone,
                   batch_size=batch_size, weight_decay=weight_decay, device=device,
                   n_jobs_dataloader=n_jobs_dataloader,
-                  print_batch_progress=print_batch_progress)
+                  print_batch_progress=print_batch_progress, criterion_weight=criterion_weight)
 
     # validate DeepSAD
-    deepSAD.validate(valid_dataset, device=device, n_jobs_dataloader=n_jobs_dataloader,
-                 print_batch_progress=print_batch_progress)
+    jointDeepSAD.validate(valid_dataset, device=device, n_jobs_dataloader=n_jobs_dataloader,
+                 print_batch_progress=print_batch_progress, criterion_weight=criterion_weight)
 
     # test DeepSAD
-    deepSAD.test(test_dataset, device=device, n_jobs_dataloader=n_jobs_dataloader,
-                 print_batch_progress=print_batch_progress)
+    jointDeepSAD.test(test_dataset, device=device, n_jobs_dataloader=n_jobs_dataloader,
+                 print_batch_progress=print_batch_progress, criterion_weight=criterion_weight)
 
     # save results
-    deepSAD.save_results(OUTPUT_PATH + f'results/DeepSAD_results_{seed_i+1}.json')
-    logger.info('Test results saved at ' + OUTPUT_PATH + f'results/DeepSAD_results_{seed_i+1}.json' + '\n')
+    jointDeepSAD.save_results(OUTPUT_PATH + f'results/JointDeepSAD_results_{seed_i+1}.json')
+    logger.info('Test results saved at ' + OUTPUT_PATH + f'results/JointDeepSAD_results_{seed_i+1}.json' + '\n')
     # save model
-    deepSAD.save_model(OUTPUT_PATH + f'model/DeepSAD_model_{seed_i+1}.pt')
-    logger.info('Model saved at ' + OUTPUT_PATH + f'model/DeepSAD_model_{seed_i+1}.pt')
+    jointDeepSAD.save_model(OUTPUT_PATH + f'model/JointDeepSAD_model_{seed_i+1}.pt')
+    logger.info('Model saved at ' + OUTPUT_PATH + f'model/JointDeepSAD_model_{seed_i+1}.pt')
 
 if __name__ == '__main__':
     # train for each seeds
