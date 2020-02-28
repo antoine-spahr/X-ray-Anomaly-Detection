@@ -6,6 +6,9 @@ from torch.autograd import Variable
 from collections import OrderedDict
 import numpy as np
 
+import warnings
+
+
 def print_progessbar(N, Max, Name='', Size=10, end_char=''):
     """
     Print a progress bar. To be used in a for-loop and called at each iteration
@@ -22,9 +25,9 @@ def print_progessbar(N, Max, Name='', Size=10, end_char=''):
         |---- None
     """
     print(f'\r{Name} {N+1:03d}/{Max:03d}'.ljust(len(Name) + 10) \
-        + f'[{"#"*int(Size*(N+1)/Max)}'.ljust(Size+1) + f'] {(int(100*(N+1)/Max))}%'.ljust(6), \
+        + f'[{"#"*int(Size*(N+1)/Max)}'.ljust(Size+1) + f'] {(N+1)/Max:.1%}'.ljust(6), \
         end=end_char)
-
+    # int(100*(N+1)/Max)
     if N+1 == Max:
         print('')
 
@@ -69,7 +72,7 @@ def print_summary_from_dict(d, index_header=' '):
 
     print(summary)
 
-def summary_string(model, input_size, batch_size=-1, device=torch.device('cuda:0'), dtypes=None):
+def summary_string(model, input_size, batch_size=-1, device='cuda'):#torch.device('cuda:0')):#, dtypes=None):
     """
     Print a summary of the Pytorch network architecture.
     (https://github.com/sksq96/pytorch-summary/blob/master/torchsummary/torchsummary.py)
@@ -85,8 +88,8 @@ def summary_string(model, input_size, batch_size=-1, device=torch.device('cuda:0
         |---- summary_string (str) the summary table of the network architecture
         |           as a string.
     """
-    if dtypes == None:
-        dtypes = [torch.FloatTensor]*len(input_size)
+    # if dtypes == None:
+    #     dtypes = [torch.FloatTensor]*len(input_size)
 
     summary_str = ''
 
@@ -118,16 +121,29 @@ def summary_string(model, input_size, batch_size=-1, device=torch.device('cuda:0
         if (
             not isinstance(module, nn.Sequential)
             and not isinstance(module, nn.ModuleList)
+            and not (module == model)
         ):
             hooks.append(module.register_forward_hook(hook))
+
+    device = device.lower()
+    assert device in [
+        "cuda",
+        "cpu",
+    ], "Input device is not valid, please specify 'cuda' or 'cpu'"
+
+    if device == "cuda" and torch.cuda.is_available():
+        dtype = torch.cuda.FloatTensor
+    else:
+        dtype = torch.FloatTensor
 
     # multiple inputs to the network
     if isinstance(input_size, tuple):
         input_size = [input_size]
 
     # batch_size of 2 for batchnorm
-    x = [torch.rand(2, *in_size).type(dtype).to(device=device)
-         for in_size, dtype in zip(input_size, dtypes)]
+    # x = [torch.rand(2, *in_size).type(dtype).to(device=device)
+    #      for in_size, dtype in zip(input_size, dtypes)]
+    x = [torch.rand(2, *in_size).type(dtype) for in_size in input_size]
 
     # create properties
     summary = OrderedDict()
@@ -145,8 +161,7 @@ def summary_string(model, input_size, batch_size=-1, device=torch.device('cuda:0
         h.remove()
 
     summary_str += "----------------------------------------------------------------" + "\n"
-    line_new = "{:>20}  {:>25} {:>15}".format(
-        "Layer (type)", "Output Shape", "Param #")
+    line_new = "{:>20}  {:>25} {:>15}".format("Layer (type)", "Output Shape", "Param #")
     summary_str += line_new + "\n"
     summary_str += "================================================================" + "\n"
     total_params = 0
@@ -160,7 +175,6 @@ def summary_string(model, input_size, batch_size=-1, device=torch.device('cuda:0
             "{0:,}".format(summary[layer]["nb_params"]),
         )
         total_params += summary[layer]["nb_params"]
-
         total_output += np.prod(summary[layer]["output_shape"])
         if "trainable" in summary[layer]:
             if summary[layer]["trainable"] == True:
@@ -188,3 +202,32 @@ def summary_string(model, input_size, batch_size=-1, device=torch.device('cuda:0
     summary_str += "----------------------------------------------------------------" + "\n"
     # return summary
     return summary_str#, (total_params, trainable_params)
+
+def get_best_threshold(scores, label, metric):
+    """
+    Compute the best threshold for the given scores and labels accoring to the
+    provided metric.
+    ----------
+    INPUT
+        |---- scores (np.array) the scores to threshold.
+        |---- label (np.array) the true labels (0 or 1)
+        |---- metric (sklearn.metrics) the metric to use.
+    OUTPUT
+        |---- best_threshold (float) the threshold maximizing the metric
+        |---- best_metric_val (float) the maximum metric value associated with
+        |           the best_threshold.
+    """
+    thresholds = np.linspace(scores.min(), scores.max(), 50)
+    best_threshold = None
+    best_metric_val = 0.0
+
+    for t in thresholds:
+        pred = np.where(scores > t, 1, 0)
+        # ignore ill-defined warning in the grid-search
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            val = metric(label, pred)
+        if val > best_metric_val:
+            best_metric_val, best_threshold = val, t
+
+    return best_threshold, best_metric_val
