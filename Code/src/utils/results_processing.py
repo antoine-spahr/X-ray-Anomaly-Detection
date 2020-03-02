@@ -141,6 +141,10 @@ def metric_barplot(metrics_scores, serie_names, group_names, colors=None, w=None
         stds = metric.std(axis=0)
         ax.bar(ind + offset*w/2, means, width=w, yerr=1.96*stds,
                fc=color, ec='black', lw=1, label=name)
+
+        for i, x in enumerate(ind):
+            ax.text(x + offset*w/2, means[i]+0.03, f'{means[i]:.2%}', fontsize=fontsize, ha='center', va='bottom')
+
         if jitter:
             for i, x in enumerate(ind):
                 ax.scatter(np.random.normal(x + offset*w/2, 0.00, metric.shape[0]),
@@ -163,7 +167,7 @@ def metric_barplot(metrics_scores, serie_names, group_names, colors=None, w=None
     ax.set_ylim([0,1])
 
 def plot_scores_dist1D(scores, labels, ax=None, colors=['forestgreen', 'tomato'],
-                       alpha=0.5, fontsize=12, density=False, legend=False):
+                       alpha=0.5, fontsize=12, density=False, legend=False, nbin=20):
     """
     Plot the scores histogram separately by the label's value.
     ----------
@@ -176,6 +180,7 @@ def plot_scores_dist1D(scores, labels, ax=None, colors=['forestgreen', 'tomato']
         |---- fontsize (int) the fontsize of the ticks.
         |---- density (bool) whether the histogram's bins sum to 1.
         |---- legend (bool) whether to add a legend (normal/abnormal) below.
+        |---- nbin (int) the number of bins for the histogram.
     OUTPUT
         |---- None
     """
@@ -186,12 +191,12 @@ def plot_scores_dist1D(scores, labels, ax=None, colors=['forestgreen', 'tomato']
     scores_1 = scores[labels == 1]
 
     # abnormal distribution
-    ax.hist(scores_1, density=density, histtype='bar', color=colors[1], alpha=alpha)
-    ax.hist(scores_1, density=density, histtype='step', color='black')
+    ax.hist(scores_1, bins=nbin, log=True, density=density, histtype='bar', color=colors[1], alpha=alpha)
+    #ax.hist(scores_1, bins=nbin, log=True, density=density, histtype='step', color=colors[1])
 
     # normal distribution
-    ax.hist(scores_0, density=density, histtype='bar', color=colors[0], alpha=alpha)
-    ax.hist(scores_0, density=density, histtype='step', color='black')
+    ax.hist(scores_0, bins=nbin, log=True, density=density, histtype='bar', color=colors[0], alpha=alpha)
+    #ax.hist(scores_0, bins=nbin, log=True, density=density, histtype='step', color=colors[0])
 
     ax.set_ylim(ax.get_ylim())
     ax.spines['top'].set_visible(False)
@@ -204,7 +209,7 @@ def plot_scores_dist1D(scores, labels, ax=None, colors=['forestgreen', 'tomato']
         ax.legend(handles, labels, loc='lower center', ncol=2, frameon=False, framealpha=0.0,\
                   fontsize=fontsize, bbox_to_anchor=(0.5, -0.4), bbox_transform=ax.transAxes)
 
-def plot_scores_dist2D(scores_1, scores_2, labels, kde=True, ax=None,
+def plot_scores_dist2D(scores_1, scores_2, labels, kde=True, scatter=True, ax=None,
                        colors=['forestgreen', 'tomato'], cmaps=['Greens', 'Reds'],
                        alphas=[0.5, 0.6], fontsize=12):
     """
@@ -215,6 +220,7 @@ def plot_scores_dist2D(scores_1, scores_2, labels, kde=True, ax=None,
         |---- scores_2 (np.array) the second scores vector to plot.
         |---- labels (np.array) the labels to categroize the scores.
         |---- kde (bool) whether to plot the kde estimation by Seaborn.
+        |---- scatter (bool) whether to plot the scatter points.
         |---- ax (matplotlib.Axes) the axes where to plot.
         |---- colors (list of str) the two colors to use for the two categroies.
         |---- cmaps (list of colormaps) the colormaps to use for the kde.
@@ -223,6 +229,7 @@ def plot_scores_dist2D(scores_1, scores_2, labels, kde=True, ax=None,
     OUTPUT
         |---- None
     """
+    assert (kde != scatter) or (kde and scatter), "At least one of kde or scatter must be True."
     # find axes
     ax = plt.gca() if ax is None else ax
     # get scores per categories
@@ -232,13 +239,14 @@ def plot_scores_dist2D(scores_1, scores_2, labels, kde=True, ax=None,
     scores_2_1 = scores_2[labels == 1]
     # plot kde
     if kde:
-        sns.kdeplot(scores_1_0, scores_2_0, cmap=cmaps[0], shade=True,
-                    shade_lowest=False, cut=3, ax=ax, alpha=alphas[1], legend=False)
         sns.kdeplot(scores_1_1, scores_2_1, cmap=cmaps[1], shade=True,
-                    shade_lowest=False, cut=3, ax=ax, alpha=alphas[1], legend=False)
-    # add points
-    ax.scatter(scores_1_0, scores_2_0, s=20, marker='o', color=colors[0], alpha=alphas[0])
-    ax.scatter(scores_1_1, scores_2_1, s=20, marker='o', color=colors[1], alpha=alphas[0])
+                    shade_lowest=False, cut=0, ax=ax, alpha=alphas[1], legend=False)
+        sns.kdeplot(scores_1_0, scores_2_0, cmap=cmaps[0], shade=True,
+                    shade_lowest=False, cut=0, ax=ax, alpha=alphas[1], legend=False)
+    if scatter:
+        # add points
+        ax.scatter(scores_1_1, scores_2_1, s=10, marker='o', color=colors[1], alpha=alphas[0])
+        ax.scatter(scores_1_0, scores_2_0, s=10, marker='o', color=colors[0], alpha=alphas[0])
     # goodies
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)

@@ -14,15 +14,15 @@ import seaborn as sns
 
 from src.postprocessing.scoresCombiner import ScoresCombiner
 from src.utils.results_processing import load_experiment_results, scores_as_df
-from src.utils.results_processing import metric_barplot, plot_scores_dist1D, plot_scores_dist2D
+from src.utils.results_processing import metric_barplot, plot_scores_dist1D, plot_scores_dist2D, plot_loss
 
 ################################################################################
 #                                Settings                                      #
 ################################################################################
 # Path to the experiments folder (outputs of train scripts)
-EXPERIMENT_PATH = r'../../Outputs/tests/'
+EXPERIMENT_PATH = r'../../Outputs/'
 # names of the experiment(s) to process
-exp_folders = ['DeepSAD_2020_02_27_16h55']
+exp_folders = ['DeepSAD_2020_02_25_11h12']
 exp_names = ['DeepSAD']
 SAVE_PATHES = [EXPERIMENT_PATH + folder + '/analysis/' for folder in exp_folders]
 FIG_RES = 200
@@ -74,7 +74,7 @@ for SAVE_PATH, results_list in zip(SAVE_PATHES, results_all.values()):
         combined_scores_test.append(t_scores)
         combined_auc_test.append(t_auc)
         # Save combiner params
-        combiner.save_param(SAVE_PATH + 'combiner_params/' + f'scores_params_{i}.json')
+        combiner.save_param(SAVE_PATH + 'combiner_params/' + f'scores_params_{i+1}.json')
 
     ############################################################################
     #                              Plot loss                                   #
@@ -117,7 +117,7 @@ for SAVE_PATH, results_list in zip(SAVE_PATHES, results_all.values()):
                    ['Validation', 'Test'],
                    [name.title() for name in scores_names+['composite']],
                    colors=['lightgray', 'dimgray'], w=None, ax=ax, fontsize=fontsize,
-                   jitter=True, jitter_color='lightcoral')
+                   jitter=False, jitter_color='lightcoral')
 
     ax.set_ylabel('AUC [-]', fontsize=fontsize)
     ax.set_title('Validation and Test AUC for the various scores', fontsize=fontsize)
@@ -137,21 +137,31 @@ for SAVE_PATH, results_list in zip(SAVE_PATHES, results_all.values()):
         fig, axs = plt.subplots(2, 4, figsize=(16,8))
         for j, name in enumerate(['Validation', 'Test']):
             legend = False if j == 0 else True
-            plot_scores_dist1D(df[name].scores_em, df[name].label, ax=axs[j,0], density=False)
-            plot_scores_dist1D(df[name].scores_rec, df[name].label, ax=axs[j,1], density=False, legend=legend)
-            plot_scores_dist1D(df[name].scores_comb, df[name].label, ax=axs[j,2], density=False)
+            plot_scores_dist1D(df[name].scores_em, df[name].label, nbin=100, ax=axs[j,0], colors=['limegreen', 'Orangered'], density=True, alpha=0.2)
+            plot_scores_dist1D(df[name].scores_rec, df[name].label, nbin=100, ax=axs[j,1], colors=['limegreen', 'Orangered'], density=True, legend=legend, alpha=0.2)
+            plot_scores_dist1D(df[name].scores_comb, df[name].label, nbin=100, ax=axs[j,2], colors=['limegreen', 'Orangered'], density=True, alpha=0.2)
             axs[j,0].set_xlabel('Embedding Scores', fontsize=fontsize)
             axs[j,0].set_title(name + ' Embedding Scores', fontsize=fontsize)
             axs[j,1].set_xlabel('Reconstruction Scores', fontsize=fontsize)
             axs[j,1].set_title(name + ' Reconstruction Scores', fontsize=fontsize)
             axs[j,2].set_xlabel('Combined Scores', fontsize=fontsize)
             axs[j,2].set_title(name + ' Combined Scores', fontsize=fontsize)
-            axs[j,0].set_ylabel('Counts [-]', fontsize=fontsize)
+            axs[j,0].set_ylabel('freq [-]', fontsize=fontsize)
 
-            plot_scores_dist2D(df[name].scores_em, df[name].scores_rec, df[name].label, ax=axs[j,3])
-            axs[j,3].set_xlabel('Embedding scores', fontsize=fontsize)
-            axs[j,3].set_ylabel('Reconstruction scores', fontsize=fontsize)
-            axs[j,3].set_title('Embedding vs Reconstruction scores', fontsize=fontsize)
+            plot_scores_dist2D(np.log(np.array(df[name].scores_em)+ 1e-9), np.log(np.array(df[name].scores_rec)+ 1e-9), df[name].label, ax=axs[j,3], kde=True, scatter=False, alphas=[0.05, 0.4])
+            axs[j,3].set_xlabel('Log Embedding scores', fontsize=fontsize)
+            axs[j,3].set_ylabel('Log Reconstruction scores', fontsize=fontsize)
+            axs[j,3].set_title('Log Embedding vs Log Reconstruction scores', fontsize=fontsize)
+            axs[j,3].set_ylim([-10,-2.5])
 
         fig.tight_layout()
-        fig.savefig(SAVE_PATH + f'scores_dist/scores_distribution_{i}.pdf', dpi=FIG_RES, bbox_inches='tight')
+        fig.savefig(SAVE_PATH + f'scores_dist/scores_distribution_{i+1}.pdf', dpi=FIG_RES, bbox_inches='tight')
+
+# %%
+df = scores_as_df(results_all[exp_names[0]][1], 'valid').sample(frac=0.1)
+
+fig, ax = plt.subplots(1, 1, figsize=(9,9))
+sns.kdeplot(np.log(np.array(df.scores_em) + 1e-9), np.log(np.array(df.scores_rec) + 1e-9), cmap='Greens', shade=True,
+            shade_lowest=False, ax=ax, alpha=0.5, legend=False)
+
+plt.show()
