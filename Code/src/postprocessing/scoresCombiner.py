@@ -21,7 +21,7 @@ class ScoresCombiner:
         self.w_1, self.w_2 = None, None
         self.fitted = False
 
-    def fit(self, scores_1, scores_2, labels, search_res=0.1, verbose=False):
+    def fit(self, scores_1, scores_2, labels, search_res=0.1, verbose=0, return_scores=0):
         """
         Find the parameters of the combiner based on the passed scores subset.
         It estimates the minimum and maximum of both anomaly scores to normalize
@@ -33,21 +33,36 @@ class ScoresCombiner:
             |---- label (np.array) the set of ground truth of anomaly (1 or 0).
             |---- search_res (float) the search resolution to use in the weight
             |           grid search. It must be 0 < search_res < 1.
-            |---- verbose (bool) whether to display a summary of the fitting.
+            |---- verbose (int) whether to display a summary of the fitting (0 :
+            |           no information displayed ; 1 : only resutls displayed ;
+            |           2 : detailed display)
+            |---- return_scores (int) whether to return the validation scores
+            |           and/or AUC. (0 : no return ; 1 : return scores only : 2 :
+            |           return AUC only ; 3 : return scores and AUC)
         OUTPUT
             |---- None
         """
+        assert verbose in [0,1,2], f'Verbose = {verbose} is an invalid key. It must be one of : 0, 1, 2'
+        assert return_scores in [0,1,2,3], f"The return code must be one of 0, 1, 2, or 3. {return_scores} has been passed."
         # get normalization parameter
-        if verbose: print('>>> Getting normalization parameters.')
+        if verbose == 2: print('>>> Getting normalization parameters.')
         self.min_1, self.max_1 = scores_1.min(), scores_1.max()
         self.min_2, self.max_2 = scores_2.min(), scores_2.max()
         #normalized scores
-        scores_1, scores_2 = self._normalize_scores(scores_1, scores_2)
-        if verbose: print('>>> Scores Normalized.')
+        scores_1_n, scores_2_n = self._normalize_scores(scores_1, scores_2)
+        if verbose == 2: print('>>> Scores Normalized.')
         # Grid search the two weights to maximize AUC
-        self.w_1, self.w_2 = self._compute_weight(scores_1, scores_2, labels,
-                                                search_res=search_res, verbose=verbose)
+        self.w_1, self.w_2 = self._compute_weight(scores_1_n, scores_2_n, labels,
+                                                  search_res=search_res, verbose=verbose)
         self.fitted = True
+        # return required results
+        scores = self.compute_scores(scores_1, scores_2)
+        if return_scores == 1:
+            return scores
+        elif return_scores == 2:
+            return roc_auc_score(labels, scores)
+        elif return_scores == 3:
+            return scores, roc_auc_score(labels, scores)
 
     def _normalize_scores(self, scores_1, scores_2):
         """
@@ -74,26 +89,28 @@ class ScoresCombiner:
             |---- label (np.array) the set of ground truth of anomaly (1 or 0).
             |---- search_res (float) the search resolution to use in the weight
             |           grid search. It must be 0 < search_res < 1.
-            |---- verbose (bool) whether to display a summary of the grid search.
+            |---- verbose (int) whether to display a summary of the fitting (0 :
+            |           no information displayed ; 1 : only resutls displayed ;
+            |           2 : detailed display)
         OUTPUT
             |---- best_weights (tuple (w_1, w_2)) the best set of weights found.
         """
         best_auc = 0.0
         best_weights = (0.0, 0.0)
-        if verbose: print('>>> Start weight searching.')
+        if verbose == 2: print('>>> Start weight searching.')
         for w_1 in np.arange(0, 1+search_res, search_res):
             for w_2 in np.arange(0, 1+search_res, search_res):
                 if w_1 + w_2 == 1:
                     scores = w_1 * scores_1 + w_2 * scores_2
                     auc = roc_auc_score(labels, scores)
-                    if verbose : print(f'>>> | w_1 = {w_1:.2f} | w_2 = {w_2:.2f} |',
-                                       f'AUC = {auc:.3%} | Best AUC = {best_auc:.3%}')
+                    if verbose == 2 : print(f'>>> | w_1 = {w_1:.2f} | w_2 = {w_2:.2f} |',
+                                            f'AUC = {auc:.3%} | Best AUC = {best_auc:.3%}')
                     if auc > best_auc:
                         best_auc = auc
-                        best_weight = (w_1, w_2)
-        if verbose: print(f'>>> Best AUC of {best_auc:.3%} obtained with ',
-                          f'w_1 = {best_weight[0]:.2f} and w_2 = {best_weight[1]:.2f}.')
-        return best_weight
+                        best_weights = (w_1, w_2)
+        if verbose in [1, 2]: print(f'>>> Best AUC of {best_auc:.3%} obtained with ',
+                                    f'w_1 = {best_weights[0]:.2f} and w_2 = {best_weights[1]:.2f}.')
+        return best_weights
 
 
     def compute_scores(self, scores_1, scores_2):
@@ -109,7 +126,25 @@ class ScoresCombiner:
         assert self.fitted, "The ScoresCombiner's parameters must be fitted before being used."
         scores_1_n, scores_2_n = self._normalize_scores(scores_1, scores_2)
         scores = self.w_1 * scores_1_n + self.w_2 * scores_2_n
+
         return scores
+
+    def compute_auc(self, scores_1, scores_2, labels):
+        """
+        Compute the composite scores of the passed set using the fitted parameters.
+        ----------
+        INPUT
+            |---- scores_1 (np.array) the first set anoamly scores.
+            |---- scores_2 (np.array) the second set anoamly scores.
+            |---- labels (np.array) the labels.
+        OUTPUT
+            |---- auc (float) The ROC-AUC.
+        """
+        assert self.fitted, "The ScoresCombiner's parameters must be fitted before being used."
+        scores_1_n, scores_2_n = self._normalize_scores(scores_1, scores_2)
+        scores = self.w_1 * scores_1_n + self.w_2 * scores_2_n
+        auc = roc_auc_score(labels, scores)
+        return auc
 
     def save_param(self, export_json_path):
         """
@@ -127,9 +162,9 @@ class ScoresCombiner:
                             'max':self.max_1,
                             'w':self.w_1},
                        'score_2':{
-                            'min':self.min_1,
-                            'max':self.max_1,
-                            'w':self.w_1}}, f)
+                            'min':self.min_2,
+                            'max':self.max_2,
+                            'w':self.w_2}}, f)
 
     def load_param(self, json_param_path):
         """
