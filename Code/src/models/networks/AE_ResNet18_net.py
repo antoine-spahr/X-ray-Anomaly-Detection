@@ -355,7 +355,7 @@ class AE_ResNet18(nn.Module):
             |---- embed_dim (int) the embeding dimension of the autoencoder.
             |---- pretrain_ResNetEnc (bool) whether to use pretrained weights on
             |           ImageNet for the encoder initialization.
-            |---- output_channel (int) the number of channel of the reconstructed image.
+            |---- output_size (tuple (C,H,W)) the output size of the reconstructed image.
             |---- return_embed (bool) whether to return the embedding in the forward
         OUTPUT
             |---- None

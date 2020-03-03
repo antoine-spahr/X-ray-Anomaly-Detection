@@ -143,7 +143,7 @@ def metric_barplot(metrics_scores, serie_names, group_names, colors=None, w=None
                fc=color, ec='black', lw=1, label=name)
 
         for i, x in enumerate(ind):
-            ax.text(x + offset*w/2, means[i]+0.03, f'{means[i]:.2%}', fontsize=fontsize, ha='center', va='bottom')
+            ax.text(x + offset*w/2, means[i]-0.03, f'{means[i]:.2%}', fontsize=fontsize, ha='center', va='top', rotation=90)
 
         if jitter:
             for i, x in enumerate(ind):

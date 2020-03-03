@@ -6,7 +6,7 @@ import os
 import sys
 sys.path.append('../')
 
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_auc_score, average_precision_score
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -44,6 +44,7 @@ for SAVE_PATH, results_list in zip(SAVE_PATHES, results_all.values()):
     if not os.path.isdir(SAVE_PATH): os.makedirs(SAVE_PATH)
     if not os.path.isdir(SAVE_PATH+'combiner_params/'): os.makedirs(SAVE_PATH+'combiner_params/')
     if not os.path.isdir(SAVE_PATH+'scores_dist/'): os.makedirs(SAVE_PATH+'scores_dist/')
+    if not os.path.isdir(SAVE_PATH+'AUC_tables/'): os.makedirs(SAVE_PATH+'AUC_tables/')
 
     ############################################################################
     #                      Compute Composite Score                             #
@@ -101,8 +102,10 @@ for SAVE_PATH, results_list in zip(SAVE_PATHES, results_all.values()):
     ############################################################################
     v_auc = np.zeros([len(results_list), 3])
     t_auc = np.zeros([len(results_list), 3])
+    v_auprc = np.zeros([len(results_list), 3])
+    t_auprc = np.zeros([len(results_list), 3])
 
-    # get auc
+    # get auc and auprc
     scores_names = ['embedding', 'reconstruction']
     for i, results in enumerate(results_list):
         for j, scores_type in enumerate(scores_names):
@@ -111,18 +114,41 @@ for SAVE_PATH, results_list in zip(SAVE_PATHES, results_all.values()):
         v_auc[i, 2] = combined_auc_valid[i]
         t_auc[i, 2] = combined_auc_test[i]
 
+        df_v = scores_as_df(results, 'valid')
+        df_t = scores_as_df(results, 'test')
 
-    fig, ax = plt.subplots(1, 1, figsize=(8,6))
-    metric_barplot([v_auc, t_auc],
-                   ['Validation', 'Test'],
+        v_auprc[i, 0] = average_precision_score(df_v.label, df_v.scores_em)
+        t_auprc[i, 0] = average_precision_score(df_t.label, df_t.scores_em)
+        v_auprc[i, 1] = average_precision_score(df_v.label, df_v.scores_rec)
+        t_auprc[i, 1] = average_precision_score(df_t.label, df_t.scores_rec)
+        v_auprc[i, 2] = average_precision_score(df_v.label, combined_scores_valid[i])
+        t_auprc[i, 2] = average_precision_score(df_t.label, combined_scores_test[i])
+
+
+    fig, ax = plt.subplots(1, 1, figsize=(10,5))
+    metric_barplot([v_auc, t_auc, v_auprc, t_auprc],
+                   ['Validation AURC', 'Test AURC', 'Validation AUPRC', 'Test AUPRC'],
                    [name.title() for name in scores_names+['composite']],
-                   colors=['lightgray', 'dimgray'], w=None, ax=ax, fontsize=fontsize,
+                   colors=['tomato', 'coral', 'dodgerblue', 'cornflowerblue'], w=None, ax=ax, fontsize=fontsize,
                    jitter=False, jitter_color='lightcoral')
 
-    ax.set_ylabel('AUC [-]', fontsize=fontsize)
-    ax.set_title('Validation and Test AUC for the various scores', fontsize=fontsize)
+    ax.set_ylabel('AURC ; AUPRC [-]', fontsize=fontsize)
+    ax.set_title('Validation and Test AUCs for various scores', fontsize=fontsize)
     fig.tight_layout()
-    fig.savefig(SAVE_PATH + 'AUC_barplot.pdf', dpi=FIG_RES, bbox_inches='tight')
+    fig.savefig(SAVE_PATH + 'AUCs_barplot.pdf', dpi=FIG_RES, bbox_inches='tight')
+
+    # save AUC in csv
+    for auc_data, name in zip([v_auc, t_auc], ['Validation', 'Test']):
+        auc_df = pd.DataFrame(data=auc_data.transpose(), index=scores_names+['composite'])
+        auc_df['mean'] = auc_df.mean(axis=1)
+        auc_df['1.96std'] = 1.96 * auc_df.std(axis=1)
+        auc_df.to_csv(SAVE_PATH + 'AUC_tables/' + name + '_AURC.csv')
+
+    for auprc_data, name in zip([v_auprc, t_auprc], ['Validation', 'Test']):
+        auprc_df = pd.DataFrame(data=auprc_data.transpose(), index=scores_names+['composite'])
+        auprc_df['mean'] = auprc_df.mean(axis=1)
+        auprc_df['1.96std'] = 1.96 * auprc_df.std(axis=1)
+        auprc_df.to_csv(SAVE_PATH + 'AUC_tables/' + name + '_AUPRC.csv')
 
     ############################################################################
     #                         Plot Scores Distributions                        #
