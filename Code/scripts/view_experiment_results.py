@@ -6,7 +6,7 @@ import os
 import sys
 sys.path.append('../')
 
-from sklearn.metrics import roc_auc_score, average_precision_score
+from sklearn.metrics import roc_auc_score, average_precision_score, roc_curve, precision_recall_curve
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -14,7 +14,7 @@ import seaborn as sns
 
 from src.postprocessing.scoresCombiner import ScoresCombiner
 from src.utils.results_processing import load_experiment_results, scores_as_df
-from src.utils.results_processing import metric_barplot, plot_scores_dist1D, plot_scores_dist2D, plot_loss
+from src.utils.results_processing import metric_barplot, plot_scores_dist1D, plot_scores_dist2D, plot_loss, metric_curves
 
 ################################################################################
 #                                Settings                                      #
@@ -22,8 +22,8 @@ from src.utils.results_processing import metric_barplot, plot_scores_dist1D, plo
 # Path to the experiments folder (outputs of train scripts)
 EXPERIMENT_PATH = r'../../Outputs/'
 # names of the experiment(s) to process
-exp_folders = ['DeepSAD_2020_02_25_11h12']
-exp_names = ['DeepSAD']
+exp_folders = ['DeepSVDD_2020_03_02_16h35']#['DeepSAD_2020_02_25_11h12']
+exp_names = ['DeepSVDD']#['DeepSAD']
 SAVE_PATHES = [EXPERIMENT_PATH + folder + '/analysis/' for folder in exp_folders]
 FIG_RES = 200
 fontsize=12
@@ -85,7 +85,7 @@ for SAVE_PATH, results_list in zip(SAVE_PATHES, results_all.values()):
     cmap_names = ['Oranges', 'Blues']
     #handles, labels = [], exp_names
     plot_loss(results_list, 'embedding/train/loss', cmap_names[0], ax=axs[0])
-    axs[0].set_title('DeepSAD loss', fontsize=fontsize)
+    axs[0].set_title(f'{exp_names[i]} loss', fontsize=fontsize)
     plot_loss(results_list, 'reconstruction/train/loss', cmap_names[0], ax=axs[1])
     axs[1].set_title('Autoencoder loss', fontsize=fontsize)
 
@@ -151,6 +151,24 @@ for SAVE_PATH, results_list in zip(SAVE_PATHES, results_all.values()):
         auprc_df.to_csv(SAVE_PATH + 'AUC_tables/' + name + '_AUPRC.csv')
 
     ############################################################################
+    #                          Plot ROC and PR Curves                          #
+    ############################################################################
+
+    fig, axs = plt.subplots(2, 2, figsize=(10,10))
+
+    metric_curves(results_list, 'scores_em', set='valid', curves=['roc', 'prc'], areas=False, ax=axs[0,0])
+    axs[0,0].set_title('Embedding scores validation curves', fontsize=fontsize)
+    metric_curves(results_list, 'scores_em', set='test', curves=['roc', 'prc'], areas=False, ax=axs[1,0])
+    axs[1,0].set_title('Embedding scores test curves', fontsize=fontsize)
+    metric_curves(results_list, 'scores_rec', set='valid', curves=['roc', 'prc'], areas=False, ax=axs[0,1])
+    axs[0,1].set_title('Reconstruction scores validation curves', fontsize=fontsize)
+    metric_curves(results_list, 'scores_rec', set='test', curves=['roc', 'prc'], areas=False, ax=axs[1,1])
+    axs[1,1].set_title('Reconstruction scores test curves', fontsize=fontsize)
+
+    fig.tight_layout()
+    fig.savefig(SAVE_PATH + f'ROC_PRC_curves.pdf', dpi=FIG_RES, bbox_inches='tight')
+
+    ############################################################################
     #                         Plot Scores Distributions                        #
     ############################################################################
     for i, results in enumerate(results_list):
@@ -184,10 +202,8 @@ for SAVE_PATH, results_list in zip(SAVE_PATHES, results_all.values()):
         fig.savefig(SAVE_PATH + f'scores_dist/scores_distribution_{i+1}.pdf', dpi=FIG_RES, bbox_inches='tight')
 
 # %%
-df = scores_as_df(results_all[exp_names[0]][1], 'valid').sample(frac=0.1)
-
-fig, ax = plt.subplots(1, 1, figsize=(9,9))
-sns.kdeplot(np.log(np.array(df.scores_em) + 1e-9), np.log(np.array(df.scores_rec) + 1e-9), cmap='Greens', shade=True,
-            shade_lowest=False, ax=ax, alpha=0.5, legend=False)
-
-plt.show()
+# results_list = results_all[exp_names[0]]
+#
+# fig, ax = plt.subplots(1, 1, figsize=(6,6))
+# metric_curves(results_list, 'scores_em', set='test', curves=['roc', 'prc'], areas=False, ax=ax)
+# plt.show()

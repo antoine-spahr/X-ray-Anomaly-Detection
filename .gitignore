@@ -141,5 +141,8 @@ Outputs/tests/*
 # ignore old bad-formated outputs of DeepSAD
 Outputs/DeepSAD_2020_02_25_11h12/results/raw/AE_*.json
 Outputs/DeepSAD_2020_02_25_11h12/results/raw/DeepSAD_*.json
+Outputs/DeepSAD_2020_03_05_224images/*
+
+Figures/barplot/*
 
 .DS_Store

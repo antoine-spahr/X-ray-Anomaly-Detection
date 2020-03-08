@@ -1,0 +1,488 @@
+2020-03-04 01:25:20,358 | INFO | Brief summary of experiment : 
+
+    Train a DeepSVDD model following Lukas Ruff et al. (2018) work and code structure
+    of their work on DeepSAD (2019) adapted to the MURA dataset (preprocessing
+    inspired from the work of Davletshina et al. (2020)). The DeepSAD network
+    structure is a ResNet18 Encoder. The Encoder is pretrained via Autoencoder
+    training. The Autoencoder itself is not initialized with weights trained on
+    ImageNet. The best threshold on the scores is defined using the validation
+    set as the one maximizing the F1-score. The ROC AUC is reported on the test
+    and validation set. This experiment is an unsupervized version of the DeepSAD
+    (i.e. without known samples).
+    
+2020-03-04 01:25:20,358 | INFO | Log file : ../../Outputs/DeepSVDD_2020_03_02_16h35/logs/log_3.txt
+2020-03-04 01:25:20,358 | INFO | Data path : ../../data/PROCESSED/
+2020-03-04 01:25:20,359 | INFO | Outputs path : ../../Outputs/DeepSVDD_2020_03_02_16h35/
+
+2020-03-04 01:25:24,616 | INFO | Train fraction : 50%
+2020-03-04 01:25:24,616 | INFO | Fraction knonw normal : 0%
+2020-03-04 01:25:24,616 | INFO | Fraction known abnormal : 0%
+2020-03-04 01:25:24,649 | INFO | Split Summary 
++-------+----------------+------------+--------------+
+| Set   | Name           | Number [-] | Fraction [%] |
++-------+----------------+------------+--------------+
+| train | Normal         | 18975      | 100.00%      |
+| train | Abnormal       | 0          | 0.00%        |
+| train | Normal known   | 0          | 0.00%        |
+| train | Abnormal known | 0          | 0.00%        |
+| train | Unknown        | 18975      | 100.00%      |
+| ----  | ----           | ----       | ----         |
+| valid | Normal         | 2282       | 21.92%       |
+| valid | Abnormal       | 8128       | 78.08%       |
+| valid | Normal known   | 0          | 0.00%        |
+| valid | Abnormal known | 0          | 0.00%        |
+| valid | Unknown        | 10410      | 100.00%      |
+| ----  | ----           | ----       | ----         |
+| test  | Normal         | 2311       | 21.88%       |
+| test  | Abnormal       | 8251       | 78.12%       |
+| test  | Normal known   | 0          | 0.00%        |
+| test  | Abnormal known | 0          | 0.00%        |
+| test  | Unknown        | 10562      | 100.00%      |
++-------+----------------+------------+--------------+
+2020-03-04 01:25:24,650 | INFO | Online preprocessing pipeline : 
+    Grayscale()
+ -> AutoContrast(cutoff=1)
+ -> RandomHorizontalFlip(p=0.5)
+ -> RandomVerticalFlip(p=0.5)
+ -> RandomBrightness(lower=0.8, upper=1.2)
+ -> RandomScaling(scale_range=(0.8, 1.2))
+ -> RandomRotation(degree_range=(-20, 20))
+ -> ResizeMax(max_len=512)
+ -> PadToSquare()
+ -> MinMaxNormalization(vmin=0, vmax=1)
+ -> ToTorchTensor()
+
+2020-03-04 01:25:24,650 | INFO | Set seed 03/04 to 111
+2020-03-04 01:25:24,650 | INFO | Device : cuda
+2020-03-04 01:25:24,650 | INFO | Number of thread : 0
+2020-03-04 01:25:24,650 | INFO | Number of dataloader worker for DeepSVDD : 8
+2020-03-04 01:25:24,650 | INFO | Autoencoder number of dataloader worker : 8
+
+2020-03-04 01:25:24,947 | INFO | Autoencoder : AE_ResNet18
+2020-03-04 01:25:24,947 | INFO | Encoder : ResNet18_Encoder
+2020-03-04 01:25:24,948 | INFO | Embedding dimension : 256
+2020-03-04 01:25:24,949 | INFO | Autoencoder pretrained on ImageNet : False
+2020-03-04 01:25:24,949 | INFO | DeepSVDD eta : 0.0
+2020-03-04 01:25:24,980 | INFO | Autoencoder architecture: 
+----------------------------------------------------------------
+        Layer (type)               Output Shape         Param #
+================================================================
+            Conv2d-1         [-1, 64, 256, 256]           9,408
+       BatchNorm2d-2         [-1, 64, 256, 256]             128
+              ReLU-3         [-1, 64, 256, 256]               0
+         MaxPool2d-4         [-1, 64, 128, 128]               0
+            Conv2d-5         [-1, 64, 128, 128]          36,864
+       BatchNorm2d-6         [-1, 64, 128, 128]             128
+              ReLU-7         [-1, 64, 128, 128]               0
+            Conv2d-8         [-1, 64, 128, 128]          36,864
+       BatchNorm2d-9         [-1, 64, 128, 128]             128
+             ReLU-10         [-1, 64, 128, 128]               0
+    ResidualBlock-11         [-1, 64, 128, 128]               0
+           Conv2d-12         [-1, 64, 128, 128]          36,864
+      BatchNorm2d-13         [-1, 64, 128, 128]             128
+             ReLU-14         [-1, 64, 128, 128]               0
+           Conv2d-15         [-1, 64, 128, 128]          36,864
+      BatchNorm2d-16         [-1, 64, 128, 128]             128
+             ReLU-17         [-1, 64, 128, 128]               0
+    ResidualBlock-18         [-1, 64, 128, 128]               0
+           Conv2d-19          [-1, 128, 64, 64]          73,728
+      BatchNorm2d-20          [-1, 128, 64, 64]             256
+             ReLU-21          [-1, 128, 64, 64]               0
+           Conv2d-22          [-1, 128, 64, 64]         147,456
+      BatchNorm2d-23          [-1, 128, 64, 64]             256
+           Conv2d-24          [-1, 128, 64, 64]           8,192
+      BatchNorm2d-25          [-1, 128, 64, 64]             256
+             ReLU-26          [-1, 128, 64, 64]               0
+    ResidualBlock-27          [-1, 128, 64, 64]               0
+           Conv2d-28          [-1, 128, 64, 64]         147,456
+      BatchNorm2d-29          [-1, 128, 64, 64]             256
+             ReLU-30          [-1, 128, 64, 64]               0
+           Conv2d-31          [-1, 128, 64, 64]         147,456
+      BatchNorm2d-32          [-1, 128, 64, 64]             256
+             ReLU-33          [-1, 128, 64, 64]               0
+    ResidualBlock-34          [-1, 128, 64, 64]               0
+           Conv2d-35          [-1, 256, 32, 32]         294,912
+      BatchNorm2d-36          [-1, 256, 32, 32]             512
+             ReLU-37          [-1, 256, 32, 32]               0
+           Conv2d-38          [-1, 256, 32, 32]         589,824
+      BatchNorm2d-39          [-1, 256, 32, 32]             512
+           Conv2d-40          [-1, 256, 32, 32]          32,768
+      BatchNorm2d-41          [-1, 256, 32, 32]             512
+             ReLU-42          [-1, 256, 32, 32]               0
+    ResidualBlock-43          [-1, 256, 32, 32]               0
+           Conv2d-44          [-1, 256, 32, 32]         589,824
+      BatchNorm2d-45          [-1, 256, 32, 32]             512
+             ReLU-46          [-1, 256, 32, 32]               0
+           Conv2d-47          [-1, 256, 32, 32]         589,824
+      BatchNorm2d-48          [-1, 256, 32, 32]             512
+             ReLU-49          [-1, 256, 32, 32]               0
+    ResidualBlock-50          [-1, 256, 32, 32]               0
+           Conv2d-51          [-1, 512, 16, 16]       1,179,648
+      BatchNorm2d-52          [-1, 512, 16, 16]           1,024
+             ReLU-53          [-1, 512, 16, 16]               0
+           Conv2d-54          [-1, 512, 16, 16]       2,359,296
+      BatchNorm2d-55          [-1, 512, 16, 16]           1,024
+           Conv2d-56          [-1, 512, 16, 16]         131,072
+      BatchNorm2d-57          [-1, 512, 16, 16]           1,024
+             ReLU-58          [-1, 512, 16, 16]               0
+    ResidualBlock-59          [-1, 512, 16, 16]               0
+           Conv2d-60          [-1, 512, 16, 16]       2,359,296
+      BatchNorm2d-61          [-1, 512, 16, 16]           1,024
+             ReLU-62          [-1, 512, 16, 16]               0
+           Conv2d-63          [-1, 512, 16, 16]       2,359,296
+      BatchNorm2d-64          [-1, 512, 16, 16]           1,024
+             ReLU-65          [-1, 512, 16, 16]               0
+    ResidualBlock-66          [-1, 512, 16, 16]               0
+AdaptiveAvgPool2d-67            [-1, 512, 1, 1]               0
+           Linear-68                  [-1, 256]         131,072
+ ResNet18_Encoder-69                  [-1, 256]               0
+           Linear-70                  [-1, 512]         131,584
+           Conv2d-71          [-1, 512, 16, 16]       2,359,296
+      BatchNorm2d-72          [-1, 512, 16, 16]           1,024
+             ReLU-73          [-1, 512, 16, 16]               0
+           Conv2d-74          [-1, 512, 16, 16]       2,359,296
+      BatchNorm2d-75          [-1, 512, 16, 16]           1,024
+             ReLU-76          [-1, 512, 16, 16]               0
+  UpResidualBlock-77          [-1, 512, 16, 16]               0
+           Conv2d-78          [-1, 256, 16, 16]       1,179,648
+      BatchNorm2d-79          [-1, 256, 16, 16]             512
+             ReLU-80          [-1, 256, 16, 16]               0
+         Upsample-81          [-1, 256, 32, 32]               0
+           Conv2d-82          [-1, 256, 32, 32]          65,536
+      BatchNorm2d-83          [-1, 256, 32, 32]             512
+         Upsample-84          [-1, 512, 32, 32]               0
+           Conv2d-85          [-1, 256, 32, 32]         131,072
+      BatchNorm2d-86          [-1, 256, 32, 32]             512
+             ReLU-87          [-1, 256, 32, 32]               0
+  UpResidualBlock-88          [-1, 256, 32, 32]               0
+           Conv2d-89          [-1, 256, 32, 32]         589,824
+      BatchNorm2d-90          [-1, 256, 32, 32]             512
+             ReLU-91          [-1, 256, 32, 32]               0
+           Conv2d-92          [-1, 256, 32, 32]         589,824
+      BatchNorm2d-93          [-1, 256, 32, 32]             512
+             ReLU-94          [-1, 256, 32, 32]               0
+  UpResidualBlock-95          [-1, 256, 32, 32]               0
+           Conv2d-96          [-1, 128, 32, 32]         294,912
+      BatchNorm2d-97          [-1, 128, 32, 32]             256
+             ReLU-98          [-1, 128, 32, 32]               0
+         Upsample-99          [-1, 128, 64, 64]               0
+          Conv2d-100          [-1, 128, 64, 64]          16,384
+     BatchNorm2d-101          [-1, 128, 64, 64]             256
+        Upsample-102          [-1, 256, 64, 64]               0
+          Conv2d-103          [-1, 128, 64, 64]          32,768
+     BatchNorm2d-104          [-1, 128, 64, 64]             256
+            ReLU-105          [-1, 128, 64, 64]               0
+ UpResidualBlock-106          [-1, 128, 64, 64]               0
+          Conv2d-107          [-1, 128, 64, 64]         147,456
+     BatchNorm2d-108          [-1, 128, 64, 64]             256
+            ReLU-109          [-1, 128, 64, 64]               0
+          Conv2d-110          [-1, 128, 64, 64]         147,456
+     BatchNorm2d-111          [-1, 128, 64, 64]             256
+            ReLU-112          [-1, 128, 64, 64]               0
+ UpResidualBlock-113          [-1, 128, 64, 64]               0
+          Conv2d-114           [-1, 64, 64, 64]          73,728
+     BatchNorm2d-115           [-1, 64, 64, 64]             128
+            ReLU-116           [-1, 64, 64, 64]               0
+        Upsample-117         [-1, 64, 128, 128]               0
+          Conv2d-118         [-1, 64, 128, 128]           4,096
+     BatchNorm2d-119         [-1, 64, 128, 128]             128
+        Upsample-120        [-1, 128, 128, 128]               0
+          Conv2d-121         [-1, 64, 128, 128]           8,192
+     BatchNorm2d-122         [-1, 64, 128, 128]             128
+            ReLU-123         [-1, 64, 128, 128]               0
+ UpResidualBlock-124         [-1, 64, 128, 128]               0
+          Conv2d-125         [-1, 64, 128, 128]          36,864
+     BatchNorm2d-126         [-1, 64, 128, 128]             128
+            ReLU-127         [-1, 64, 128, 128]               0
+          Conv2d-128         [-1, 64, 128, 128]          36,864
+     BatchNorm2d-129         [-1, 64, 128, 128]             128
+            ReLU-130         [-1, 64, 128, 128]               0
+ UpResidualBlock-131         [-1, 64, 128, 128]               0
+          Conv2d-132         [-1, 64, 128, 128]          36,864
+     BatchNorm2d-133         [-1, 64, 128, 128]             128
+            ReLU-134         [-1, 64, 128, 128]               0
+        Upsample-135         [-1, 64, 256, 256]               0
+          Conv2d-136         [-1, 64, 256, 256]           4,096
+     BatchNorm2d-137         [-1, 64, 256, 256]             128
+        Upsample-138         [-1, 64, 256, 256]               0
+          Conv2d-139         [-1, 64, 256, 256]           4,096
+     BatchNorm2d-140         [-1, 64, 256, 256]             128
+            ReLU-141         [-1, 64, 256, 256]               0
+ UpResidualBlock-142         [-1, 64, 256, 256]               0
+        Upsample-143         [-1, 64, 512, 512]               0
+          Conv2d-144          [-1, 1, 512, 512]              64
+            Tanh-145          [-1, 1, 512, 512]               0
+ResNet18_Decoder-146          [-1, 1, 512, 512]               0
+================================================================
+Total params: 19,564,416
+Trainable params: 19,564,416
+Non-trainable params: 0
+----------------------------------------------------------------
+Input size (MB): 1.00
+Forward/backward pass size (MB): 983.51
+Params size (MB): 74.63
+Estimated Total Size (MB): 1059.14
+----------------------------------------------------------------
+
+
+2020-03-04 01:25:24,980 | INFO | Pretraining DeepSVDD via Autoencoder : True
+2020-03-04 01:25:24,980 | INFO | Autoencoder number of epoch : 100
+2020-03-04 01:25:24,980 | INFO | Autoencoder learning rate : 0.0001
+2020-03-04 01:25:24,980 | INFO | Autoencoder learning rate milestone : [59]
+2020-03-04 01:25:24,980 | INFO | Autoencoder weight_decay : 1e-06
+2020-03-04 01:25:24,980 | INFO | Autoencoder optimizer : Adam
+2020-03-04 01:25:24,980 | INFO | Autoencoder batch_size 16
+
+2020-03-04 01:25:24,983 | INFO | >>> Start Training the AutoEncoder.
+2020-03-04 01:31:37,049 | INFO | | Epoch: 001/100 | Train Time: 372.065 [s] | Train Loss: 0.043199 |
+2020-03-04 01:37:50,555 | INFO | | Epoch: 002/100 | Train Time: 373.505 [s] | Train Loss: 0.035079 |
+2020-03-04 01:44:03,924 | INFO | | Epoch: 003/100 | Train Time: 373.369 [s] | Train Loss: 0.034612 |
+2020-03-04 01:50:17,573 | INFO | | Epoch: 004/100 | Train Time: 373.648 [s] | Train Loss: 0.033966 |
+2020-03-04 01:56:31,333 | INFO | | Epoch: 005/100 | Train Time: 373.760 [s] | Train Loss: 0.032547 |
+2020-03-04 02:02:45,308 | INFO | | Epoch: 006/100 | Train Time: 373.974 [s] | Train Loss: 0.031478 |
+2020-03-04 02:08:58,883 | INFO | | Epoch: 007/100 | Train Time: 373.575 [s] | Train Loss: 0.030784 |
+2020-03-04 02:15:12,978 | INFO | | Epoch: 008/100 | Train Time: 374.095 [s] | Train Loss: 0.029609 |
+2020-03-04 02:21:27,020 | INFO | | Epoch: 009/100 | Train Time: 374.041 [s] | Train Loss: 0.029463 |
+2020-03-04 02:27:40,936 | INFO | | Epoch: 010/100 | Train Time: 373.916 [s] | Train Loss: 0.029321 |
+2020-03-04 02:33:54,857 | INFO | | Epoch: 011/100 | Train Time: 373.919 [s] | Train Loss: 0.026631 |
+2020-03-04 02:40:08,562 | INFO | | Epoch: 012/100 | Train Time: 373.704 [s] | Train Loss: 0.025635 |
+2020-03-04 02:46:22,228 | INFO | | Epoch: 013/100 | Train Time: 373.665 [s] | Train Loss: 0.024315 |
+2020-03-04 02:52:35,787 | INFO | | Epoch: 014/100 | Train Time: 373.557 [s] | Train Loss: 0.023516 |
+2020-03-04 02:58:49,516 | INFO | | Epoch: 015/100 | Train Time: 373.729 [s] | Train Loss: 0.023225 |
+2020-03-04 03:05:03,324 | INFO | | Epoch: 016/100 | Train Time: 373.808 [s] | Train Loss: 0.022600 |
+2020-03-04 03:11:17,001 | INFO | | Epoch: 017/100 | Train Time: 373.676 [s] | Train Loss: 0.022073 |
+2020-03-04 03:17:30,764 | INFO | | Epoch: 018/100 | Train Time: 373.762 [s] | Train Loss: 0.021882 |
+2020-03-04 03:23:44,355 | INFO | | Epoch: 019/100 | Train Time: 373.590 [s] | Train Loss: 0.021582 |
+2020-03-04 03:29:58,139 | INFO | | Epoch: 020/100 | Train Time: 373.784 [s] | Train Loss: 0.021203 |
+2020-03-04 03:36:12,003 | INFO | | Epoch: 021/100 | Train Time: 373.863 [s] | Train Loss: 0.021104 |
+2020-03-04 03:42:25,718 | INFO | | Epoch: 022/100 | Train Time: 373.714 [s] | Train Loss: 0.020724 |
+2020-03-04 03:48:39,513 | INFO | | Epoch: 023/100 | Train Time: 373.795 [s] | Train Loss: 0.020142 |
+2020-03-04 03:54:52,983 | INFO | | Epoch: 024/100 | Train Time: 373.469 [s] | Train Loss: 0.019563 |
+2020-03-04 04:01:06,809 | INFO | | Epoch: 025/100 | Train Time: 373.825 [s] | Train Loss: 0.019373 |
+2020-03-04 04:07:20,609 | INFO | | Epoch: 026/100 | Train Time: 373.799 [s] | Train Loss: 0.019005 |
+2020-03-04 04:13:34,071 | INFO | | Epoch: 027/100 | Train Time: 373.461 [s] | Train Loss: 0.018777 |
+2020-03-04 04:19:47,825 | INFO | | Epoch: 028/100 | Train Time: 373.754 [s] | Train Loss: 0.018731 |
+2020-03-04 04:26:01,601 | INFO | | Epoch: 029/100 | Train Time: 373.775 [s] | Train Loss: 0.018236 |
+2020-03-04 04:32:15,265 | INFO | | Epoch: 030/100 | Train Time: 373.664 [s] | Train Loss: 0.018149 |
+2020-03-04 04:38:29,093 | INFO | | Epoch: 031/100 | Train Time: 373.827 [s] | Train Loss: 0.018023 |
+2020-03-04 04:44:42,993 | INFO | | Epoch: 032/100 | Train Time: 373.899 [s] | Train Loss: 0.017893 |
+2020-03-04 04:50:56,994 | INFO | | Epoch: 033/100 | Train Time: 374.000 [s] | Train Loss: 0.017556 |
+2020-03-04 04:57:11,012 | INFO | | Epoch: 034/100 | Train Time: 374.017 [s] | Train Loss: 0.017462 |
+2020-03-04 05:03:24,887 | INFO | | Epoch: 035/100 | Train Time: 373.875 [s] | Train Loss: 0.017304 |
+2020-03-04 05:09:38,913 | INFO | | Epoch: 036/100 | Train Time: 374.025 [s] | Train Loss: 0.017184 |
+2020-03-04 05:15:53,096 | INFO | | Epoch: 037/100 | Train Time: 374.182 [s] | Train Loss: 0.016946 |
+2020-03-04 05:22:07,103 | INFO | | Epoch: 038/100 | Train Time: 374.007 [s] | Train Loss: 0.016624 |
+2020-03-04 05:28:20,950 | INFO | | Epoch: 039/100 | Train Time: 373.846 [s] | Train Loss: 0.016480 |
+2020-03-04 05:34:34,957 | INFO | | Epoch: 040/100 | Train Time: 374.007 [s] | Train Loss: 0.016503 |
+2020-03-04 05:40:48,897 | INFO | | Epoch: 041/100 | Train Time: 373.939 [s] | Train Loss: 0.016270 |
+2020-03-04 05:47:02,979 | INFO | | Epoch: 042/100 | Train Time: 374.081 [s] | Train Loss: 0.016111 |
+2020-03-04 05:53:16,924 | INFO | | Epoch: 043/100 | Train Time: 373.945 [s] | Train Loss: 0.016177 |
+2020-03-04 05:59:30,831 | INFO | | Epoch: 044/100 | Train Time: 373.905 [s] | Train Loss: 0.016001 |
+2020-03-04 06:05:44,527 | INFO | | Epoch: 045/100 | Train Time: 373.695 [s] | Train Loss: 0.015826 |
+2020-03-04 06:11:58,429 | INFO | | Epoch: 046/100 | Train Time: 373.902 [s] | Train Loss: 0.015760 |
+2020-03-04 06:18:12,424 | INFO | | Epoch: 047/100 | Train Time: 373.994 [s] | Train Loss: 0.015690 |
+2020-03-04 06:24:26,106 | INFO | | Epoch: 048/100 | Train Time: 373.682 [s] | Train Loss: 0.015665 |
+2020-03-04 06:30:39,705 | INFO | | Epoch: 049/100 | Train Time: 373.598 [s] | Train Loss: 0.015643 |
+2020-03-04 06:36:53,513 | INFO | | Epoch: 050/100 | Train Time: 373.808 [s] | Train Loss: 0.015461 |
+2020-03-04 06:43:07,205 | INFO | | Epoch: 051/100 | Train Time: 373.691 [s] | Train Loss: 0.015484 |
+2020-03-04 06:49:20,693 | INFO | | Epoch: 052/100 | Train Time: 373.488 [s] | Train Loss: 0.015343 |
+2020-03-04 06:55:34,323 | INFO | | Epoch: 053/100 | Train Time: 373.629 [s] | Train Loss: 0.015366 |
+2020-03-04 07:01:47,882 | INFO | | Epoch: 054/100 | Train Time: 373.558 [s] | Train Loss: 0.015381 |
+2020-03-04 07:08:01,486 | INFO | | Epoch: 055/100 | Train Time: 373.604 [s] | Train Loss: 0.015229 |
+2020-03-04 07:14:15,080 | INFO | | Epoch: 056/100 | Train Time: 373.593 [s] | Train Loss: 0.015246 |
+2020-03-04 07:20:28,619 | INFO | | Epoch: 057/100 | Train Time: 373.539 [s] | Train Loss: 0.015109 |
+2020-03-04 07:26:41,980 | INFO | | Epoch: 058/100 | Train Time: 373.360 [s] | Train Loss: 0.014961 |
+2020-03-04 07:32:55,286 | INFO | | Epoch: 059/100 | Train Time: 373.305 [s] | Train Loss: 0.014989 |
+2020-03-04 07:39:08,609 | INFO | | Epoch: 060/100 | Train Time: 373.322 [s] | Train Loss: 0.014111 |
+2020-03-04 07:39:08,609 | INFO | >>> LR Scheduler : new learning rate 1e-05
+2020-03-04 07:45:22,154 | INFO | | Epoch: 061/100 | Train Time: 373.544 [s] | Train Loss: 0.013939 |
+2020-03-04 07:51:35,538 | INFO | | Epoch: 062/100 | Train Time: 373.383 [s] | Train Loss: 0.013861 |
+2020-03-04 07:57:48,949 | INFO | | Epoch: 063/100 | Train Time: 373.411 [s] | Train Loss: 0.013793 |
+2020-03-04 08:04:02,663 | INFO | | Epoch: 064/100 | Train Time: 373.714 [s] | Train Loss: 0.013757 |
+2020-03-04 08:10:16,122 | INFO | | Epoch: 065/100 | Train Time: 373.458 [s] | Train Loss: 0.013683 |
+2020-03-04 08:16:29,798 | INFO | | Epoch: 066/100 | Train Time: 373.675 [s] | Train Loss: 0.013665 |
+2020-03-04 08:22:43,314 | INFO | | Epoch: 067/100 | Train Time: 373.516 [s] | Train Loss: 0.013643 |
+2020-03-04 08:28:57,044 | INFO | | Epoch: 068/100 | Train Time: 373.729 [s] | Train Loss: 0.013590 |
+2020-03-04 08:35:10,896 | INFO | | Epoch: 069/100 | Train Time: 373.852 [s] | Train Loss: 0.013605 |
+2020-03-04 08:41:24,507 | INFO | | Epoch: 070/100 | Train Time: 373.610 [s] | Train Loss: 0.013533 |
+2020-03-04 08:47:38,101 | INFO | | Epoch: 071/100 | Train Time: 373.594 [s] | Train Loss: 0.013495 |
+2020-03-04 08:53:51,910 | INFO | | Epoch: 072/100 | Train Time: 373.808 [s] | Train Loss: 0.013484 |
+2020-03-04 09:00:05,508 | INFO | | Epoch: 073/100 | Train Time: 373.597 [s] | Train Loss: 0.013435 |
+2020-03-04 09:06:18,941 | INFO | | Epoch: 074/100 | Train Time: 373.432 [s] | Train Loss: 0.013461 |
+2020-03-04 09:12:32,366 | INFO | | Epoch: 075/100 | Train Time: 373.424 [s] | Train Loss: 0.013473 |
+2020-03-04 09:18:45,896 | INFO | | Epoch: 076/100 | Train Time: 373.530 [s] | Train Loss: 0.013404 |
+2020-03-04 09:24:59,486 | INFO | | Epoch: 077/100 | Train Time: 373.589 [s] | Train Loss: 0.013380 |
+2020-03-04 09:31:12,957 | INFO | | Epoch: 078/100 | Train Time: 373.470 [s] | Train Loss: 0.013345 |
+2020-03-04 09:37:26,670 | INFO | | Epoch: 079/100 | Train Time: 373.713 [s] | Train Loss: 0.013277 |
+2020-03-04 09:43:39,869 | INFO | | Epoch: 080/100 | Train Time: 373.199 [s] | Train Loss: 0.013348 |
+2020-03-04 09:49:52,351 | INFO | | Epoch: 081/100 | Train Time: 372.481 [s] | Train Loss: 0.013307 |
+2020-03-04 09:56:04,491 | INFO | | Epoch: 082/100 | Train Time: 372.140 [s] | Train Loss: 0.013263 |
+2020-03-04 10:02:16,246 | INFO | | Epoch: 083/100 | Train Time: 371.754 [s] | Train Loss: 0.013301 |
+2020-03-04 10:08:27,635 | INFO | | Epoch: 084/100 | Train Time: 371.388 [s] | Train Loss: 0.013233 |
+2020-03-04 10:14:39,159 | INFO | | Epoch: 085/100 | Train Time: 371.524 [s] | Train Loss: 0.013263 |
+2020-03-04 10:20:50,312 | INFO | | Epoch: 086/100 | Train Time: 371.153 [s] | Train Loss: 0.013189 |
+2020-03-04 10:27:01,625 | INFO | | Epoch: 087/100 | Train Time: 371.312 [s] | Train Loss: 0.013186 |
+2020-03-04 10:33:12,612 | INFO | | Epoch: 088/100 | Train Time: 370.987 [s] | Train Loss: 0.013219 |
+2020-03-04 10:39:23,378 | INFO | | Epoch: 089/100 | Train Time: 370.766 [s] | Train Loss: 0.013162 |
+2020-03-04 10:45:34,866 | INFO | | Epoch: 090/100 | Train Time: 371.487 [s] | Train Loss: 0.013171 |
+2020-03-04 10:51:46,923 | INFO | | Epoch: 091/100 | Train Time: 372.055 [s] | Train Loss: 0.013095 |
+2020-03-04 10:57:59,291 | INFO | | Epoch: 092/100 | Train Time: 372.368 [s] | Train Loss: 0.013178 |
+2020-03-04 11:04:11,607 | INFO | | Epoch: 093/100 | Train Time: 372.315 [s] | Train Loss: 0.013025 |
+2020-03-04 11:10:24,202 | INFO | | Epoch: 094/100 | Train Time: 372.594 [s] | Train Loss: 0.013067 |
+2020-03-04 11:16:37,244 | INFO | | Epoch: 095/100 | Train Time: 373.041 [s] | Train Loss: 0.013097 |
+2020-03-04 11:22:50,420 | INFO | | Epoch: 096/100 | Train Time: 373.175 [s] | Train Loss: 0.013110 |
+2020-03-04 11:29:03,846 | INFO | | Epoch: 097/100 | Train Time: 373.425 [s] | Train Loss: 0.013093 |
+2020-03-04 11:35:17,175 | INFO | | Epoch: 098/100 | Train Time: 373.329 [s] | Train Loss: 0.013048 |
+2020-03-04 11:41:30,614 | INFO | | Epoch: 099/100 | Train Time: 373.439 [s] | Train Loss: 0.012988 |
+2020-03-04 11:47:44,266 | INFO | | Epoch: 100/100 | Train Time: 373.651 [s] | Train Loss: 0.013012 |
+2020-03-04 11:47:44,266 | INFO | >>> Training of AutoEncoder Time: 37339.283 [s]
+2020-03-04 11:47:44,266 | INFO | >>> Finished AutoEncoder Training.
+
+2020-03-04 11:47:44,276 | INFO | >>> Start Validating the AutoEncoder.
+2020-03-04 11:48:53,559 | INFO | >>> Validation Time: 69.074 [s]
+2020-03-04 11:48:53,559 | INFO | >>> Validation Loss: 0.011184
+2020-03-04 11:48:53,559 | INFO | >>> Validation AUC: 47.319%
+2020-03-04 11:48:53,559 | INFO | >>> Best Threshold maximizing the F1-score: 0.000
+2020-03-04 11:48:53,560 | INFO | >>> Best Validation F1-score: 87.642%
+2020-03-04 11:48:53,560 | INFO | >>> Finished Validating the AutoEncoder.
+
+2020-03-04 11:48:53,568 | INFO | >>> Start Testing the AutoEncoder.
+2020-03-04 11:50:04,188 | INFO | >>> Test Time: 70.608 [s]
+2020-03-04 11:50:04,188 | INFO | >>> Test Loss: 0.011531
+2020-03-04 11:50:04,189 | INFO | >>> Test AUC: 48.384%
+2020-03-04 11:50:04,189 | INFO | >>> Test F1-score: 87.674%
+2020-03-04 11:50:04,189 | INFO | >>> Finished Testing the AutoEncoder.
+
+2020-03-04 11:50:04,197 | INFO | DeepSVDD number of epoch : 100
+2020-03-04 11:50:04,197 | INFO | DeepSVDD learning rate : 0.0001
+2020-03-04 11:50:04,197 | INFO | DeepSVDD learning rate milestone : [59]
+2020-03-04 11:50:04,197 | INFO | DeepSVDD weight_decay : 1e-06
+2020-03-04 11:50:04,197 | INFO | DeepSVDD optimizer : Adam
+2020-03-04 11:50:04,197 | INFO | DeepSVDD batch_size 16
+2020-03-04 11:50:04,197 | INFO | DeepSVDD number of dataloader worker : 8
+
+2020-03-04 11:50:04,198 | INFO | >>> Initializing the hypersphere center.
+2020-03-04 11:51:41,199 | INFO | >>> Center succesfully initialized.
+2020-03-04 11:51:41,200 | INFO | >>> Start Training the DeepSAD.
+2020-03-04 11:55:18,678 | INFO | | Epoch: 001/100 | Train Time: 217.478 [s] | Train Loss: 0.098795 |
+2020-03-04 11:58:57,246 | INFO | | Epoch: 002/100 | Train Time: 218.567 [s] | Train Loss: 0.006274 |
+2020-03-04 12:02:36,550 | INFO | | Epoch: 003/100 | Train Time: 219.303 [s] | Train Loss: 0.003019 |
+2020-03-04 12:06:14,544 | INFO | | Epoch: 004/100 | Train Time: 217.994 [s] | Train Loss: 0.000460 |
+2020-03-04 12:09:52,698 | INFO | | Epoch: 005/100 | Train Time: 218.153 [s] | Train Loss: 0.000150 |
+2020-03-04 12:13:30,398 | INFO | | Epoch: 006/100 | Train Time: 217.700 [s] | Train Loss: 0.000181 |
+2020-03-04 12:17:08,262 | INFO | | Epoch: 007/100 | Train Time: 217.864 [s] | Train Loss: 0.000274 |
+2020-03-04 12:20:47,046 | INFO | | Epoch: 008/100 | Train Time: 218.783 [s] | Train Loss: 0.000241 |
+2020-03-04 12:24:24,324 | INFO | | Epoch: 009/100 | Train Time: 217.277 [s] | Train Loss: 0.000255 |
+2020-03-04 12:28:01,753 | INFO | | Epoch: 010/100 | Train Time: 217.428 [s] | Train Loss: 0.001483 |
+2020-03-04 12:31:39,221 | INFO | | Epoch: 011/100 | Train Time: 217.468 [s] | Train Loss: 0.000067 |
+2020-03-04 12:35:16,932 | INFO | | Epoch: 012/100 | Train Time: 217.710 [s] | Train Loss: 0.000076 |
+2020-03-04 12:38:54,334 | INFO | | Epoch: 013/100 | Train Time: 217.402 [s] | Train Loss: 0.000213 |
+2020-03-04 12:42:31,357 | INFO | | Epoch: 014/100 | Train Time: 217.022 [s] | Train Loss: 0.000170 |
+2020-03-04 12:46:08,391 | INFO | | Epoch: 015/100 | Train Time: 217.034 [s] | Train Loss: 0.000234 |
+2020-03-04 12:49:45,672 | INFO | | Epoch: 016/100 | Train Time: 217.281 [s] | Train Loss: 0.000122 |
+2020-03-04 12:53:23,008 | INFO | | Epoch: 017/100 | Train Time: 217.335 [s] | Train Loss: 0.000115 |
+2020-03-04 12:56:58,335 | INFO | | Epoch: 018/100 | Train Time: 215.327 [s] | Train Loss: 0.000308 |
+2020-03-04 13:00:35,600 | INFO | | Epoch: 019/100 | Train Time: 217.265 [s] | Train Loss: 0.000101 |
+2020-03-04 13:04:12,252 | INFO | | Epoch: 020/100 | Train Time: 216.651 [s] | Train Loss: 0.000161 |
+2020-03-04 13:07:48,891 | INFO | | Epoch: 021/100 | Train Time: 216.639 [s] | Train Loss: 0.000237 |
+2020-03-04 13:11:25,190 | INFO | | Epoch: 022/100 | Train Time: 216.298 [s] | Train Loss: 0.000091 |
+2020-03-04 13:15:00,873 | INFO | | Epoch: 023/100 | Train Time: 215.683 [s] | Train Loss: 0.000247 |
+2020-03-04 13:18:36,769 | INFO | | Epoch: 024/100 | Train Time: 215.895 [s] | Train Loss: 0.000115 |
+2020-03-04 13:22:11,504 | INFO | | Epoch: 025/100 | Train Time: 214.735 [s] | Train Loss: 0.000153 |
+2020-03-04 13:25:46,147 | INFO | | Epoch: 026/100 | Train Time: 214.642 [s] | Train Loss: 0.000164 |
+2020-03-04 13:29:21,516 | INFO | | Epoch: 027/100 | Train Time: 215.368 [s] | Train Loss: 0.000088 |
+2020-03-04 13:32:56,133 | INFO | | Epoch: 028/100 | Train Time: 214.616 [s] | Train Loss: 0.000119 |
+2020-03-04 13:36:31,223 | INFO | | Epoch: 029/100 | Train Time: 215.090 [s] | Train Loss: 0.000214 |
+2020-03-04 13:40:06,276 | INFO | | Epoch: 030/100 | Train Time: 215.053 [s] | Train Loss: 0.000103 |
+2020-03-04 13:43:42,848 | INFO | | Epoch: 031/100 | Train Time: 216.571 [s] | Train Loss: 0.000176 |
+2020-03-04 13:47:17,926 | INFO | | Epoch: 032/100 | Train Time: 215.077 [s] | Train Loss: 0.000153 |
+2020-03-04 13:50:54,467 | INFO | | Epoch: 033/100 | Train Time: 216.540 [s] | Train Loss: 0.000136 |
+2020-03-04 13:54:30,156 | INFO | | Epoch: 034/100 | Train Time: 215.689 [s] | Train Loss: 0.000080 |
+2020-03-04 13:58:06,281 | INFO | | Epoch: 035/100 | Train Time: 216.125 [s] | Train Loss: 0.000136 |
+2020-03-04 14:01:42,157 | INFO | | Epoch: 036/100 | Train Time: 215.876 [s] | Train Loss: 0.000128 |
+2020-03-04 14:05:17,760 | INFO | | Epoch: 037/100 | Train Time: 215.602 [s] | Train Loss: 0.000150 |
+2020-03-04 14:08:53,857 | INFO | | Epoch: 038/100 | Train Time: 216.097 [s] | Train Loss: 0.000073 |
+2020-03-04 14:12:30,259 | INFO | | Epoch: 039/100 | Train Time: 216.401 [s] | Train Loss: 0.000110 |
+2020-03-04 14:16:05,991 | INFO | | Epoch: 040/100 | Train Time: 215.732 [s] | Train Loss: 0.000296 |
+2020-03-04 14:19:41,895 | INFO | | Epoch: 041/100 | Train Time: 215.903 [s] | Train Loss: 0.000094 |
+2020-03-04 14:23:17,819 | INFO | | Epoch: 042/100 | Train Time: 215.923 [s] | Train Loss: 0.000136 |
+2020-03-04 14:26:53,924 | INFO | | Epoch: 043/100 | Train Time: 216.104 [s] | Train Loss: 0.000076 |
+2020-03-04 14:30:29,854 | INFO | | Epoch: 044/100 | Train Time: 215.930 [s] | Train Loss: 0.000111 |
+2020-03-04 14:34:06,145 | INFO | | Epoch: 045/100 | Train Time: 216.291 [s] | Train Loss: 0.000171 |
+2020-03-04 14:37:43,312 | INFO | | Epoch: 046/100 | Train Time: 217.166 [s] | Train Loss: 0.000086 |
+2020-03-04 14:41:19,873 | INFO | | Epoch: 047/100 | Train Time: 216.561 [s] | Train Loss: 0.000440 |
+2020-03-04 14:44:55,917 | INFO | | Epoch: 048/100 | Train Time: 216.043 [s] | Train Loss: 0.000056 |
+2020-03-04 14:48:31,883 | INFO | | Epoch: 049/100 | Train Time: 215.965 [s] | Train Loss: 0.000104 |
+2020-03-04 14:52:08,309 | INFO | | Epoch: 050/100 | Train Time: 216.426 [s] | Train Loss: 0.002413 |
+2020-03-04 14:55:45,423 | INFO | | Epoch: 051/100 | Train Time: 217.114 [s] | Train Loss: 0.000073 |
+2020-03-04 14:59:21,700 | INFO | | Epoch: 052/100 | Train Time: 216.276 [s] | Train Loss: 0.000034 |
+2020-03-04 15:02:58,843 | INFO | | Epoch: 053/100 | Train Time: 217.142 [s] | Train Loss: 0.000060 |
+2020-03-04 15:06:35,668 | INFO | | Epoch: 054/100 | Train Time: 216.825 [s] | Train Loss: 0.000092 |
+2020-03-04 15:10:12,166 | INFO | | Epoch: 055/100 | Train Time: 216.498 [s] | Train Loss: 0.000100 |
+2020-03-04 15:13:48,388 | INFO | | Epoch: 056/100 | Train Time: 216.221 [s] | Train Loss: 0.000087 |
+2020-03-04 15:17:24,700 | INFO | | Epoch: 057/100 | Train Time: 216.312 [s] | Train Loss: 0.000170 |
+2020-03-04 15:21:01,063 | INFO | | Epoch: 058/100 | Train Time: 216.363 [s] | Train Loss: 0.000051 |
+2020-03-04 15:24:37,556 | INFO | | Epoch: 059/100 | Train Time: 216.492 [s] | Train Loss: 0.000143 |
+2020-03-04 15:28:13,620 | INFO | | Epoch: 060/100 | Train Time: 216.063 [s] | Train Loss: 0.000006 |
+2020-03-04 15:28:13,620 | INFO | >>> LR Scheduler : new learning rate 1e-05
+2020-03-04 15:31:50,130 | INFO | | Epoch: 061/100 | Train Time: 216.510 [s] | Train Loss: 0.000004 |
+2020-03-04 15:35:26,295 | INFO | | Epoch: 062/100 | Train Time: 216.164 [s] | Train Loss: 0.000003 |
+2020-03-04 15:39:02,712 | INFO | | Epoch: 063/100 | Train Time: 216.416 [s] | Train Loss: 0.000004 |
+2020-03-04 15:42:39,134 | INFO | | Epoch: 064/100 | Train Time: 216.422 [s] | Train Loss: 0.000003 |
+2020-03-04 15:46:15,934 | INFO | | Epoch: 065/100 | Train Time: 216.800 [s] | Train Loss: 0.000003 |
+2020-03-04 15:49:52,550 | INFO | | Epoch: 066/100 | Train Time: 216.616 [s] | Train Loss: 0.000003 |
+2020-03-04 15:53:28,844 | INFO | | Epoch: 067/100 | Train Time: 216.293 [s] | Train Loss: 0.000003 |
+2020-03-04 15:57:04,821 | INFO | | Epoch: 068/100 | Train Time: 215.977 [s] | Train Loss: 0.000003 |
+2020-03-04 16:00:41,591 | INFO | | Epoch: 069/100 | Train Time: 216.769 [s] | Train Loss: 0.000002 |
+2020-03-04 16:04:17,870 | INFO | | Epoch: 070/100 | Train Time: 216.278 [s] | Train Loss: 0.000003 |
+2020-03-04 16:07:54,164 | INFO | | Epoch: 071/100 | Train Time: 216.294 [s] | Train Loss: 0.000003 |
+2020-03-04 16:11:32,182 | INFO | | Epoch: 072/100 | Train Time: 218.017 [s] | Train Loss: 0.000002 |
+2020-03-04 16:15:08,327 | INFO | | Epoch: 073/100 | Train Time: 216.144 [s] | Train Loss: 0.000002 |
+2020-03-04 16:18:45,113 | INFO | | Epoch: 074/100 | Train Time: 216.786 [s] | Train Loss: 0.000002 |
+2020-03-04 16:22:21,327 | INFO | | Epoch: 075/100 | Train Time: 216.213 [s] | Train Loss: 0.000002 |
+2020-03-04 16:25:57,626 | INFO | | Epoch: 076/100 | Train Time: 216.298 [s] | Train Loss: 0.000002 |
+2020-03-04 16:29:34,269 | INFO | | Epoch: 077/100 | Train Time: 216.642 [s] | Train Loss: 0.000003 |
+2020-03-04 16:33:10,382 | INFO | | Epoch: 078/100 | Train Time: 216.113 [s] | Train Loss: 0.000002 |
+2020-03-04 16:36:47,204 | INFO | | Epoch: 079/100 | Train Time: 216.822 [s] | Train Loss: 0.000002 |
+2020-03-04 16:40:23,608 | INFO | | Epoch: 080/100 | Train Time: 216.404 [s] | Train Loss: 0.000002 |
+2020-03-04 16:43:59,863 | INFO | | Epoch: 081/100 | Train Time: 216.255 [s] | Train Loss: 0.000002 |
+2020-03-04 16:47:36,196 | INFO | | Epoch: 082/100 | Train Time: 216.332 [s] | Train Loss: 0.000003 |
+2020-03-04 16:51:12,773 | INFO | | Epoch: 083/100 | Train Time: 216.577 [s] | Train Loss: 0.000002 |
+2020-03-04 16:54:49,529 | INFO | | Epoch: 084/100 | Train Time: 216.756 [s] | Train Loss: 0.000002 |
+2020-03-04 16:58:26,214 | INFO | | Epoch: 085/100 | Train Time: 216.684 [s] | Train Loss: 0.000002 |
+2020-03-04 17:02:02,675 | INFO | | Epoch: 086/100 | Train Time: 216.461 [s] | Train Loss: 0.000002 |
+2020-03-04 17:05:39,834 | INFO | | Epoch: 087/100 | Train Time: 217.158 [s] | Train Loss: 0.000002 |
+2020-03-04 17:09:16,707 | INFO | | Epoch: 088/100 | Train Time: 216.873 [s] | Train Loss: 0.000003 |
+2020-03-04 17:12:53,082 | INFO | | Epoch: 089/100 | Train Time: 216.374 [s] | Train Loss: 0.000002 |
+2020-03-04 17:16:29,984 | INFO | | Epoch: 090/100 | Train Time: 216.902 [s] | Train Loss: 0.000002 |
+2020-03-04 17:20:06,904 | INFO | | Epoch: 091/100 | Train Time: 216.919 [s] | Train Loss: 0.000002 |
+2020-03-04 17:23:42,805 | INFO | | Epoch: 092/100 | Train Time: 215.900 [s] | Train Loss: 0.000002 |
+2020-03-04 17:27:19,287 | INFO | | Epoch: 093/100 | Train Time: 216.481 [s] | Train Loss: 0.000002 |
+2020-03-04 17:30:56,253 | INFO | | Epoch: 094/100 | Train Time: 216.966 [s] | Train Loss: 0.000003 |
+2020-03-04 17:34:33,087 | INFO | | Epoch: 095/100 | Train Time: 216.833 [s] | Train Loss: 0.000005 |
+2020-03-04 17:38:09,330 | INFO | | Epoch: 096/100 | Train Time: 216.242 [s] | Train Loss: 0.000002 |
+2020-03-04 17:41:45,648 | INFO | | Epoch: 097/100 | Train Time: 216.317 [s] | Train Loss: 0.000002 |
+2020-03-04 17:45:22,228 | INFO | | Epoch: 098/100 | Train Time: 216.579 [s] | Train Loss: 0.000002 |
+2020-03-04 17:48:59,043 | INFO | | Epoch: 099/100 | Train Time: 216.816 [s] | Train Loss: 0.000002 |
+2020-03-04 17:52:36,051 | INFO | | Epoch: 100/100 | Train Time: 217.007 [s] | Train Loss: 0.000002 |
+2020-03-04 17:52:36,051 | INFO | >>> Training of DeepSAD Time: 21654.852 [s]
+2020-03-04 17:52:36,052 | INFO | >>> Finished DeepSAD Training.
+
+2020-03-04 17:52:36,061 | INFO | >>> Start Validating the DeepSAD
+2020-03-04 17:53:28,971 | INFO | >>> Validation Time: 52.732 [s]
+2020-03-04 17:53:28,972 | INFO | >>> Validation Loss: 0.002215
+2020-03-04 17:53:28,972 | INFO | >>> Validation AUC: 51.447%
+2020-03-04 17:53:28,972 | INFO | >>> Best Threshold maximizing the F1-score: 0.000
+2020-03-04 17:53:28,972 | INFO | >>> Best Validation F1-score: 87.684%
+2020-03-04 17:53:28,972 | INFO | >>> Finished Validating the DeepSAD.
+
+2020-03-04 17:53:28,978 | INFO | >>> Start Testing the DeepSAD
+2020-03-04 17:54:23,067 | INFO | >>> Test Time: 54.045 [s]
+2020-03-04 17:54:23,067 | INFO | >>> Test Loss: 0.002532
+2020-03-04 17:54:23,067 | INFO | >>> Test AUC: 49.540%
+2020-03-04 17:54:23,067 | INFO | >>> Test F1-score: 87.710%
+2020-03-04 17:54:23,067 | INFO | >>> Finished Testing the DeepSAD.
+
+2020-03-04 17:54:23,379 | INFO | Test results saved at ../../Outputs/DeepSVDD_2020_03_02_16h35/results/DeepSVDD_results_3.json
+
+2020-03-04 17:54:23,492 | INFO | Model saved at ../../Outputs/DeepSVDD_2020_03_02_16h35/model/DeepSVDD_model_3.pt

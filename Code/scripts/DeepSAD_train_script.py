@@ -112,7 +112,7 @@ def main(seed_i):
     df_info = df_info[df_info.low_contrast == 0]
 
     # Train Validation Test Split
-    spliter = MURA_TrainValidTestSplitter(df_info.sample(n=128, random_state=seeds[seed_i]), train_frac=train_frac,
+    spliter = MURA_TrainValidTestSplitter(df_info, train_frac=train_frac,
                                           ratio_known_normal=ratio_known_normal,
                                           ratio_known_abnormal=ratio_known_abnormal, random_state=42)
     spliter.split_data(verbose=False)

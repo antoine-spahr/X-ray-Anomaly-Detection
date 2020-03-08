@@ -9,6 +9,7 @@ sys.path.append('../')
 import matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sns
+from sklearn.metrics import roc_curve, precision_recall_curve
 
 def load_experiment_results(path, exp_folders, exp_names):
     """
@@ -251,3 +252,45 @@ def plot_scores_dist2D(scores_1, scores_2, labels, kde=True, scatter=True, ax=No
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.tick_params(labelsize=fontsize)
+
+def metric_curves(results_list, scores_name, set='valid', curves=['roc', 'prc'], areas=False, ax=None, fontsize=12):
+    """
+    Plot the ROC and/or Precision recall curves on the given axes for all the
+    replicates on results_list.
+    ----------
+    INPUT
+        |---- results_list
+    """
+    # find axes
+    ax = plt.gca() if ax is None else ax
+
+    for results in results_list:
+        df = scores_as_df(results, set)
+        if 'roc' in curves:
+            fpr, tpr, thres = roc_curve(df.label, df[scores_name])
+            ax.plot(fpr, tpr, color='coral', lw=1)
+            if areas : ax.fill_between(fpr, tpr, facecolor='coral', alpha=0.05)
+        if 'prc' in curves:
+            pre, rec, thres2 = precision_recall_curve(df.label, df[scores_name])
+            ax.plot(rec, pre, color='cornflowerblue', lw=1)
+            if areas : ax.fill_between(rec, pre, facecolor='cornflowerblue', alpha=0.05)
+
+    colors = []
+    xlabel, ylabel = [], []
+    if 'roc' in curves:
+        xlabel.append('FPR')
+        ylabel.append('TPR')
+        colors.append('coral')
+    if 'prc' in curves:
+        xlabel.append('Recall')
+        ylabel.append('Precision')
+        colors.append('cornflowerblue')
+
+    ax.set_xlim([0,1])
+    ax.set_ylim([0,1])
+    ax.set_xlabel(' ; '.join(xlabel), fontsize=fontsize)
+    ax.set_ylabel(' ; '.join(ylabel), fontsize=fontsize)
+
+    handles = [matplotlib.lines.Line2D((0,0),(1,1), color=c, lw=1) for c in colors]
+    labels = [f'{name.upper()} curves' for name in curves]
+    ax.legend(handles, labels, loc='lower right', ncol=1, frameon=False, fontsize=fontsize)

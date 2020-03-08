@@ -10,7 +10,7 @@ class MaskedMSELoss(nn.Module):
         Loss Constructor.
         ----------
         INPUT
-            |---- reduction (str) the reduction to use on the loss. ONLY mean supported so far.
+            |---- reduction (str) the reduction to use on the loss. ONLY 'mean' or 'none'.
         OUTPUT
             |---- None
         """
