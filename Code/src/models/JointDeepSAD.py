@@ -33,6 +33,10 @@ class JointDeepSAD:
 
         # Dict to store all the results : reconstruction and embedding
         self.results = {
+            'pretrain':{
+                'time': None,
+                'loss': None
+            },
             'train':{
                 'time': None,
                 'loss': None
@@ -73,7 +77,7 @@ class JointDeepSAD:
             }
         }
 
-    def train(self, dataset, lr=0.0001, n_epoch=150, lr_milestone=(), batch_size=64,
+    def train(self, dataset, lr=0.0001, n_epoch=150, n_epoch_pretrain=10, lr_milestone=(), batch_size=64,
               weight_decay=1e-6, device='cuda', n_jobs_dataloader=0, print_batch_progress=False,
               criterion_weight=(0.5,0.5)):
         """
@@ -85,6 +89,8 @@ class JointDeepSAD:
             |           Must return (input, label, mask, semi_label, idx).
             |---- lr (float) the learning rate.
             |---- n_epoch (int) the number of epoch.
+            |---- n_epoch_pretrain (int) the number of epoch to perform with only
+            |           the reconstruction loss.
             |---- lr_milestone (tuple) the lr update steps.
             |---- batch_size (int) the batch_size to use.
             |---- weight_decay (float) the weight_decay for the Adam optimizer.
@@ -98,12 +104,20 @@ class JointDeepSAD:
         OUTPUT
             |---- None
         """
-        self.trainer = DeepSAD_Joint_trainer(self.c, self.eta, lr=lr, n_epoch=n_epoch,
+        self.trainer = DeepSAD_Joint_trainer(self.c, self.eta, lr=lr,
+                                n_epoch=n_epoch, n_epoch_pretrain=n_epoch_pretrain,
                                 lr_milestone=lr_milestone, batch_size=batch_size,
                                 weight_decay=weight_decay, device=device,
                                 n_jobs_dataloader=n_jobs_dataloader,
                                 print_batch_progress=print_batch_progress,
                                 criterion_weight=criterion_weight)
+
+        # pretrain AE
+        if n_epoch_pretrain > 0:
+            self.net = self.trainer.pretrain(dataset, self.net)
+            self.results['pretrain']['time'] = self.trainer.pretrain_time
+            self.results['pretrain']['loss'] = self.trainer.pretrain_loss
+
         # train Joint DeepSAD
         self.net = self.trainer.train(dataset, self.net)
         # get results
@@ -112,7 +126,7 @@ class JointDeepSAD:
         self.c = self.trainer.c.cpu().data.numpy().tolist()
 
     def validate(self, dataset, device='cuda', n_jobs_dataloader=0, print_batch_progress=False,
-             criterion_weight=(0.5, 0.5)):
+                 criterion_weight=(0.5, 0.5)):
         """
         Validate the Joint DeepSAD model on the provided dataset with the provided
         parameters.

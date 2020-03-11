@@ -267,14 +267,5 @@ class AE_ResNet18(nn.Module):
 
 # # %%
 # import torchsummary
-# from src.utils.utils import summary_string
-#
-#
-# #m = ResNet18_Encoder(embed_dim=128, pretrained=True)
-# #
-# #m = ResNet18_Decoder(embed_dim=128, output_size=(1, 256, 256))
-# # # torchsummary.summary(m, (1,128))
-# m = AE_ResNet18(embed_dim=256, pretrain_ResNetEnc=False, output_size=(1,256,256), return_embed=True)
-# s = summary_string(m, (1,256,256), device='cpu')
-# print(s)
-# torchsummary.summary(m, (1,256,256), device='cpu')
+# m = AE_ResNet18(embed_dim=256, pretrain_ResNetEnc=False, output_size=(1,512,512), return_embed=True)
+# torchsummary.summary(m, (1,512,512), device='cpu', batch_size=16)

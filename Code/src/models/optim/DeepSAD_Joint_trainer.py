@@ -13,7 +13,7 @@ class DeepSAD_Joint_trainer:
     """
     Trainer for the DeepSAD together with the autoencoder (joint training).
     """
-    def __init__(self, c, eta, lr=0.0001, n_epoch=150, lr_milestone=(), batch_size=64,
+    def __init__(self, c, eta, lr=0.0001, n_epoch=150, n_epoch_pretrain=10, lr_milestone=(), batch_size=64,
                  weight_decay=1e-6, device='cuda', n_jobs_dataloader=0, print_batch_progress=False,
                  criterion_weight=(0.5,0.5)):
         """
@@ -42,6 +42,7 @@ class DeepSAD_Joint_trainer:
         # learning parameters
         self.lr = lr
         self.n_epoch = n_epoch
+        self.n_epoch_pretrain = n_epoch_pretrain
         self.lr_milestone = lr_milestone
         self.batch_size = batch_size
         self.weight_decay = weight_decay
@@ -49,6 +50,9 @@ class DeepSAD_Joint_trainer:
         self.n_jobs_dataloader = n_jobs_dataloader
         self.print_batch_progress = print_batch_progress
         self.criterion_weight = criterion_weight
+
+        self.scale_rec = 1.0
+        self.scale_em = 1.0
 
         # DeepSAD parameters
         self.c = torch.tensor(c, device=self.device) if c is not None else None
@@ -60,6 +64,8 @@ class DeepSAD_Joint_trainer:
         # Results
         self.train_time = None
         self.train_loss = None
+        self.pretrain_time = None
+        self.pretrain_loss = None
 
         self.valid_auc_rec = None
         self.valid_auc_ad = None
@@ -81,6 +87,90 @@ class DeepSAD_Joint_trainer:
         self.scores_threhold_rec = None
         self.scores_threhold_ad = None
 
+    def pretrain(self, dataset, net):
+        """
+        Pretrain the AE for the joint DeepSAD network on the provided dataset.
+        ----------
+        INPUT
+            |---- dataset (torch.utils.data.Dataset) the dataset on which the
+            |           network is trained. It must return an image, a mask and
+            |           semi-supervized labels.
+            |---- net (nn.Module) The DeepSAD to train. The network should be an
+            |           autoencoder for which the forward pass returns both the
+            |           reconstruction and the embedding of the input.
+        OUTPUT
+            |---- net (nn.Module) The pretrained joint DeepSAD.
+        """
+        logger = logging.getLogger()
+
+        # make dataloader
+        train_loader = torch.utils.data.DataLoader(dataset, batch_size=self.batch_size, \
+                                                   shuffle=True, num_workers=self.n_jobs_dataloader)
+        # put net to device
+        net = net.to(self.device)
+        net.return_svdd_embed = False
+
+        # define the two criterion for reconstruction
+        criterion_rec = MaskedMSELoss()
+
+        # define optimizer
+        optimizer = optim.Adam(net.parameters(), lr=self.lr, weight_decay=self.weight_decay)
+
+        # Start training
+        logger.info('>>> Start Pretraining the Autoencoder.')
+        start_time = time.time()
+        epoch_loss_list = []
+        n_batch_tot = train_loader.__len__()
+
+        # set network in train mode
+        net.train()
+        for epoch in range(self.n_epoch_pretrain):
+            epoch_loss = 0.0
+            n_batch = 0
+            epoch_start_time = time.time()
+
+            for b, data in enumerate(train_loader):
+                input, _, mask, semi_label, _ = data
+                # put inputs to device
+                input, mask, semi_label = input.to(self.device).float(), mask.to(self.device), semi_label.to(self.device)
+                input.requires_grad = True
+
+                # mask the input (keep only the object)
+                input = input * mask
+
+                # zeros the gradient
+                optimizer.zero_grad()
+
+                # Update network parameters by backpropagation
+                rec, _ = net(input)
+                # ignore reconstruction for known abnormal samples (no gradient update because loss = 0)
+                rec = torch.where(semi_label.view(-1,1,1,1).expand(*input.shape) != -1, rec, input)
+                loss = criterion_rec(rec, input, mask)
+
+                loss.backward()
+                optimizer.step()
+
+                epoch_loss += loss.item()
+                n_batch += 1
+
+                if self.print_batch_progress:
+                    print_progessbar(b, n_batch_tot, Name='\t\tBatch', Size=20)
+
+            # epoch statistic
+            epoch_train_time = time.time() - epoch_start_time
+            logger.info(f'| Epoch: {epoch + 1:03}/{self.n_epoch_pretrain:03} | Pretrain Time: {epoch_train_time:.3f} [s] '
+                        f'| Pretrain Loss: {epoch_loss / n_batch:.6f} |')
+
+            epoch_loss_list.append([epoch+1, epoch_loss/n_batch])
+
+        # End training
+        self.pretrain_loss = epoch_loss_list
+        self.pretrain_time = time.time() - start_time
+        logger.info(f'>>> Pretraining of AutoEncoder Time: {self.pretrain_time:.3f} [s]')
+        logger.info('>>> Finished of AutoEncoder Pretraining.\n')
+
+        return net
+
     def train(self, dataset, net):
         """
         Train the joint DeepSAD network on the provided dataset.
@@ -100,8 +190,10 @@ class DeepSAD_Joint_trainer:
         # make dataloader
         train_loader = torch.utils.data.DataLoader(dataset, batch_size=self.batch_size, \
                                                    shuffle=True, num_workers=self.n_jobs_dataloader)
+
         # put net to device
         net = net.to(self.device)
+        net.return_svdd_embed = True # enable the network to provide the SVDD embdeding
 
         # initialize hypersphere center
         if self.c is None:
@@ -112,6 +204,9 @@ class DeepSAD_Joint_trainer:
         # define the two criterion for Anomaly detection and reconstruction
         criterion_rec = MaskedMSELoss()
         criterion_ad = DeepSADLoss(self.c, self.eta, eps=self.eps)
+
+        # compute the scale weight so that the rec and sad losses are scalled and comparable
+        self.initialize_loss_scale_weight(train_loader, net, criterion_rec, criterion_ad)
 
         # define optimizer
         optimizer = optim.Adam(net.parameters(), lr=self.lr, weight_decay=self.weight_decay)
@@ -137,14 +232,24 @@ class DeepSAD_Joint_trainer:
                 input, mask, semi_label = input.to(self.device).float(), mask.to(self.device), semi_label.to(self.device)
                 input.requires_grad = True
 
+                # mask the input (keep only the object)
+                input = input * mask
+
                 # zeros the gradient
                 optimizer.zero_grad()
 
                 # Update network parameters by backpropagation on the two criterion
                 rec, embed = net(input)
+                # reconstruction loss
+                # ignore reconstruction for known abnormal samples (no gradient update because loss = 0)
+                rec = torch.where(semi_label.view(-1,1,1,1).expand(*input.shape) != -1, rec, input)
                 loss_rec = criterion_rec(rec, input, mask)
+                loss_rec = self.scale_rec * self.criterion_weight[0] * loss_rec
+                # SVDD embedding loss
                 loss_ad = criterion_ad(embed, semi_label)
-                loss = self.criterion_weight[0]*loss_rec + self.criterion_weight[1]*loss_ad
+                loss_ad = self.scale_em * self.criterion_weight[1] * loss_ad
+                loss = loss_rec + loss_ad
+
                 loss.backward()
                 optimizer.step()
 
@@ -159,20 +264,71 @@ class DeepSAD_Joint_trainer:
             logger.info(f'| Epoch: {epoch + 1:03}/{self.n_epoch:03} | Train Time: {epoch_train_time:.3f} [s] '
                         f'| Train Loss: {epoch_loss / n_batch:.6f} |')
 
-            epoch_loss_list += [[epoch+1, epoch_loss/n_batch]]
+            # append the epoch loss to results list
+            epoch_loss_list.append([epoch+1, epoch_loss/n_batch])
 
-            # apply the scheduler step
+            # update the learning rate if the milestone is reached
             scheduler.step()
-            if epoch in self.lr_milestone:
+            if epoch + 1 in self.lr_milestone:
                 logger.info('>>> LR Scheduler : new learning rate %g' % float(scheduler.get_lr()[0]))
 
         # End training
         self.train_loss = epoch_loss_list
         self.train_time = time.time() - start_time
         logger.info(f'>>> Training of Joint DeepSAD and AutoEncoder Time: {self.train_time:.3f} [s]')
-        logger.info('>>> Finished of Joint DeepSAD and AutoEncoder Training.\n')
+        logger.info('>>> Finished Joint DeepSAD and AutoEncoder Training.\n')
 
         return net
+
+    def initialize_loss_scale_weight(self, loader, net, criterion_rec, criterion_ad):
+        """
+        Perform one forward pass to compute the reconstruction and embdeding loss
+        scalling factors to get a loss in the magnitude of 1.
+        ----------
+        INPUT
+            |---- loader (torch.utils.data.DataLoader) the loader of the data.
+            |---- net (nn.Module) the DeepSAD network. The output must be a vector
+            |           embedding of the input. The network should be an
+            |           autoencoder for which the forward pass returns both the
+            |           reconstruction and the embedding of the input.
+            |---- criterion_rec (nn.Module) the reconstruction loss criterion.
+            |---- criterion_ad (nn.Module) the SVDD embdeding loss criterion.
+        OUTPUT
+            |---- None
+        """
+        logger = logging.getLogger()
+        logger.info('>>> Initializing the loss scale factors.')
+        sumloss_rec = 0.0
+        sumloss_ad = 0.0
+        n_batch = 0
+        net.train()
+        with torch.no_grad():
+            for b, data in enumerate(loader):
+                input, _, mask, semi_label, _ = data
+                # put inputs to device
+                input, mask, semi_label = input.to(self.device).float(), mask.to(self.device), semi_label.to(self.device)
+                # mask input
+                input = input * mask
+                # forward
+                rec, embed = net(input)
+                # compute rec loss
+                rec = torch.where(semi_label.view(-1,1,1,1).expand(*input.shape) != -1, rec, input) # ignore knwon abnormal samples
+                loss_rec = criterion_rec(rec, input, mask)
+                sumloss_rec += loss_rec.item()
+                # compute ad loss
+                loss_ad = criterion_ad(embed, semi_label)
+                sumloss_ad += loss_ad.item()
+
+                n_batch += 1
+
+                if self.print_batch_progress:
+                    print_progessbar(b, loader.__len__(), Name='\t\tBatch', Size=20)
+
+            # initialize the scalling weight of the reconstruction loss so that it's 1 at epoch 1
+            self.scale_rec = 1 / (sumloss_rec / n_batch)
+            self.scale_em = 1 / (sumloss_ad / n_batch)
+            logger.info(f'>>> reconstruction loss scale factor initialized to {self.scale_rec:.4f}')
+            logger.info(f'>>> SVDD embdeding loss scale factor initialized to {self.scale_em:.4f}')
 
     def validate(self, dataset, net):
         """
@@ -197,6 +353,7 @@ class DeepSAD_Joint_trainer:
 
         # put net to device
         net = net.to(self.device)
+        net.return_svdd_embed = True
 
         # define the two criterion for Anomaly detection and reconstruction
         criterion_rec = MaskedMSELoss(reduction='none')
@@ -219,6 +376,10 @@ class DeepSAD_Joint_trainer:
                 input, label = input.to(self.device).float(), label.to(self.device)
                 mask, semi_label = mask.to(self.device), semi_label.to(self.device)
                 idx = idx.to(self.device)
+
+                # mask the input
+                input = input * mask
+
                 # compute loss
                 rec, embed = net(input)
                 loss_rec = criterion_rec(rec, input, mask)
@@ -228,7 +389,8 @@ class DeepSAD_Joint_trainer:
                 ad_score = torch.sum((embed - self.c) ** 2, dim=1) # score is the distance (large distances highlight anomalies)
                 # compute overall loss
                 mean_loss_rec = torch.sum(loss_rec) / torch.sum(mask)
-                loss = self.criterion_weight[0]*mean_loss_rec + self.criterion_weight[1]*loss_ad
+                loss = self.scale_rec * self.criterion_weight[0] * mean_loss_rec
+                loss += self.scale_em * self.criterion_weight[1] * loss_ad
 
                 # append scores and label
                 idx_label_score_rec += list(zip(idx.cpu().data.numpy().tolist(),
@@ -245,8 +407,6 @@ class DeepSAD_Joint_trainer:
                     print_progessbar(b, n_batch_tot, Name='\t\tBatch', Size=20)
 
         self.valid_time = time.time() - start_time
-        # Compute AUC : if AE is good a high reconstruction loss highlights the presence of an anomaly on the image
-        # Compute AUC : if DeepSAD is good a distance highlights the presence of an anomaly on the image
         self.valid_scores_rec = idx_label_score_rec
         _, label, rec_score = zip(*idx_label_score_rec)
         label, rec_score = np.array(label), np.array(rec_score)
@@ -292,6 +452,7 @@ class DeepSAD_Joint_trainer:
 
         # put net to device
         net = net.to(self.device)
+        net.return_svdd_embed = True
 
         # define the two criterion for Anomaly detection and reconstruction
         criterion_rec = MaskedMSELoss(reduction='none')
@@ -314,6 +475,10 @@ class DeepSAD_Joint_trainer:
                 input, label = input.to(self.device).float(), label.to(self.device)
                 mask, semi_label = mask.to(self.device), semi_label.to(self.device)
                 idx = idx.to(self.device)
+
+                # mask the input
+                input = input * mask
+
                 # compute loss
                 rec, embed = net(input)
                 loss_rec = criterion_rec(rec, input, mask)
@@ -323,7 +488,8 @@ class DeepSAD_Joint_trainer:
                 ad_score = torch.sum((embed - self.c) ** 2, dim=1) # score is the distance (large distances highlight anomalies)
                 # get overall loss
                 mean_loss_rec = torch.sum(loss_rec) / torch.sum(mask)
-                loss = self.criterion_weight[0]*mean_loss_rec + self.criterion_weight[1]*loss_ad
+                loss = self.scale_rec * self.criterion_weight[0] * mean_loss_rec
+                loss += self.scale_em * self.criterion_weight[1] * loss_ad
 
                 # append scores and label
                 idx_label_score_rec += list(zip(idx.cpu().data.numpy().tolist(),
@@ -340,8 +506,6 @@ class DeepSAD_Joint_trainer:
                     print_progessbar(b, n_batch_tot, Name='\t\tBatch', Size=20)
 
         self.test_time = time.time() - start_time
-        # Compute AUC : if AE is good a high reconstruction loss highlights the presence of an anomaly on the image
-        # Compute AUC : if DeepSAD is good a distance highlights the presence of an anomaly on the image
         self.test_scores_rec = idx_label_score_rec
         _, label, rec_score = zip(*idx_label_score_rec)
         label, rec_score = np.array(label), np.array(rec_score)
@@ -380,13 +544,22 @@ class DeepSAD_Joint_trainer:
             |---- c (torch.Tensor) the initialized center.
         """
         n_sample = 0
-        c = torch.zeros(net.embed_dim, device=self.device)
+        # get embdedding dimension with one forward pass of one batch
+        with torch.no_grad():
+            sample = next(iter(loader))[0].float()
+            svdd_embedding_dim = net(sample.to(self.device))[1].shape[1]
+        # initialize center
+        c = torch.zeros(svdd_embedding_dim, device=self.device)
+
         # get the output of all samples and accumulate them
         net.eval()
         with torch.no_grad():
             for b, data in enumerate(loader):
-                input, _, _, _, _ = data
-                input = input.to(self.device).float()
+                input, _, mask, _, _ = data
+                input, mask = input.to(self.device).float(), mask.to(self.device)
+                # mask input
+                input = input * mask
+
                 _, embed = net(input)
                 n_sample += embed.shape[0]
                 c += torch.sum(embed, dim=0)
@@ -401,3 +574,126 @@ class DeepSAD_Joint_trainer:
         c[(torch.abs(c) < eps) & (c > 0)] = eps
 
         return c
+
+# def train(self, dataset, net):
+#     """
+#     Train the joint DeepSAD network on the provided dataset.
+#     ----------
+#     INPUT
+#         |---- dataset (torch.utils.data.Dataset) the dataset on which the
+#         |           network is trained. It must return an image, a mask and
+#         |           semi-supervized labels.
+#         |---- net (nn.Module) The DeepSAD to train. The network should be an
+#         |           autoencoder for which the forward pass returns both the
+#         |           reconstruction and the embedding of the input.
+#     OUTPUT
+#         |---- net (nn.Module) The trained joint DeepSAD.
+#     """
+#     logger = logging.getLogger()
+#
+#     # make dataloader
+#     train_loader = torch.utils.data.DataLoader(dataset, batch_size=self.batch_size, \
+#                                                shuffle=True, num_workers=self.n_jobs_dataloader)
+#     # put net to device
+#     net = net.to(self.device)
+#     net.return_svdd_embed = False # return only reconstruction if pretraining
+#
+#     # initialize hypersphere center
+#     # if self.c is None:
+#     #     logger.info('>>> Initializing the hypersphere center.')
+#     #     self.c = self.initialize_hypersphere_center(train_loader, net)
+#     #     logger.info('>>> Center succesfully initialized.')
+#
+#     # define the two criterion for Anomaly detection and reconstruction
+#     criterion_rec = MaskedMSELoss()
+#     # initialize only if center is defined
+#     criterion_ad = None  # DeepSADLoss(self.c, self.eta, eps=self.eps) if self.c is not None else None
+#     # initialize scale factor of AE so that the loss is 1 at epoch 1
+#     # self.initialize_AE_scale_weight(train_loader, net, criterion_rec, out_val=1)
+#
+#     # define optimizer
+#     optimizer = optim.Adam(net.parameters(), lr=self.lr, weight_decay=self.weight_decay)
+#
+#     # define scheduler
+#     scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=self.lr_milestone, gamma=0.1)
+#
+#     # Start training
+#     logger.info('>>> Start Training the Joint DeepSAD and Autoencoder.')
+#     start_time = time.time()
+#     epoch_loss_list = []
+#     epoch_loss_list_pretrain = []
+#     n_batch_tot = train_loader.__len__()
+#     # set network in train mode
+#     net.train()
+#     for epoch in range(self.n_epoch):
+#         epoch_loss = 0.0
+#         n_batch = 0
+#         epoch_start_time = time.time()
+#
+#         for b, data in enumerate(train_loader):
+#             input, label, mask, semi_label, _ = data
+#             # put inputs to device
+#             input, mask, semi_label = input.to(self.device).float(), mask.to(self.device), semi_label.to(self.device)
+#             input.requires_grad = True
+#
+#             # zeros the gradient
+#             optimizer.zero_grad()
+#
+#             # Update network parameters by backpropagation on the two criterion
+#             rec, embed = net(input * mask)
+#             rec = torch.where(semi_label != -1, rec, input) # <-- ignore reconstruction for known abnormal samples (no gradient update because loss = 0)
+#             loss_rec = criterion_rec(rec, input, mask) # rec[semi_label != -1] ???? or rec = torch.where(semi_label != -1, rec, input) <-- ignore reconstruction for known abnormal samples (no gradient update because loss = 0)
+#             loss = self.scale_rec * self.criterion_weight[0] * loss_rec
+#             # check if DeepSAD loss can be computed
+#             if epoch >= self.n_epoch_pretrain: #self.c is not None:
+#                 loss_ad = criterion_ad(embed, semi_label)
+#                 loss += self.scale_em * self.criterion_weight[1] * loss_ad
+#
+#             loss.backward()
+#             optimizer.step()
+#
+#             epoch_loss += loss.item()
+#             n_batch += 1
+#
+#             if self.print_batch_progress:
+#                 print_progessbar(b, n_batch_tot, Name='\t\tBatch', Size=20)
+#
+#         # epoch statistic
+#         epoch_train_time = time.time() - epoch_start_time
+#         logger.info(f'| Epoch: {epoch + 1:03}/{self.n_epoch:03} | Train Time: {epoch_train_time:.3f} [s] '
+#                     f'| Train Loss: {epoch_loss / n_batch:.6f} |')
+#
+#         # append the epoch loss to results list
+#         if epoch >= self.n_epoch_pretrain:
+#             epoch_loss_list.append([epoch+1, epoch_loss/n_batch])
+#         else:
+#             epoch_loss_list_pretrain.append([epoch+1, epoch_loss/n_batch])
+#
+#         # initialize hypersphere center once the pretraining has been performed
+#         if epoch == self.n_epoch_pretrain - 1:
+#             logger.info('>>> AE pretraining done : Start using DeepSAD loss')
+#             net.return_svdd_embed = True # enable the network to provide the SVDD embdeding
+#             # initialize hypersphere center
+#             if self.c is None:
+#                 logger.info('>>> Initializing the hypersphere center.')
+#                 self.c = self.initialize_hypersphere_center(train_loader, net)
+#                 logger.info('>>> Center succesfully initialized.')
+#             # initialize DeepSAD criterion
+#             criterion_ad = DeepSADLoss(self.c, self.eta, eps=self.eps)
+#             # compute the scale weight so that the rec and sad losses are scalled and comparable
+#             #self.initialize_Embed_scale_weight(train_loader, net, criterion_ad, out_val=epoch_loss/n_batch)
+#             self.initialize_loss_scale_weight(train_loader, net, criterion_rec, criterion_ad)
+#
+#         # update the learning rate if the milestone is reached
+#         scheduler.step()
+#         if epoch in self.lr_milestone:
+#             logger.info('>>> LR Scheduler : new learning rate %g' % float(scheduler.get_lr()[0]))
+#
+#     # End training
+#     self.train_loss = epoch_loss_list
+#     self.pretrain_loss = epoch_loss_list_pretrain
+#     self.train_time = time.time() - start_time
+#     logger.info(f'>>> Training of Joint DeepSAD and AutoEncoder Time: {self.train_time:.3f} [s]')
+#     logger.info('>>> Finished of Joint DeepSAD and AutoEncoder Training.\n')
+#
+#     return net
