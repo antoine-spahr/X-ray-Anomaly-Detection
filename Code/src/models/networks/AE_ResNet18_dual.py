@@ -92,7 +92,6 @@ class UpResBlock(nn.Module):
 
         # convolution 2. If block upsample
         if upsample:
-            #self.conv2 = nn.ConvTranspose2d(in_channel, out_channel, kernel_size=3, stride=2, bias=False, padding=1, output_padding=1)
             self.conv2 = nn.Sequential(nn.Upsample(mode='bilinear', scale_factor=2, align_corners=True),
                                        nn.Conv2d(in_channel, out_channel, kernel_size=1, stride=1, bias=False, dilation=1))
         else:
@@ -100,11 +99,9 @@ class UpResBlock(nn.Module):
         self.bn2 = nn.BatchNorm2d(out_channel, affine=False)
 
         # module for the pass-through
-        self.upLayer = nn.Sequential(
-                                    #nn.ConvTranspose2d(in_channel, out_channel, kernel_size=1, stride=2, bias=False, output_padding=1),
-                                    nn.Upsample(mode='bilinear', scale_factor=2, align_corners=True),
-                                    nn.Conv2d(in_channel, out_channel, kernel_size=1, stride=1, bias=False),
-                                    nn.BatchNorm2d(out_channel, affine=False))
+        self.upLayer = nn.Sequential(nn.Upsample(mode='bilinear', scale_factor=2, align_corners=True),
+                                     nn.Conv2d(in_channel, out_channel, kernel_size=1, stride=1, bias=False),
+                                     nn.BatchNorm2d(out_channel, affine=False))
 
     def forward(self, x):
         """
@@ -251,7 +248,6 @@ class ResNet18_Decoder(nn.Module):
         self.uplayer4 = nn.Sequential(UpResBlock(64, 64, upsample=False),
                                       UpResBlock(64, 64, upsample=True))
 
-        #self.uplayer_final = nn.ConvTranspose2d(64, output_channels, kernel_size=1, stride=2, bias=False, output_padding=1)
         self.uplayer_final = nn.Sequential(nn.Upsample(mode='bilinear', scale_factor=2, align_corners=True),
                                            nn.Conv2d(64, output_channels, kernel_size=1, stride=1, bias=False))
         self.final_activation = nn.Tanh()
@@ -297,15 +293,6 @@ class AE_SVDD_Hybrid(nn.Module):
         nn.Module.__init__(self)
         self.return_svdd_embed = return_svdd_embed
         self.encoder = ResNet18_Encoder(pretrained=pretrain_ResNetEnc)
-        # self.conv_svdd = nn.Sequential(nn.Conv2d(512, 256, 3, stride=1, bias=False),
-        #                                nn.BatchNorm2d(256, affine=False),
-        #                                nn.ReLU(),
-        #                                nn.MaxPool2d(kernel_size=3, stride=2),
-        #                                nn.Conv2d(256, 128, 3, stride=1, bias=False),
-        #                                nn.BatchNorm2d(128, affine=False),
-        #                                nn.ReLU(),
-        #                                nn.Conv2d(128, 128, 3, stride=1, bias=False),
-        #                                nn.BatchNorm2d(128, affine=False))
         self.conv_svdd = nn.Sequential(nn.AvgPool2d(kernel_size=3, stride=2),
                                        nn.Conv2d(512, 256, 3, stride=1, bias=False),
                                        nn.BatchNorm2d(256, affine=False),
@@ -313,7 +300,6 @@ class AE_SVDD_Hybrid(nn.Module):
                                        nn.MaxPool2d(kernel_size=3, stride=2),
                                        nn.Conv2d(256, 128, 1, stride=1, bias=False),
                                        nn.BatchNorm2d(128, affine=False))
-
         self.decoder = ResNet18_Decoder(output_channels=output_channels)
 
     def forward(self, input):
