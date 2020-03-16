@@ -9,7 +9,7 @@ class JointDeepSAD:
     Define a Joint DeepSAD instance (adapted form the work of Lukas Ruff et al.
     (2019)) and utility method to train and test it.
     """
-    def __init__(self, net, eta=1.0):
+    def __init__(self, net, eta=1.0, use_subspace=False):
         """
         Build the Joint DeepSAD instance.
         ---------
@@ -22,11 +22,14 @@ class JointDeepSAD:
             |           equal weight to known and unknown samples. <1.0 gives more
             |           weight to unkonwn sample. >1.0 gives more weight to known
             |           samples.
+            |---- use_subspace (bool) whether to use the subspace projecttion as
+            |           a distance metric for the SVDD loss computation.
         OUTPUT
             |---- None
         """
+        self.use_subspace = use_subspace
         self.eta = eta # balance of importance of labeled or unlabeled sample
-        self.c = None # hypersphere center
+        self.space_repr = None # hypersphere center or normal points subspace projection martrix
 
         self.net = net
         self.trainer = None
@@ -104,13 +107,13 @@ class JointDeepSAD:
         OUTPUT
             |---- None
         """
-        self.trainer = DeepSAD_Joint_trainer(self.c, self.eta, lr=lr,
+        self.trainer = DeepSAD_Joint_trainer(self.space_repr, self.eta, lr=lr,
                                 n_epoch=n_epoch, n_epoch_pretrain=n_epoch_pretrain,
                                 lr_milestone=lr_milestone, batch_size=batch_size,
                                 weight_decay=weight_decay, device=device,
                                 n_jobs_dataloader=n_jobs_dataloader,
                                 print_batch_progress=print_batch_progress,
-                                criterion_weight=criterion_weight)
+                                criterion_weight=criterion_weight, use_subspace=self.use_subspace)
 
         # pretrain AE
         if n_epoch_pretrain > 0:
@@ -123,7 +126,7 @@ class JointDeepSAD:
         # get results
         self.results['train']['time'] = self.trainer.train_time
         self.results['train']['loss'] = self.trainer.train_loss
-        self.c = self.trainer.c.cpu().data.numpy().tolist()
+        self.space_repr = self.trainer.space_repr.cpu().data.numpy().tolist()
 
     def validate(self, dataset, device='cuda', n_jobs_dataloader=0, print_batch_progress=False,
                  criterion_weight=(0.5, 0.5)):
@@ -141,10 +144,10 @@ class JointDeepSAD:
             |---- None
         """
         if self.trainer is None:
-            self.trainer = DeepSAD_Joint_trainer(self.c, self.eta, device=device,
+            self.trainer = DeepSAD_Joint_trainer(self.space_repr, self.eta, device=device,
                                     n_jobs_dataloader=n_jobs_dataloader,
                                     print_batch_progress=print_batch_progress,
-                                    criterion_weight=criterion_weight)
+                                    criterion_weight=criterion_weight, use_subspace=self.use_subspace)
         # test the network
         self.trainer.validate(dataset, self.net)
         # get results
@@ -175,10 +178,10 @@ class JointDeepSAD:
             |---- None
         """
         if self.trainer is None:
-            self.trainer = DeepSAD_Joint_trainer(self.c, self.eta, device=device,
+            self.trainer = DeepSAD_Joint_trainer(self.space_repr, self.eta, device=device,
                                     n_jobs_dataloader=n_jobs_dataloader,
                                     print_batch_progress=print_batch_progress,
-                                    criterion_weight=criterion_weight)
+                                    criterion_weight=criterion_weight, use_subspace=self.use_subspace)
         # test the network
         self.trainer.test(dataset, self.net)
         # get results
@@ -215,7 +218,7 @@ class JointDeepSAD:
             |---- None
         """
         net_dict = self.net.state_dict()
-        torch.save({'c':self.c,
+        torch.save({'space_repr':self.space_repr,
                     'net_dict':net_dict}, export_path)
 
     def load_model(self, model_path, map_location='cpu'):
@@ -231,4 +234,4 @@ class JointDeepSAD:
         """
         model = torch.load(model_path, map_location=map_location)
         self.net.load_state_dict(model['net_dict'])
-        self.c = model['c']
+        self.space_repr = model['space_repr']

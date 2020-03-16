@@ -80,3 +80,52 @@ class DeepSADLoss(nn.Module):
         losses = torch.where(semi_target == 0, dist, self.eta * ((dist + self.eps) ** semi_target.float()))
         loss = torch.mean(losses)
         return loss
+
+class DeepSADLossSubspace(nn.Module):
+    """
+    Implementation of the DeepSAD loss proposed by Lukas Ruff et al. (2019) but
+    with the distance of the point projected to the subspace of training samples
+    rather than the hypersphere. It follows the mathematical derivation proposed
+    by Arnout Devos et al. (2019).
+    """
+    def __init__(self, P, eta, eps=0.1):
+        """
+        Constructor of the DeepSAD loss Subspace.
+        ----------
+        INPUT
+            |---- P (torch.Tensor) The projection matrix to the subspace of normal
+            |            sample. P is a MxM matrix where M is the embedding dimension.
+            |---- eta (float) control the importance given to known or unknonw
+            |           samples. 1.0 gives equal weights, <1.0 gives more weight
+            |           to the unknown samples, >1.0 gives more weight to the
+            |           known samples.
+            |---- eps (float) epsilon to ensure numerical stability in the
+            |           inverse distance.
+        OUTPUT
+            |---- None
+        """
+        nn.Module.__init__(self)
+        self.P = P
+        self.eta = eta
+        self.eps = 0.1
+
+    def forward(self, input, semi_target):
+        """
+        Forward pass of the DeepSAD loss Subspace.
+        ----------
+        INPUT
+            |---- input (torch.Tensor) the point to project onto the subspace.
+            |           (must thus have the same dimension (B x embed.dim)).
+            |---- semi_target (torch.Tensor) the semi-supervized label (0 -> unknown ;
+            |           1 -> known normal ; -1 -> knonw abnormal)
+        OUTPUT
+            |---- loss (torch.Tensor) the DeepSAD loss Subspace.
+        """
+        # distance between center c and the input (tranpose to manage the batch dimension)
+        dist = torch.sum((input - torch.matmul(self.P, input.transpose(0,1)).transpose(0,1))**2, dim=1)
+        # compute the loss depening on the semi-supervized label
+        # keep distance if semi-label is 0 or 1 (normal sample or unknonw (assumed) normal)
+        # inverse distance if semi-label = -1 (known abnormal)
+        losses = torch.where(semi_target == 0, dist, self.eta * ((dist + self.eps) ** semi_target.float()))
+        loss = torch.mean(losses)
+        return loss
