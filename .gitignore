@@ -143,6 +143,8 @@ Outputs/DeepSAD_2020_02_25_11h12/results/raw/AE_*.json
 Outputs/DeepSAD_2020_02_25_11h12/results/raw/DeepSAD_*.json
 Outputs/DeepSAD_2020_03_05_224images/*
 
+Code/junk_file/*
+
 Figures/barplot/*
 
 .DS_Store

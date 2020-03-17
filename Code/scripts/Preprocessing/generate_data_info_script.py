@@ -1,9 +1,9 @@
 import pandas as pd
 
-sys.path.append('../')
+sys.path.append('../../')
 from src.preprocessing.get_data_info import generate_data_info
 
-DATA_PATH = '../data/'
+DATA_PATH = '../../../data/'
 
 def main():
     """

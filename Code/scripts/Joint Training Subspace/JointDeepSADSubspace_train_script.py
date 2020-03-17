@@ -7,7 +7,7 @@ import random
 from datetime import datetime
 import os
 import sys
-sys.path.append('../')
+sys.path.append('../../')
 
 from src.datasets.MURADataset import MURA_TrainValidTestSplitter, MURA_Dataset
 from src.models.JointDeepSAD import JointDeepSAD
@@ -19,9 +19,9 @@ from src.utils.utils import summary_string
 ################################################################################
 # Import Export
 Experiment_Name = 'Joint_DeepSAD_Subspace'
-DATA_PATH = r'../../data/PROCESSED/'
-DATA_INFO_PATH = r'../../data/data_info.csv'
-OUTPUT_PATH = r'../../Outputs/' + Experiment_Name + '_' + datetime.today().strftime('%Y_%m_%d_%Hh%M')+'/'
+DATA_PATH = r'../../../data/PROCESSED/'
+DATA_INFO_PATH = r'../../../data/data_info.csv'
+OUTPUT_PATH = r'../../../Outputs/' + Experiment_Name + '_' + datetime.today().strftime('%Y_%m_%d_%Hh%M')+'/'
 # make output dir
 if not os.path.isdir(OUTPUT_PATH+'models/'): os.makedirs(OUTPUT_PATH+'model/')
 if not os.path.isdir(OUTPUT_PATH+'results/'): os.makedirs(OUTPUT_PATH+'results/')
@@ -45,7 +45,7 @@ img_size = 512
 # Training
 lr = 1e-4
 lr_milestone = [60]
-n_epoch = 70
+n_epoch = 100
 n_epoch_pretrain = 5
 weight_decay = 1e-6
 use_subspace = True

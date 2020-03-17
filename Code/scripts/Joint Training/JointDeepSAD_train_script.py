@@ -7,7 +7,7 @@ import random
 from datetime import datetime
 import os
 import sys
-sys.path.append('../')
+sys.path.append('../../')
 
 from src.datasets.MURADataset import MURA_TrainValidTestSplitter, MURA_Dataset
 from src.models.JointDeepSAD import JointDeepSAD
@@ -18,10 +18,10 @@ from src.utils.utils import summary_string
 #                                Settings                                      #
 ################################################################################
 # Import Export
-Experiment_Name = 'JointDeepSVDD_'
-DATA_PATH = r'../../data/PROCESSED/'
-DATA_INFO_PATH = r'../../data/data_info.csv'
-OUTPUT_PATH = r'../../Outputs/' + Experiment_Name + datetime.today().strftime('%Y_%m_%d_%Hh%M')+'/'
+Experiment_Name = 'JointDeepSAD_'
+DATA_PATH = r'../../../data/PROCESSED/'
+DATA_INFO_PATH = r'../../../data/data_info.csv'
+OUTPUT_PATH = r'../../../Outputs/' + Experiment_Name + datetime.today().strftime('%Y_%m_%d_%Hh%M')+'/'
 # make output dir
 if not os.path.isdir(OUTPUT_PATH+'models/'): os.makedirs(OUTPUT_PATH+'model/')
 if not os.path.isdir(OUTPUT_PATH+'results/'): os.makedirs(OUTPUT_PATH+'results/')
@@ -36,23 +36,23 @@ print_batch_progress = True
 
 # Datasets
 train_frac = 0.5
-ratio_known_normal = 0.00
-ratio_known_abnormal = 0.00
+ratio_known_normal = 0.05
+ratio_known_abnormal = 0.05
 n_jobs_dataloader = 8
 batch_size = 16
 img_size = 512
 
 # Training
 lr = 1e-4
-lr_milestone = []
-n_epoch = 60
+lr_milestone = [40, 80]
+n_epoch = 100
 n_epoch_pretrain = 5
 weight_decay = 1e-6
-criterion_weight = (0.75, 0.25)
+criterion_weight = (0.6, 0.4)
 model_path_to_load = None
 
 # Network
-eta = 0.0 # <<<<< change to zero to get DeepSVDD (only unsupervized)
+eta = 1.0 # <<<<< change to zero to get DeepSVDD (only unsupervized)
 ae_pretrain = False
 ae_out_size = (1, img_size, img_size)
 
@@ -62,7 +62,7 @@ ae_out_size = (1, img_size, img_size)
 
 def main(seed_i):
     """
-    Train jointly the AutoEncoder and the DeepSVDD model following Lukas Ruff et
+    Train jointly the AutoEncoder and the DeepSAD model following Lukas Ruff et
     al. (2019) work adapted to the MURA dataset (preprocessing inspired from the
     work of Davletshina et al. (2020)). The network structure is a ResNet18
     AutoEncoder until the Adaptative average pooling layer. The AE embdedding is
@@ -149,7 +149,7 @@ def main(seed_i):
     # print info in logger
     logger.info(f'Device : {device}')
     logger.info(f'Number of thread : {n_thread}')
-    logger.info(f'Number of dataloader worker for Joint DeepSVDD : {n_jobs_dataloader}' + '\n')
+    logger.info(f'Number of dataloader worker for Joint DeepSAD : {n_jobs_dataloader}' + '\n')
 
     ######################### Networks Initialization ##########################
     net = AE_SVDD_Hybrid(pretrain_ResNetEnc=ae_pretrain, output_channels=ae_out_size[0], return_svdd_embed=True)
@@ -170,15 +170,15 @@ def main(seed_i):
 
     ################################ Training ##################################
     # add parameter info
-    logger.info(f'Joint DeepSVDD number of epoch : {n_epoch}')
-    logger.info(f'Joint DeepSVDD number of pretraining epoch: {n_epoch_pretrain}')
-    logger.info(f'Joint DeepSVDD learning rate : {lr}')
-    logger.info(f'Joint DeepSVDD learning rate milestone : {lr_milestone}')
-    logger.info(f'Joint DeepSVDD weight_decay : {weight_decay}')
-    logger.info(f'Joint DeepSVDD optimizer : Adam')
-    logger.info(f'Joint DeepSVDD batch_size {batch_size}')
-    logger.info(f'Joint DeepSVDD number of dataloader worker : {n_jobs_dataloader}')
-    logger.info(f'Joint DeepSVDD criterion weighting : {criterion_weight[0]} Reconstruction loss + {criterion_weight[1]} SVDD embdedding loss' + '\n')
+    logger.info(f'Joint DeepSAD number of epoch : {n_epoch}')
+    logger.info(f'Joint DeepSAD number of pretraining epoch: {n_epoch_pretrain}')
+    logger.info(f'Joint DeepSAD learning rate : {lr}')
+    logger.info(f'Joint DeepSAD learning rate milestone : {lr_milestone}')
+    logger.info(f'Joint DeepSAD weight_decay : {weight_decay}')
+    logger.info(f'Joint DeepSAD optimizer : Adam')
+    logger.info(f'Joint DeepSAD batch_size {batch_size}')
+    logger.info(f'Joint DeepSAD number of dataloader worker : {n_jobs_dataloader}')
+    logger.info(f'Joint DeepSAD criterion weighting : {criterion_weight[0]} Reconstruction loss + {criterion_weight[1]} SVDD embdedding loss' + '\n')
 
     # train DeepSAD
     jointDeepSAD.train(train_dataset, lr=lr, n_epoch=n_epoch, n_epoch_pretrain=n_epoch_pretrain,
@@ -195,12 +195,12 @@ def main(seed_i):
                  print_batch_progress=print_batch_progress, criterion_weight=criterion_weight)
 
     # save results
-    jointDeepSAD.save_results(OUTPUT_PATH + f'results/JointDeepSVDD_results_{seed_i+1}.json')
-    logger.info('Test results saved at ' + OUTPUT_PATH + f'results/JointDeepSVDD_results_{seed_i+1}.json' + '\n')
+    jointDeepSAD.save_results(OUTPUT_PATH + f'results/JointDeepSAD_results_{seed_i+1}.json')
+    logger.info('Test results saved at ' + OUTPUT_PATH + f'results/JointDeepSAD_results_{seed_i+1}.json' + '\n')
 
     # save model
-    jointDeepSAD.save_model(OUTPUT_PATH + f'model/JointDeepSVDD_model_{seed_i+1}.pt')
-    logger.info('Model saved at ' + OUTPUT_PATH + f'model/JointDeepSVDD_model_{seed_i+1}.pt')
+    jointDeepSAD.save_model(OUTPUT_PATH + f'model/JointDeepSAD_model_{seed_i+1}.pt')
+    logger.info('Model saved at ' + OUTPUT_PATH + f'model/JointDeepSAD_model_{seed_i+1}.pt')
 
 if __name__ == '__main__':
     # experiment for each seeds

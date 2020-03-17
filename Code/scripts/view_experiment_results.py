@@ -22,7 +22,7 @@ from src.utils.results_processing import metric_barplot, plot_scores_dist1D, plo
 # Path to the experiments folder (outputs of train scripts)
 EXPERIMENT_PATH = r'../../Outputs/'
 # names of the experiment(s) to process
-exp_folders = ['DeepSVDD_2020_03_02_16h35']#['DeepSAD_2020_02_25_11h12']
+exp_folders = ['JointDeepSVDD_2020_03_15_09h34_075-025']#['DeepSAD_2020_02_25_11h12']
 exp_names = ['DeepSVDD']#['DeepSAD']
 SAVE_PATHES = [EXPERIMENT_PATH + folder + '/analysis/' for folder in exp_folders]
 FIG_RES = 200
@@ -84,9 +84,9 @@ for SAVE_PATH, results_list in zip(SAVE_PATHES, results_all.values()):
     fig, axs = plt.subplots(2, 1, figsize=(10,6))
     cmap_names = ['Oranges', 'Blues']
     #handles, labels = [], exp_names
-    plot_loss(results_list, 'embedding/train/loss', cmap_names[0], ax=axs[0])
+    plot_loss(results_list, 'train/loss', cmap_names[0], ax=axs[0])
     axs[0].set_title(f'{exp_names[i]} loss', fontsize=fontsize)
-    plot_loss(results_list, 'reconstruction/train/loss', cmap_names[0], ax=axs[1])
+    plot_loss(results_list, 'pretrain/loss', cmap_names[0], ax=axs[1])
     axs[1].set_title('Autoencoder loss', fontsize=fontsize)
 
     for ax in axs:

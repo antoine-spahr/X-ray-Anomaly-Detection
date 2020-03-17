@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 import skimage
 
-sys.path.append('../')
+sys.path.append('../../')
 from src.utils.utils import print_progessbar, print_summary_from_dict
 from src.preprocessing.cropping_rect import find_squares, crop_squares
 from src.preprocessing.segmentation import find_best_mask
@@ -14,9 +14,9 @@ from src.preprocessing.segmentation import find_best_mask
 # 1) perform a logging and save it in PROCESSED folder
 # 2) save output summary as JSON in PROCESSED folder
 
-IN_DATA_PATH = '../../data/RAW/'
-OUT_DATA_PATH = '../../data/PROCESSED/'
-DATAINFO_PATH = '../../data/'
+IN_DATA_PATH = '../../../data/RAW/'
+OUT_DATA_PATH = '../../../data/PROCESSED/'
+DATAINFO_PATH = '../../../data/'
 
 def main():
     """

@@ -7,7 +7,7 @@ import random
 from datetime import datetime
 import os
 import sys
-sys.path.append('../')
+sys.path.append('../../')
 
 from src.datasets.MURADataset import MURA_TrainValidTestSplitter, MURA_Dataset
 from src.models.DeepSAD import DeepSAD
@@ -19,9 +19,9 @@ from src.utils.utils import summary_string
 ################################################################################
 # Import Export
 Experiment_Name = 'DeepSVDD_'
-DATA_PATH = r'../../data/PROCESSED/'
-DATA_INFO_PATH = r'../../data/data_info.csv'
-OUTPUT_PATH = r'../../Outputs/' + Experiment_Name + datetime.today().strftime('%Y_%m_%d_%Hh%M')+'/'
+DATA_PATH = r'../../../data/PROCESSED/'
+DATA_INFO_PATH = r'../../../data/data_info.csv'
+OUTPUT_PATH = r'../../../Outputs/' + Experiment_Name + datetime.today().strftime('%Y_%m_%d_%Hh%M')+'/'
 # make output dir
 if not os.path.isdir(OUTPUT_PATH+'models/'): os.makedirs(OUTPUT_PATH+'model/')
 if not os.path.isdir(OUTPUT_PATH+'results/'): os.makedirs(OUTPUT_PATH+'results/')
