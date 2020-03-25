@@ -138,6 +138,7 @@ Code/playground.py
 Outputs/**/*.pt
 # ignore debugging outputs (test ones)
 Outputs/tests/*
+Outputs/others/*
 # ignore old bad-formated outputs of DeepSAD
 Outputs/DeepSAD_2020_02_25_11h12/results/raw/AE_*.json
 Outputs/DeepSAD_2020_02_25_11h12/results/raw/DeepSAD_*.json

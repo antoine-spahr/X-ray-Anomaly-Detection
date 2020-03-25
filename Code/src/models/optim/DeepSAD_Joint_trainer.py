@@ -282,7 +282,7 @@ class DeepSAD_Joint_trainer:
             # update the learning rate if the milestone is reached
             scheduler.step()
             if epoch + 1 in self.lr_milestone:
-                logger.info('>>> LR Scheduler : new learning rate %g' % float(scheduler.get_lr()[0]))
+                logger.info(f'>>> LR Scheduler : new learning rate {scheduler.get_lr()[0]:g}')
 
         # End training
         self.train_loss = epoch_loss_list
@@ -611,7 +611,7 @@ class DeepSAD_Joint_trainer:
         OUTPUT
             |---- c (torch.Tensor) the initialized center.
         """
-        N = loader.dataset.__len__() # number of sample to use
+        N = 10000 #loader.dataset.__len__() # number of sample to use
 
         # Get S : matrix of sample embeding (M x N) with M the embeding dimension and N the number of samples
         S = []

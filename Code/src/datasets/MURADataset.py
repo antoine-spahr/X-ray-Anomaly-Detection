@@ -7,8 +7,8 @@ from torch.utils import data
 from sklearn.model_selection import train_test_split
 from prettytable import PrettyTable
 
-#import src.datasets.transforms as tf
-from . import transforms as tf
+import src.datasets.transforms as tf
+#from . import transforms as tf
 
 class MURA_Dataset(data.Dataset):
     """

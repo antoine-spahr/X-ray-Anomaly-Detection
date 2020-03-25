@@ -511,4 +511,7 @@ class Compose:
         """
         Transform printing format
         """
-        return '    ' + '\n -> '.join([str(t) for t in self.transformations])
+        tf_names = [str(t) for t in self.transformations]
+        max_size = max(len(x) for x in tf_names)
+        link = '\n' + '|'.center(max_size) + '\n' + 'V'.center(max_size) + '\n'
+        return link.join([t.center(max_size) for t in tf_names])

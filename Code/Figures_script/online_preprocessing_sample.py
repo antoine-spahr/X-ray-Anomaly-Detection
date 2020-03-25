@@ -36,8 +36,8 @@ img_idx = 15
 fig, axs = plt.subplots(2, 5, figsize=(12,5), gridspec_kw={'hspace':0.01, 'wspace':0.01})
 if transparent: fig.set_alpha(0)
 for ax in axs.reshape(-1):
-    im, _, _, _, _ = dataset.__getitem__(img_idx)
-    ax.imshow(im[0,:,:], cmap='Greys_r', vmin=0, vmax=1)
+    im, _, mask, _, _ = dataset.__getitem__(img_idx)
+    ax.imshow(im[0,:,:].float() * mask[0,:,:], cmap='Greys_r', vmin=0, vmax=1)
     ax.set_axis_off()
 if save_fig : fig.savefig(FIGURE_PATH+'online_preprocessing_sample.pdf', dpi=FIG_RES, bbox_inches='tight')
 plt.show()
