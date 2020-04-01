@@ -40,7 +40,7 @@ class DeepSADLoss(nn.Module):
     """
     Implementation of the DeepSAD loss proposed by Lukas Ruff et al. (2019)
     """
-    def __init__(self, c, eta, eps=0.1):
+    def __init__(self, c, eta, eps=1e-6):
         """
         Constructor of the DeepSAD loss.
         ----------
@@ -58,7 +58,7 @@ class DeepSADLoss(nn.Module):
         nn.Module.__init__(self)
         self.c = c
         self.eta = eta
-        self.eps = 0.1
+        self.eps = eps
 
     def forward(self, input, semi_target):
         """
@@ -88,7 +88,7 @@ class DeepSADLossSubspace(nn.Module):
     rather than the hypersphere. It follows the mathematical derivation proposed
     by Arnout Devos et al. (2019).
     """
-    def __init__(self, P, eta, eps=0.1):
+    def __init__(self, P, eta, eps=1e-6):
         """
         Constructor of the DeepSAD loss Subspace.
         ----------
@@ -107,7 +107,7 @@ class DeepSADLossSubspace(nn.Module):
         nn.Module.__init__(self)
         self.P = P
         self.eta = eta
-        self.eps = 0.1
+        self.eps = eps
 
     def forward(self, input, semi_target):
         """

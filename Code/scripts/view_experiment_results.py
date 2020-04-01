@@ -22,7 +22,7 @@ from src.utils.results_processing import metric_barplot, plot_scores_dist1D, plo
 # Path to the experiments folder (outputs of train scripts)
 EXPERIMENT_PATH = r'../../Outputs/'
 # names of the experiment(s) to process
-exp_folders = ['JointDeepSVDD_2020_03_23_09h14_milestone4080']#['DeepSAD_2020_02_25_11h12']
+exp_folders = ['Joint_DeepSVDD_Subspace_2020_03_28_12h40']#['DeepSAD_2020_02_25_11h12']
 exp_names = ['DeepSVDD']#['DeepSAD']
 SAVE_PATHES = [EXPERIMENT_PATH + folder + '/analysis/' for folder in exp_folders]
 FIG_RES = 200
