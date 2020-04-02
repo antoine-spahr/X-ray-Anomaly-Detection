@@ -5,134 +5,6 @@ import torchvision.models.utils
 
 from src.models.networks.ResNetBlocks import DownResBlock, UpResBlock
 
-# class DownResBlock(nn.Module):
-#     """
-#     Residual Block for the ResNet18 (without bottleneck).
-#     """
-#     def __init__(self, in_channel, out_channel, downsample=False):
-#         """
-#          in ->[Conv3x3]->[BN]->[ReLU]->[Conv3x3]->[BN]-> + -> out
-#             |                                            |
-#             |________________[downLayer]_________________|
-#         ----------
-#         INPUT
-#             |---- in_channel (int) the number of input channels.
-#             |---- out_channel (int) the number of output channels.
-#             |---- downsample (bool) whether the block downsample the input.
-#         OUTPUT
-#             |---- None
-#         """
-#         nn.Module.__init__(self)
-#         self.downsample = downsample
-#         # convolution 1
-#         conv1_stride = 2 if downsample else 1
-#         self.conv1 = nn.Conv2d(in_channel, out_channel, kernel_size=3, stride=conv1_stride, \
-#                                bias=False, padding=1)
-#         self.bn1 = nn.BatchNorm2d(out_channel, affine=False)
-#         self.relu = nn.ReLU(inplace=True)
-#         # convolution 2
-#         self.conv2 = nn.Conv2d(out_channel, out_channel, kernel_size=3, stride=1, \
-#                                bias=False, padding=1)
-#         self.bn2 = nn.BatchNorm2d(out_channel, affine=False)
-#         # the module for the pass through
-#         self.downLayer = nn.Sequential(nn.Conv2d(in_channel, out_channel, kernel_size=1, stride=2, bias=False),
-#                                        nn.BatchNorm2d(out_channel, affine=False))
-#
-#     def forward(self, x):
-#         """
-#         Forward pass of the Residual Block.
-#         ----------
-#         INPUT
-#             |---- x (torch.Tensor) the input tensor (B x C x H x W) with C = in_channel
-#         OUTPUT
-#             |---- out (torch.Tensor) the output tensor (B x C x H' x W') with
-#             |           C = out_channel. H and W are changed if the stride is
-#             |           bigger than one.
-#         """
-#         # get the residual
-#         if self.downsample:
-#             residual = self.downLayer(x)
-#         else:
-#             residual = x
-#
-#         # convolution n°1 with potential down sampling
-#         out = self.conv1(x)
-#         out = self.bn1(out)
-#         out = self.relu(out)
-#         # convolution n°2
-#         out = self.conv2(out)
-#         out = self.bn2(out)
-#         # sum convolution with shortcut
-#         out += residual
-#         out = self.relu(out)
-#         return out
-#
-# class UpResBlock(nn.Module):
-#     """
-#     Up Residual Block for the ResNet18-like decoder (without bottleneck).
-#     """
-#     def __init__(self, in_channel, out_channel, upsample=False):
-#         """
-#          in ->[Conv3x3]->[BN]->[ReLU]->[Conv3x3 / ConvTransp3x3]->[BN]-> + -> out
-#             |                                                            |
-#             |__________________________[upLayer]_________________________|
-#         ----------
-#         INPUT
-#             |---- in_channel (int) the number of input channels.
-#             |---- out_channel (int) the number of output channels.
-#             |---- upsample (bool) whether the block upsample the input.
-#         OUTPUT
-#             |---- None
-#         """
-#         nn.Module.__init__(self)
-#         self.upsample = upsample
-#         # convolution 1
-#         self.conv1 = nn.Conv2d(in_channel, in_channel, kernel_size=3, stride=1, \
-#                                bias=False, padding=1)
-#         self.bn1 = nn.BatchNorm2d(in_channel, affine=False)
-#         self.relu = nn.ReLU(inplace=True)
-#
-#         # convolution 2. If block upsample
-#         if upsample:
-#             self.conv2 = nn.Sequential(nn.Upsample(mode='bilinear', scale_factor=2, align_corners=True),
-#                                        nn.Conv2d(in_channel, out_channel, kernel_size=1, stride=1, bias=False, dilation=1))
-#         else:
-#             self.conv2 = nn.Conv2d(in_channel, out_channel, kernel_size=3, stride=1, bias=False, padding=1)
-#         self.bn2 = nn.BatchNorm2d(out_channel, affine=False)
-#
-#         # module for the pass-through
-#         self.upLayer = nn.Sequential(nn.Upsample(mode='bilinear', scale_factor=2, align_corners=True),
-#                                      nn.Conv2d(in_channel, out_channel, kernel_size=1, stride=1, bias=False),
-#                                      nn.BatchNorm2d(out_channel, affine=False))
-#
-#     def forward(self, x):
-#         """
-#         Forward pass of the UP Residual Block.
-#         ----------
-#         INPUT
-#             |---- x (torch.Tensor) the input tensor (B x C x H x W) with C = in_channel
-#         OUTPUT
-#             |---- out (torch.Tensor) the output tensor (B x C x H' x W') with
-#             |           C = out_channel. H and W are changed if the stride is
-#             |           bigger than one.
-#         """
-#         # convolution n°1
-#         out = self.conv1(x)
-#         out = self.bn1(out)
-#         out = self.relu(out)
-#         # convolution n°2 or transposed convolution
-#         out = self.conv2(out)
-#         out = self.bn2(out)
-#         # get the residual
-#         if self.upsample:
-#             residual = self.upLayer(x)
-#         else:
-#             residual = x
-#         # sum convolution with shortcut
-#         out += residual
-#         out = self.relu(out)
-#         return out
-
 class ResNet18_Encoder(nn.Module):
     """
     Combine multiple Residual block to form a ResNet18 up to the Average poolong
@@ -278,8 +150,8 @@ class AE_SVDD_Hybrid(nn.Module):
     """
     def __init__(self, pretrain_ResNetEnc=False, output_channels=3, return_svdd_embed=True):
         """
-        Build the ResNet18 Autoencoder with the provided embeding dimension.
-        The Encoder can be initialized with weights pretrained on ImageNet.
+        Build the ResNet18 Autoencoder.The Encoder can be initialized with
+        weights pretrained on ImageNet.
         ----------
         INPUT
             |---- pretrain_ResNetEnc (bool) whether to use pretrained weights on
@@ -322,28 +194,47 @@ class AE_SVDD_Hybrid(nn.Module):
 
         return rec, svdd_embedding
 
-# MODIFICATION PERFORMED
-# in Up residual block : keep In channel number in conv and at end of the block reduce it to Out channels number (before In-Out at the begining)
-# Use of ConvTranspose2d instead of Upsampling+conv because less memory usage in forward/backward and same number of parameters <--- ???????
-# AE embedding is 512x16x16
-# SVDD CNN in the end takes 512x16x16 input and perform 3 convolution (Conv->BN->ReLU->MaxPool->Conv->BN->ReLU-Conv->BN) and provide a data embdeing in 512 dimensions.
+class AE_ResNet18(nn.Module):
+    """
+    Define an autoencoder with a ResNet18 backbone : The encoder is similar to a
+    ResNet18 up to the last convolutional layer to which an AvgPool2d layer is
+    added to divide the output dimension by a factor 2. The decoder is an Upsample
+    layer followed by a mirrored ResNet18. The deconvolution is performed by
+    upsampling + convolution.
+    """
+    def __init__(self, pretrain_ResNetEnc=False, output_channels=3):
+        """
+        Build the ResNet18 Autoencoder.The Encoder can be initialized with
+        weights pretrained on ImageNet.
+        ----------
+        INPUT
+            |---- pretrain_ResNetEnc (bool) whether to use pretrained weights on
+            |           ImageNet for the encoder initialization.
+            |---- out_channel (int) the output channel of the reconstructed image.
+        OUTPUT
+            |---- None
+        """
+        nn.Module.__init__(self)
+        self.encoder = ResNet18_Encoder(pretrained=pretrain_ResNetEnc)
+        self.avg_pool = nn.AvgPool2d(kernel_size=3, stride=2, padding=1)
+        self.interp = nn.Upsample(mode='bilinear', scale_factor=2, align_corners=True)
+        self.decoder = ResNet18_Decoder(output_channels=output_channels)
+        self.encoding_only = False
 
-# # %%
-# import torchsummary
-# import torchviz
-# m = AE_SVDD_Hybrid(pretrain_ResNetEnc=False, output_channels=1, return_svdd_embed=True)
-# torchsummary.summary(m, (1, 512, 512), device='cpu', batch_size=16)
-#
-# #%%
-# input = torch.rand(1,1,512,512, requires_grad=True)
-#
-# dots = torchviz.make_dot(m(input), params=dict(list(m.named_parameters()) + [('input', input)]))
-# dots.render("AE_net")
-#
-# with torch.no_grad():
-#     input = torch.rand(4, 1, 512, 512, device='cpu', requires_grad=False)
-#     rec, em = m(input)
-#
-# import matplotlib.pyplot as plt
-# plt.imshow(input[0,0,:,:], cmap='gray')
-# plt.imshow(rec[0,0,:,:], cmap='gray')
+    def forward(self, input):
+        """
+        Foward pass of the Autoencoder to reconstruct the provided image.
+        ----------
+        INPUT
+            |---- input (torch.Tensor) the input image (Grayscale or RGB) with
+            |           dimension (B x C x H x W).
+        OUTPUT
+            |---- rec (torch.Tensor) the reconstructed image (B x C' x H x W)
+        """
+        ae_embedding = self.encoder(input)
+        ae_embedding = self.avg_pool(ae_embedding)
+        rec = None
+        if not self.encoding_only:
+            rec = self.decoder(self.interp(ae_embedding))
+
+        return rec, ae_embedding

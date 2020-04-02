@@ -10,14 +10,35 @@ from src.utils.utils import print_progessbar, get_best_threshold
 
 class DROCC_trainer:
     """
-
+    Trainer for the DROCC following the paper of Goyal et al. (2020).
     """
     def __init__(self, r, gamma=0.5, mu=0.5, lr=1e-4, lr_adv=1e-2, lr_milestone=(),
                  weight_decay=1e-6, n_epoch=100, n_epoch_init=15, n_epoch_adv=15,
                  batch_size=16, device='cuda', n_jobs_dataloader=0, LFOC=False,
                  print_batch_progress=False):
         """
-
+        Build a DROCC trainer.
+        ----------
+        INPUT
+            |---- r (float) the radius to use.
+            |---- gamma (float) the fraction of the radius defining the lower
+            |           bound of the close adversarial samples layer.
+            |---- mu (float) the adversarial loss weight in the total loss.
+            |---- lr (float) the learning rate.
+            |---- lr_adv (float) the learning rate for the adversarial search.
+            |---- n_epoch (int) the number of epoch.
+            |---- n_epoch_init (int) the number of epoch without adversarial search.
+            |---- n_epoch_adv (int) the number of epoch for the gradient ascent.
+            |---- lr_milestone (tuple) the lr update steps.
+            |---- batch_size (int) the batch_size to use.
+            |---- weight_decay (float) the weight_decay for the Adam optimizer.
+            |---- device (str) the device to work on ('cpu' or 'cuda').
+            |---- n_jobs_dataloader (int) number of workers for the dataloader.
+            |---- print_batch_progress (bool) whether to dispay the batch
+            |           progress bar.
+            |---- LFOC (bool) whether to use the LFOC implementation.
+        OUTPUT
+            |---- None
         """
         self.LFOC = LFOC # whether to use the DROCC-LF implementation
 
@@ -55,7 +76,16 @@ class DROCC_trainer:
 
     def train(self, dataset, net):
         """
-
+        Train the DROCC network on the provided dataset.
+        ----------
+        INPUT
+            |---- dataset (torch.utils.data.Dataset) the dataset on which the
+            |           network is trained. It must return an image, a mask and
+            |           semi-supervised labels.
+            |---- net (nn.Module) The DROCC to train. The network should return
+            |           the logit of the passed sample.
+        OUTPUT
+            |---- net (nn.Module) The trained DROCC.
         """
         logger = logging.getLogger()
 
@@ -88,12 +118,13 @@ class DROCC_trainer:
 
             for b, data in enumerate(train_loader):
                 input, _, mask, semi_label, _ = data
-                input, semi_label = input.to(self.device).float(), semi_label.to(self.device)
+                input = input.to(self.device).float()
                 mask = mask.to(self.device)
-                semi_label = torch.where(semi_label != -1, torch.Tensor([0], device=self.device), torch.Tensor([1], device=self.device)) # get 'label' 0 = normal, 1 = abnormal
-                # input.requires_grad = True
-                input = input * mask # ?!
-                # optimizer.zero_grad()
+                semi_label = semi_label.to(self.device)
+                # get 'label' 0 = normal, 1 = abnormal
+                semi_label = torch.where(semi_label != -1, torch.Tensor([0]).to(self.device), torch.Tensor([1]).to(self.device))
+                # mask the input
+                input = input * mask
 
                 if epoch < self.n_epoch_init:
                     # initial steps without adversarial samples
@@ -103,20 +134,20 @@ class DROCC_trainer:
                 else:
                     # get adversarial samples
                     normal_input = input[semi_label == 0] # get normal input only for the adversarial search
-                    adv_input = self.adversarial_search2(normal_input, net)
-                    # set the network in training mode again
-                    net.train()
-                    # build the input of sample and adversarial sample
-                    input_all = torch.cat([input, adv_input], dim=0).detach().requires_grad_(True)
-                    # make the forward pass with all normal and adversarial samples
-                    logit = net(input_all).squeeze(dim=1)
+                    adv_input = self.adversarial_search(normal_input, net)
+
+                    # forward on both normal and adversarial samples
+                    input.requires_grad_(True)
+                    logit = net(input).squeeze(dim=1)
+                    logit_adv = net(adv_input).squeeze(dim=1)
                     # loss of samples
-                    loss_sample = criterion(logit[:input.shape[0]], semi_label)
+                    loss_sample = criterion(logit, semi_label)
                     # loss of adversarial samples
-                    loss_adv = criterion(logit[input.shape[0]:], torch.ones(adv_input.shape[0], device=self.device))
+                    loss_adv = criterion(logit_adv, torch.ones(adv_input.shape[0], device=self.device))
                     # weighted sum of normal and aversarial loss
                     loss = loss_sample + self.mu * loss_adv
 
+                # Gradient step
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
@@ -127,9 +158,10 @@ class DROCC_trainer:
                 if self.print_batch_progress:
                     print_progessbar(b, n_batch_tot, Name='\t\tBatch', Size=20)
 
-            # epoch statistic
+            # print epoch statistic
             epoch_train_time = time.time() - epoch_start_time
-            logger.info(f'| Epoch: {epoch + 1:03}/{self.n_epoch:03} | Train Time: {epoch_train_time:.3f} [s] '
+            logger.info(f'| Epoch: {epoch + 1:03}/{self.n_epoch:03} | '
+                        f'Train Time: {epoch_train_time:.3f} [s] '
                         f'| Train Loss: {epoch_loss / n_batch:.6f} |')
 
             # append the epoch loss to results list
@@ -138,7 +170,7 @@ class DROCC_trainer:
             # update the learning rate if the milestone is reached
             scheduler.step()
             if epoch + 1 in self.lr_milestone:
-                logger.info('>>> LR Scheduler : new learning rate %g' % float(scheduler.get_lr()[0]))
+                logger.info(f'>>> LR Scheduler : new learning rate {scheduler.get_lr()[0]:g}')
 
         # End training
         self.train_loss = epoch_loss_list
@@ -162,7 +194,7 @@ class DROCC_trainer:
         x_adv = x + torch.normal(0, 1, x.shape, device=self.device)
         x_adv = x_adv.detach().requires_grad_(True)
         # set optimizer for the the input h
-        optimizer_adv = optim.Adam([x_adv], lr=self.lr_adv) # or SDG ???
+        optimizer_adv = optim.SGD([x_adv], lr=self.lr_adv) # or SDG ???
         criterion = nn.BCEWithLogitsLoss()
 
         # get the sigmas for the LFOC manifold projection
@@ -170,9 +202,8 @@ class DROCC_trainer:
         sigma = self.get_sigma(x, torch.zeros(x.shape[0], device=self.device), net) if self.LFOC else None
 
         # gradient ascent
-        net.eval() # the network parameters are not updated here
+        # net.eval() # the network parameters are not updated here
         for i in range(self.n_epoch_adv):
-            #with torch.enable_grad():
             # Update h to increase loss
             optimizer_adv.zero_grad()
             logit = net(x_adv).squeeze(dim=1)
@@ -183,9 +214,8 @@ class DROCC_trainer:
             with torch.no_grad():
                 h = self.project_on_manifold(x_adv - x, sigma)
                 x_adv = x + h
-            #print(f'-----> Loss adv : {loss_h}')
-        #print('------------------------')
-        return x_adv
+
+        return x_adv.detach()
 
     def adversarial_search(self, x, net):
         """
@@ -210,20 +240,18 @@ class DROCC_trainer:
         sigma = self.get_sigma(x, torch.zeros(x.shape[0], device=self.device), net) if self.LFOC else None
 
         # gradient ascent
-        net.eval() # the network parameters are not updated here
         for i in range(self.n_epoch_adv):
             # Update h to increase loss
             optimizer_adv.zero_grad()
             logit = net(x + h).squeeze(dim=1)
-            loss_h = -criterion(logit, torch.ones(h.shape[0], device=self.device)) # all adversarial samples are abnormal but the network should be fooled
-            loss_h.backward()
+            loss_h = criterion(logit, torch.ones(h.shape[0], device=self.device)) # all adversarial samples are abnormal but the network should be fooled
+            (-loss_h).backward()
             optimizer_adv.step()
             # Project h onto the the Ni(r)
             with torch.no_grad():
                 h = self.project_on_manifold(h, sigma)
-            print(f'-----> Loss adv : {loss_h}')
-        print('------------------------')
-        return x + h # Normalize adversarial samples ?!
+
+        return (x + h).detach()
 
     def project_on_manifold(self, h, sigma):
         """
@@ -238,6 +266,7 @@ class DROCC_trainer:
             |---- h (torch.Tensor) the projected h.
         """
         if self.LFOC:
+            # solve the 1D optimization problem described in Goyal et al. (2020)
             solver = ProjectionSolver(h, sigma, self.r, self.device)
             alpha = solver.solve()
             h = alpha * h
@@ -264,7 +293,6 @@ class DROCC_trainer:
             |---- sigma (torch.Tensor) the gradient of the network with respect
             |           to the input in absolute value divided by the norm.
         """
-        net.eval()
         criterion = nn.BCEWithLogitsLoss()
         grad_data, target = data.float().detach().requires_grad_(), target.float()
         # evaluate the logit with the data and compute the loss
@@ -275,12 +303,22 @@ class DROCC_trainer:
         # normalize absolute value gradient by batch
         grad_norm = torch.sum(torch.abs(grad), dim=tuple(range(1, grad.dim())))
         sigma = torch.abs(grad) / grad_norm.view(-1, *[1]*(grad.dim()-1))
-        # torch.abs(grad) ?????
+
         return sigma
 
     def validate(self, dataset, net):
         """
-
+        Validate the DROCC network on the provided dataset and find the best
+        threshold on the score to maximize the f1-score.
+        ----------
+        INPUT
+            |---- dataset (torch.utils.data.Dataset) the dataset on which the
+            |           network is validated. It must return an image and
+            |           semi-supervized labels.
+            |---- net (nn.Module) The DROCC to validate. The network should return
+            |           the logit of the passed sample.
+        OUTPUT
+            |---- None
         """
         logger = logging.getLogger()
 
@@ -313,7 +351,7 @@ class DROCC_trainer:
 
                 logit = net(input).squeeze(dim=1)
                 loss = criterion(logit, label)
-
+                # get the anomaly scores
                 ad_score = torch.sigmoid(logit) # sigmoid of logit : should be high for abnormal (target = 1) and low for normal (target = 0)
 
                 idx_label_score += list(zip(idx.cpu().data.numpy().tolist(),
@@ -332,7 +370,7 @@ class DROCC_trainer:
         label, ad_score = np.array(label), np.array(ad_score)
         self.valid_auc = roc_auc_score(label, ad_score)
         self.scores_threshold, self.valid_f1 = get_best_threshold(ad_score, label, metric=f1_score)
-        
+
         # add info to logger
         logger.info(f'>>> Validation Time: {self.valid_time:.3f} [s]')
         logger.info(f'>>> Validation Loss: {epoch_loss / n_batch:.6f}')
@@ -343,7 +381,16 @@ class DROCC_trainer:
 
     def test(self, dataset, net):
         """
-
+        Test the DROCC network on the provided dataset.
+        ----------
+        INPUT
+            |---- dataset (torch.utils.data.Dataset) the dataset on which the
+            |           network is tested. It must return an image and
+            |           semi-supervised labels.
+            |---- net (nn.Module) The DROCC to test. The network should return
+            |           the logit of the passed sample.
+        OUTPUT
+            |---- None
         """
         logger = logging.getLogger()
 
@@ -376,7 +423,7 @@ class DROCC_trainer:
 
                 logit = net(input).squeeze(dim=1)
                 loss = criterion(logit, label)
-
+                # get anomaly scores
                 ad_score = torch.sigmoid(logit) # sigmoid of logit : should be high for abnormal (target = 1) and low for normal (target = 0)
 
                 idx_label_score += list(zip(idx.cpu().data.numpy().tolist(),
@@ -529,5 +576,3 @@ class ProjectionSolver:
                         best_tau[idx] = tau
 
         return 1 / (1 + best_tau.view(-1, *[1]*(self.sigma.dim()-1)) * self.sigma)
-
-#

@@ -76,7 +76,6 @@ class ResNet18_binary(nn.Module):
         # classification
         x = self.avg_pool(x)
         x = self.fc_classifier(x.view(x.size(0), -1))
-        #x = self.out_softmax(x)
 
         return x
 
