@@ -107,7 +107,7 @@ def plot_loss(results_list, dict_pass_to_loss, cmap_name, ax=None, lw=1, color_r
                            losses.mean(axis=1) - 1.96*losses.std(axis=1),
                            color='gray', alpha=0.3)
 
-def metric_barplot(metrics_scores, serie_names, group_names, colors=None, w=None, ax=None, fontsize=12, jitter=False, jitter_color=None):
+def metric_barplot(metrics_scores, serie_names, group_names, colors=None, w=None, ax=None, fontsize=12, jitter=False, jitter_color=None, gap=None):
     """
     Plot a grouped barplot from the passed array, for various metrics.
     ----------
@@ -136,6 +136,8 @@ def metric_barplot(metrics_scores, serie_names, group_names, colors=None, w=None
     offsets = list(np.arange(-(n-1),(n-1)+2, 2))
     if w is None: w = 0.9/n
     ind = np.arange(metrics_scores[0].shape[1]) # number of different groups
+    if gap:
+        ind = np.where(ind + 1 > gap, ind + 0.5, ind)
 
     for metric, offset, name, color in zip(metrics_scores, offsets, serie_names, colors):
         means = metric.mean(axis=0)
@@ -147,9 +149,9 @@ def metric_barplot(metrics_scores, serie_names, group_names, colors=None, w=None
             ax.text(x + offset*w/2, means[i]-0.03, f'{means[i]:.2%}', fontsize=fontsize, ha='center', va='top', rotation=90)
 
         if jitter:
-            for i, x in enumerate(ind):
+            for j, x in enumerate(ind):
                 ax.scatter(np.random.normal(x + offset*w/2, 0.00, metric.shape[0]),
-                           metric[:,i], c=jitter_color, marker='o', s=30, lw=0, zorder=5)
+                           metric[:,j], c=jitter_color, marker='o', s=30, lw=0, zorder=5)
 
     handles, labels = ax.get_legend_handles_labels()
     if jitter:
@@ -253,7 +255,7 @@ def plot_scores_dist2D(scores_1, scores_2, labels, kde=True, scatter=True, ax=No
     ax.spines['right'].set_visible(False)
     ax.tick_params(labelsize=fontsize)
 
-def metric_curves(results_list, scores_name, set='valid', curves=['roc', 'prc'], areas=False, ax=None, fontsize=12):
+def metric_curves(results_list, scores_name=None, set='valid', curves=['roc', 'prc'], areas=False, ax=None, fontsize=12):
     """
     Plot the ROC and/or Precision recall curves on the given axes for all the
     replicates on results_list.
@@ -265,13 +267,21 @@ def metric_curves(results_list, scores_name, set='valid', curves=['roc', 'prc'],
     ax = plt.gca() if ax is None else ax
 
     for results in results_list:
-        df = scores_as_df(results, set)
+        if scores_name is None:
+            df = pd.DataFrame(data=np.array(results[set]['scores']),
+                              columns=['index', 'label', 'scores'])
+            scores_name_tmp = 'scores'
+        else:
+            df = scores_as_df(results, set)
+            scores_name_tmp = scores_name
+
+
         if 'roc' in curves:
-            fpr, tpr, thres = roc_curve(df.label, df[scores_name])
+            fpr, tpr, thres = roc_curve(df.label, df[scores_name_tmp])
             ax.plot(fpr, tpr, color='coral', lw=1)
             if areas : ax.fill_between(fpr, tpr, facecolor='coral', alpha=0.05)
         if 'prc' in curves:
-            pre, rec, thres2 = precision_recall_curve(df.label, df[scores_name])
+            pre, rec, thres2 = precision_recall_curve(df.label, df[scores_name_tmp])
             ax.plot(rec, pre, color='cornflowerblue', lw=1)
             if areas : ax.fill_between(rec, pre, facecolor='cornflowerblue', alpha=0.05)
 

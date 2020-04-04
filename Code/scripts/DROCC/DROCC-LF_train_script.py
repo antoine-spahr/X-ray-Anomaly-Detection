@@ -17,11 +17,15 @@ from src.utils.utils import summary_string
 ################################################################################
 #                                Settings                                      #
 ################################################################################
+use_LFOC = True
+
 # Import Export
 Experiment_Name = 'DROCC'
+if use_LFOC : Experiment_Name += '-LF'
 DATA_PATH = r'../../../data/PROCESSED/'
 DATA_INFO_PATH = r'../../../data/data_info.csv'
 OUTPUT_PATH = r'../../../Outputs/' + Experiment_Name + '_' + datetime.today().strftime('%Y_%m_%d_%Hh%M')+'/'
+
 # make output dir
 if not os.path.isdir(OUTPUT_PATH+'models/'): os.makedirs(OUTPUT_PATH+'model/')
 if not os.path.isdir(OUTPUT_PATH+'results/'): os.makedirs(OUTPUT_PATH+'results/')
@@ -43,9 +47,6 @@ batch_size = 16
 img_size = 512
 
 # Training
-use_LFOC = True
-if use_LFOC : Experiment_Name += '-LF'
-
 r = img_size / 2 # sqrt(img_size ** 2) / 2 as suggested in Goyal et al. 2020
 gamma = 0.5
 mu = 0.25 # weight of adversarial sample in loss (typically between 0 and 1)
@@ -55,7 +56,7 @@ lr_adv = 1e-1
 lr_milestone = [25, 50]
 n_epoch = 65
 n_epoch_init = 5
-n_epoch_adv = 6
+n_epoch_adv = 5
 weight_decay = 1e-6
 model_path_to_load = None
 

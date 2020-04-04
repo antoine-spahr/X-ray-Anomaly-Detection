@@ -180,42 +180,42 @@ class DROCC_trainer:
 
         return net
 
-    def adversarial_search2(self, x, net):
-        """
-        Perform an adversarial sample search by gradient ascent on the batch input.
-        ----------
-        INPUT
-            |---- x (torch.Tensor) a batch of normal samples (B, (C,) H, W).
-            |---- net (nn.Module) the network to fool.
-        OUTPUT
-            |---- x + h (torch.Tensor) the batch of adversarial samples.
-        """
-        # take the adversarial input around normal samples
-        x_adv = x + torch.normal(0, 1, x.shape, device=self.device)
-        x_adv = x_adv.detach().requires_grad_(True)
-        # set optimizer for the the input h
-        optimizer_adv = optim.SGD([x_adv], lr=self.lr_adv) # or SDG ???
-        criterion = nn.BCEWithLogitsLoss()
-
-        # get the sigmas for the LFOC manifold projection
-        # target = 0 (normal samples)
-        sigma = self.get_sigma(x, torch.zeros(x.shape[0], device=self.device), net) if self.LFOC else None
-
-        # gradient ascent
-        # net.eval() # the network parameters are not updated here
-        for i in range(self.n_epoch_adv):
-            # Update h to increase loss
-            optimizer_adv.zero_grad()
-            logit = net(x_adv).squeeze(dim=1)
-            loss_h = criterion(logit, torch.ones(x_adv.shape[0], device=self.device)) # all adversarial samples are abnormal but the network should be fooled
-            (-loss_h).backward()
-            optimizer_adv.step()
-            # Project h onto the the Ni(r)
-            with torch.no_grad():
-                h = self.project_on_manifold(x_adv - x, sigma)
-                x_adv = x + h
-
-        return x_adv.detach()
+    # def adversarial_search2(self, x, net):
+    #     """
+    #     Perform an adversarial sample search by gradient ascent on the batch input.
+    #     ----------
+    #     INPUT
+    #         |---- x (torch.Tensor) a batch of normal samples (B, (C,) H, W).
+    #         |---- net (nn.Module) the network to fool.
+    #     OUTPUT
+    #         |---- x + h (torch.Tensor) the batch of adversarial samples.
+    #     """
+    #     # take the adversarial input around normal samples
+    #     x_adv = x + torch.normal(0, 1, x.shape, device=self.device)
+    #     x_adv = x_adv.detach().requires_grad_(True)
+    #     # set optimizer for the the input h
+    #     optimizer_adv = optim.SGD([x_adv], lr=self.lr_adv) # or SDG ???
+    #     criterion = nn.BCEWithLogitsLoss()
+    #
+    #     # get the sigmas for the LFOC manifold projection
+    #     # target = 0 (normal samples)
+    #     sigma = self.get_sigma(x, torch.zeros(x.shape[0], device=self.device), net) if self.LFOC else None
+    #
+    #     # gradient ascent
+    #     # net.eval() # the network parameters are not updated here
+    #     for i in range(self.n_epoch_adv):
+    #         # Update h to increase loss
+    #         optimizer_adv.zero_grad()
+    #         logit = net(x_adv).squeeze(dim=1)
+    #         loss_h = criterion(logit, torch.ones(x_adv.shape[0], device=self.device)) # all adversarial samples are abnormal but the network should be fooled
+    #         (-loss_h).backward()
+    #         optimizer_adv.step()
+    #         # Project h onto the the Ni(r)
+    #         with torch.no_grad():
+    #             h = self.project_on_manifold(x_adv - x, sigma)
+    #             x_adv = x + h
+    #
+    #     return x_adv.detach()
 
     def adversarial_search(self, x, net):
         """
@@ -564,7 +564,7 @@ class ProjectionSolver:
                 min_val = np.inf
                 for _ in range(self.n_search):
                     # pick a random value of tau
-                    tau = torch.FloatTensor(1).uniform_(self.lower_tau[idx], 0)#np.random.uniform(low=self.lower_tau, high=0)
+                    tau = torch.FloatTensor(1).uniform_(self.lower_tau[idx], 0).to(self.device)#np.random.uniform(low=self.lower_tau, high=0)
                     # check the score to minimize
                     if self.eval_search_condition(tau, self.sigma[idx], self.h[idx]):
                         val = self.eval_minimum(tau, self.sigma[idx], self.h[idx])

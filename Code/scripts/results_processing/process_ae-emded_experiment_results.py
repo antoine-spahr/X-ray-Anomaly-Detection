@@ -4,7 +4,7 @@ import glob
 import json
 import os
 import sys
-sys.path.append('../')
+sys.path.append('../../')
 
 from sklearn.metrics import roc_auc_score, average_precision_score, roc_curve, precision_recall_curve
 
@@ -20,10 +20,10 @@ from src.utils.results_processing import metric_barplot, plot_scores_dist1D, plo
 #                                Settings                                      #
 ################################################################################
 # Path to the experiments folder (outputs of train scripts)
-EXPERIMENT_PATH = r'../../Outputs/'
+EXPERIMENT_PATH = r'../../../Outputs/'
 # names of the experiment(s) to process
-exp_folders = ['Joint_DeepSVDD_Subspace_2020_03_28_12h40']#['DeepSAD_2020_02_25_11h12']
-exp_names = ['DeepSVDD']#['DeepSAD']
+exp_folders = ['Joint_DeepSVDD_Subspace_2020_03_28_12h40']
+exp_names = ['DeepSVDD_Subspace']
 SAVE_PATHES = [EXPERIMENT_PATH + folder + '/analysis/' for folder in exp_folders]
 FIG_RES = 200
 fontsize=12
