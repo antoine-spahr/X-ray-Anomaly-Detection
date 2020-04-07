@@ -21,7 +21,7 @@ from src.utils.utils import summary_string
 Experiment_Name = 'ARAE'
 DATA_PATH = r'../../../data/PROCESSED/'
 DATA_INFO_PATH = r'../../../data/data_info.csv'
-OUTPUT_PATH = r'../../../Outputs/tests/' + Experiment_Name + '_' + datetime.today().strftime('%Y_%m_%d_%Hh%M')+'/'
+OUTPUT_PATH = r'../../../Outputs/' + Experiment_Name + '_' + datetime.today().strftime('%Y_%m_%d_%Hh%M')+'/'
 # make output dir
 if not os.path.isdir(OUTPUT_PATH+'models/'): os.makedirs(OUTPUT_PATH+'model/')
 if not os.path.isdir(OUTPUT_PATH+'results/'): os.makedirs(OUTPUT_PATH+'results/')
@@ -30,7 +30,7 @@ if not os.path.isdir(OUTPUT_PATH+'logs/'): os.makedirs(OUTPUT_PATH+'logs/')
 # General
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 n_thread = 0
-n_seeds = 1#4
+n_seeds = 2#4
 seeds = [int(''.join(['1']*(i+1))) for i in range(n_seeds)]
 print_batch_progress = True
 
@@ -39,7 +39,7 @@ train_frac = 0.5
 ratio_known_normal = 0.00
 ratio_known_abnormal = 0.00
 n_jobs_dataloader = 8
-batch_size = 8#16
+batch_size = 16
 img_size = 512
 
 # Training
@@ -48,9 +48,9 @@ epsilon = 0.05 # the allowed l-inf distance of the adversarial samples to the po
 
 lr = 1e-3
 lr_adv = 1e-1
-lr_milestone = []#[40,80]
-n_epoch = 4#100
-n_epoch_adv = 3#15
+lr_milestone = [25,40]
+n_epoch = 50
+n_epoch_adv = 4
 weight_decay = 1e-6
 model_path_to_load = None
 
@@ -101,7 +101,7 @@ def main(seed_i):
     df_info = df_info[df_info.low_contrast == 0]
 
     # Train Validation Test Split
-    spliter = MURA_TrainValidTestSplitter(df_info.sample(n=100, random_state=42), train_frac=train_frac,
+    spliter = MURA_TrainValidTestSplitter(df_info, train_frac=train_frac,
                                           ratio_known_normal=ratio_known_normal,
                                           ratio_known_abnormal=ratio_known_abnormal, random_state=42)
     spliter.split_data(verbose=False)

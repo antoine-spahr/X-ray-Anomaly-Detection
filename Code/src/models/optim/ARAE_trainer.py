@@ -113,7 +113,7 @@ class ARAE_trainer:
                 net.encoding_only = False
                 rec_adv, lat_adv = net(adv_input)
                 # compute the loss
-                loss_rec = criterion_rec(x_adv, rec_adv, mask)
+                loss_rec = criterion_rec(adv_input, rec_adv, mask)
                 loss_lat = criterion_lat(lat, lat_adv)
                 loss = loss_rec + self.gamma * loss_lat
 
@@ -159,13 +159,16 @@ class ARAE_trainer:
         OUTPUT
             |---- x + h (torch.Tensor) the batch of adversarial samples.
         """
+        # detach input
+        x = x.detach()
         # set the network to give only the encoding (to speed up computation)
         net.encoding_only = True
         # define the loss fucntion
         loss_fn = nn.MSELoss()
         # initialize the perturbation in the range of [-epsilon, epsilon]
-        delta = torch.zeros_like(x, device=self.device, requires_grad=True)
+        delta = torch.zeros_like(x, device=self.device)
         delta.uniform_(-self.epsilon, self.epsilon)
+        delta.requires_grad_(True)
 
         for _ in range(self.n_epoch_adv):
             # forward of normal and adversarial samples

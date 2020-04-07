@@ -129,3 +129,94 @@ class DeepSADLossSubspace(nn.Module):
         losses = torch.where(semi_target == 0, dist, self.eta * ((dist + self.eps) ** semi_target.float()))
         loss = torch.mean(losses)
         return loss
+
+class DeepSVDDLoss(nn.Module):
+    """
+    Implementation of the DeepSVDD loss proposed by Lukas Ruff et al. (2019)
+    """
+    def __init__(self, c, nu, eps=1e-6, soft_boundary=False):
+        """
+        Constructor of the DeepSVDD loss.
+        ----------
+        INPUT
+            |---- c (torch.Tensor) the center of the hypersphere as a multidimensional vector.
+            |---- nu (float) a priory fraction of outliers.
+            |---- eps (float) epsilon to ensure numerical stability in the
+            |           inverse distance.
+            |---- soft_boundary (bool) whether to use a soft boundary
+        OUTPUT
+            |---- None
+        """
+        nn.Module.__init__(self)
+        self.c = c
+        self.nu = nu
+        self.eps = eps
+        self.soft_boundary = soft_boundary
+
+    def forward(self, input, R):
+        """
+        Forward pass of the DeepSAD loss.
+        ----------
+        INPUT
+            |---- input (torch.Tensor) the point to compare to the hypershere
+            |           center. (must thus have the same dimension (B x c.dim)).
+            |---- R (flaot) radius for the soft boundary.
+        OUTPUT
+            |---- loss (torch.Tensor) the DeepSVDD loss.
+        """
+        # distance between center c and the input
+        dist = torch.sum((self.c - input)**2, dim=1)
+        # compute the loss
+        if self.soft_boundary:
+            scores = dist - R ** 2
+            loss = R ** 2 + (1 / self.nu) * torch.mean(torch.max(torch.zeros_like(scores), scores))
+        else:
+            loss = torch.mean(dist)
+        return loss
+
+class DeepSVDDLossSubspace(nn.Module):
+    """
+    Implementation of the DeepSVDD loss proposed by Lukas Ruff et al. (2019) but
+    with the distance of the point projected to the subspace of training samples
+    rather than the hypersphere. It follows the mathematical derivation proposed
+    by Arnout Devos et al. (2019).
+    """
+    def __init__(self, P, nu, eps=1e-6, soft_boundary=False):
+        """
+        Constructor of the DeepSVDD loss Subspace.
+        ----------
+        INPUT
+            |---- P (torch.Tensor) The projection matrix to the subspace of normal
+            |            sample. P is a MxM matrix where M is the embedding dimension.
+            |---- nu (float) a priory fraction of outliers.
+            |---- eps (float) epsilon to ensure numerical stability in the
+            |           inverse distance.
+            |---- soft_boundary (bool) whether to use a soft boundary.
+        OUTPUT
+            |---- None
+        """
+        nn.Module.__init__(self)
+        self.P = P
+        self.nu = nu
+        self.eps = eps
+
+    def forward(self, input, R):
+        """
+        Forward pass of the DeepSVDD loss Subspace.
+        ----------
+        INPUT
+            |---- input (torch.Tensor) the point to project onto the subspace.
+            |           (must thus have the same dimension (B x embed.dim)).
+            |---- R (flaot) radius for the soft boundary.
+        OUTPUT
+            |---- loss (torch.Tensor) the DeepSVDD loss Subspace.
+        """
+        # distance between center c and the input (tranpose to manage the batch dimension)
+        dist = torch.sum((input - torch.matmul(self.P, input.transpose(0,1)).transpose(0,1))**2, dim=1)
+        # compute the loss
+        if self.soft_boundary:
+            scores = dist - R ** 2
+            loss = R ** 2 + (1 / self.nu) * torch.mean(torch.max(torch.zeros_like(scores), scores))
+        else:
+            loss = torch.mean(dist)
+        return loss

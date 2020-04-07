@@ -27,7 +27,7 @@ def load_experiment_results(path, exp_folders, exp_names):
     results_all = {}
     for folder, name in zip(exp_folders, exp_names):
         results = []
-        for json_file in glob.glob(path + folder + '/results/[!AE]*.json'):
+        for json_file in glob.glob(path + folder + '/results/*.json'):
             with open(json_file) as fp:
                 results.append(json.load(fp))
         results_all[name] = results
@@ -140,8 +140,8 @@ def metric_barplot(metrics_scores, serie_names, group_names, colors=None, w=None
         ind = np.where(ind + 1 > gap, ind + 0.5, ind)
 
     for metric, offset, name, color in zip(metrics_scores, offsets, serie_names, colors):
-        means = metric.mean(axis=0)
-        stds = metric.std(axis=0)
+        means = np.nanmean(metric, axis=0)
+        stds = np.nanstd(metric, axis=0)
         ax.bar(ind + offset*w/2, means, width=w, yerr=1.96*stds,
                fc=color, ec='black', lw=1, label=name)
 

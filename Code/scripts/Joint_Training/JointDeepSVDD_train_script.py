@@ -47,6 +47,7 @@ lr = 1e-4
 lr_milestone = [40,80]
 n_epoch = 100
 n_epoch_pretrain = 5
+n_epoch_warm_up = 5
 weight_decay = 1e-6
 criterion_weight = (0.6, 0.4)
 model_path_to_load = None
