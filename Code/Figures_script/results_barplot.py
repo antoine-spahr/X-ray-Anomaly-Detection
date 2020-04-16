@@ -26,7 +26,7 @@ expe_unsupervised = {'DeepSVDD': ['DeepSVDD_2020_03_02_16h35', 'embedding'],
                      'Autoencoder \n(JointDSVDD)': ['JointDeepSVDD_2020_03_23_09h14_milestone4080', 'reconstruction'],
                      'Joint\nDeepSVDD\nSubspace': ['Joint_DeepSVDD_Subspace_2020_03_28_12h40', 'embedding'],
                      'DROCC': ['DROCC_2020_04_02_11h56', 'DROCC anomaly score'],
-                     'ARAE': ['ARAE_2020_04_06_16h14', 'ARAE anomaly score']}
+                     'ARAE': ['ARAE_2020_04_09_20h13', 'ARAE anomaly score']}
 
 #%%#############################################################################
 #                                 Load Data                                    #

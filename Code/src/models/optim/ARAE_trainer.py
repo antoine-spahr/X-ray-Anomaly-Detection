@@ -14,7 +14,7 @@ class ARAE_trainer:
     Trainer for the ARAE following the paper of Salehi et al. (2020).
     """
     def __init__(self, gamma, epsilon, lr=1e-4, lr_adv=1e-2, lr_milestone=(),
-                 weight_decay=1e-6, n_epoch=100, n_epoch_adv=15, batch_size=16,
+                 weight_decay=1e-6, n_epoch=100, n_epoch_adv=15, use_PGD=True, batch_size=16,
                  device='cuda', n_jobs_dataloader=0, print_batch_progress=False):
         """
         Build a ARAE trainer.
@@ -28,6 +28,7 @@ class ARAE_trainer:
             |---- lr_adv (float) the learning rate for the adversarial search.
             |---- n_epoch (int) the number of epoch.
             |---- n_epoch_adv (int) the number of epoch for the gradient ascent.
+            |---- use_PDG (bool) whether to use PGD or FGSM.
             |---- lr_milestone (tuple) the lr update steps.
             |---- batch_size (int) the batch_size to use.
             |---- weight_decay (float) the weight_decay for the Adam optimizer.
@@ -46,6 +47,7 @@ class ARAE_trainer:
         self.weight_decay = weight_decay
         self.n_epoch = n_epoch
         self.n_epoch_adv = n_epoch_adv
+        self.use_PGD = use_PGD
         self.batch_size = batch_size
         self.device = device
         self.n_jobs_dataloader = n_jobs_dataloader
@@ -104,9 +106,11 @@ class ARAE_trainer:
                 # mask input
                 input = input * mask
 
-                adv_input = self.adversarial_search(input, net)
-                # set the network in training mode again
-                net.train()
+                if self.use_PGD:
+                    adv_input = self.adversarial_search(input, net)
+                else:
+                    adv_input = self.FGSM(input, net)
+                    
                 # pass the adversarial and normal samples through the network
                 net.encoding_only = True
                 _, lat = net(input)
@@ -148,6 +152,32 @@ class ARAE_trainer:
         logger.info('>>> Finished ARAE Training.\n')
 
         return net
+
+    def FGSM(self, x, net):
+        """
+
+        """
+        # detach input
+        x = x.detach()
+        # set the network to give only the encoding (to speed up computation)
+        net.encoding_only = True
+        # define the loss fucntion
+        loss_fn = nn.MSELoss()
+        # initialize the perturbation in the range of [-epsilon, epsilon]
+        delta = torch.zeros_like(x, device=self.device)
+        delta.uniform_(-self.epsilon, self.epsilon)
+        delta.requires_grad_(True)
+        # forward/backward of normal and adversarial samples
+        _, lat = net(x)
+        _, lat_adv = net(x + delta)
+        loss = loss_fn(lat, lat_adv)
+        loss.backward()
+        # steepest l-inf ascent and l-inf projection
+        grad = delta.grad.detach()
+        delta.data = delta + self.lr_adv * grad.sign()
+        delta.data = torch.clamp(delta.data, -self.epsilon, self.epsilon)
+
+        return (x + delta).detach()
 
     def adversarial_search(self, x, net):
         """

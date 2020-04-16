@@ -13,7 +13,8 @@ class DeepSVDD_Joint_trainer:
     """
     Trainer for the DeepSVDD together with the autoencoder (joint training).
     """
-    def __init__(self, space_repr, nu, R, lr=0.0001, n_epoch=150, n_epoch_pretrain=10, lr_milestone=(), batch_size=64,
+    def __init__(self, space_repr, nu, R, lr=0.0001, n_epoch=150, n_epoch_pretrain=10, n_epoch_warm_up=10,
+                 lr_milestone=(), batch_size=64,
                  weight_decay=1e-6, device='cuda', n_jobs_dataloader=0, print_batch_progress=False,
                  criterion_weight=(0.5,0.5), soft_boundary=False, use_subspace=False):
         """
@@ -244,6 +245,7 @@ class DeepSVDD_Joint_trainer:
             epoch_loss = 0.0
             n_batch = 0
             epoch_start_time = time.time()
+            dist = []
 
             for b, data in enumerate(train_loader):
                 input, _, mask, semi_label, _ = data
@@ -272,19 +274,23 @@ class DeepSVDD_Joint_trainer:
                 loss.backward()
                 optimizer.step()
 
-                # update radius R
-                if self.soft_boundary and epoch > self.n_epoch_warm_up:
-                    if use_subspace:
-                        dist = torch.sum((input - torch.matmul(self.space_repr, input.transpose(0,1)).transpose(0,1))**2, dim=1)
+                # compute dist to update radius R
+                if self.soft_boundary and (epoch + 1 > self.n_epoch_warm_up):
+                    if self.use_subspace:
+                        dist.append(torch.sum((embed - torch.matmul(self.space_repr, embed.transpose(0,1)).transpose(0,1))**2, dim=1).detach())
                     else:
-                        dist = torch.sum((self.space_repr - input)**2, dim=1)
-                    self.R.data = torch.tensor(get_radius(dist, self.nu), device=self.device)
+                        dist.append(torch.sum((self.space_repr - embed)**2, dim=1).detach())
+
 
                 epoch_loss += loss.item()
                 n_batch += 1
 
                 if self.print_batch_progress:
                     print_progessbar(b, n_batch_tot, Name='\t\tBatch', Size=20)
+
+            # update radius
+            if self.soft_boundary and (epoch + 1 > self.n_epoch_warm_up):
+                self.R.data = torch.tensor(self.get_radius(torch.cat(dist, dim=0)), device=self.device)
 
             # epoch statistic
             epoch_train_time = time.time() - epoch_start_time
@@ -357,11 +363,11 @@ class DeepSVDD_Joint_trainer:
             logger.info(f'>>> reconstruction loss scale factor initialized to {self.scale_rec:.6f}')
             logger.info(f'>>> SVDD embdeding loss scale factor initialized to {self.scale_em:.6f}')
 
-    def get_radius(dist: torch.Tensor, nu: float):
+    def get_radius(self, dist):
         """
         Optimally solve for radius R via the (1-nu)-quantile of distances.
         """
-        return np.quantile(np.sqrt(dist.clone().data.cpu().numpy()), 1 - nu)
+        return np.quantile(np.sqrt(dist.clone().data.cpu().numpy()), 1 - self.nu)
 
     def validate(self, dataset, net):
         """
@@ -390,7 +396,7 @@ class DeepSVDD_Joint_trainer:
 
         # define the two criterion for Anomaly detection and reconstruction
         criterion_rec = MaskedMSELoss(reduction='none')
-        criterion_ad = self.SVDDLoss(self.space_repr, self.eta, eps=self.eps)
+        criterion_ad = self.SVDDLoss(self.space_repr, self.nu, eps=self.eps, soft_boundary=self.soft_boundary)
 
         # Testing
         logger.info('>>> Start Validating of the joint DeepSVDD and AutoEncoder.')
@@ -416,7 +422,7 @@ class DeepSVDD_Joint_trainer:
                 # compute loss
                 rec, embed = net(input)
                 loss_rec = criterion_rec(rec, input, mask)
-                loss_ad = criterion_ad(embed, semi_label)
+                loss_ad = criterion_ad(embed, self.R)
                 # compute anomaly scores
                 rec_score = torch.mean(loss_rec, dim=tuple(range(1, rec.dim()))) # mean over all dimension per batch
                 #rec_score = torch.sum(loss_rec, dim=tuple(range(1, rec.dim()))) / (torch.sum(mask, dim=tuple(range(1, rec.dim()))) + 1) # mean reconstruction MSE on the mask per batch
@@ -499,7 +505,7 @@ class DeepSVDD_Joint_trainer:
 
         # define the two criterion for Anomaly detection and reconstruction
         criterion_rec = MaskedMSELoss(reduction='none')
-        criterion_ad = self.SVDDLoss(self.space_repr, self.eta, eps=self.eps)
+        criterion_ad = self.SVDDLoss(self.space_repr, self.nu, eps=self.eps, soft_boundary=self.soft_boundary)
 
         # Testing
         logger.info('>>> Start Testing the joint DeepSVDD and AutoEncoder.')
@@ -525,7 +531,7 @@ class DeepSVDD_Joint_trainer:
                 # compute loss
                 rec, embed = net(input)
                 loss_rec = criterion_rec(rec, input, mask)
-                loss_ad = criterion_ad(embed, semi_label)
+                loss_ad = criterion_ad(embed, self.R)
                 # compute anomaly scores
                 rec_score = torch.mean(loss_rec, dim=tuple(range(1, rec.dim()))) # mean over all dimension per batch
                 if self.use_subspace:

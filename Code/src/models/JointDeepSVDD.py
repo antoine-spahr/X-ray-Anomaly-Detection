@@ -109,7 +109,7 @@ class JointDeepSVDD:
             |---- None
         """
         self.trainer = DeepSVDD_Joint_trainer(self.space_repr, self.nu, self.R, lr=lr,
-                                n_epoch=n_epoch, n_epoch_pretrain=n_epoch_pretrain,, n_epoch_warm_up=n_epoch_warm_up,
+                                n_epoch=n_epoch, n_epoch_pretrain=n_epoch_pretrain, n_epoch_warm_up=n_epoch_warm_up,
                                 lr_milestone=lr_milestone, batch_size=batch_size,
                                 weight_decay=weight_decay, device=device,
                                 n_jobs_dataloader=n_jobs_dataloader,

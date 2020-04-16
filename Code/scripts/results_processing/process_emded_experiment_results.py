@@ -21,7 +21,7 @@ from src.utils.results_processing import metric_barplot, plot_scores_dist1D, plo
 # Path to the experiments folder (outputs of train scripts)
 EXPERIMENT_PATH = r'../../../Outputs/'
 # names of the experiment(s) to process
-exp_folders = ['ARAE_2020_04_06_16h14']
+exp_folders = ['ARAE_2020_04_09_20h13']
 exp_names = ['ARAE']
 SAVE_PATHES = [EXPERIMENT_PATH + folder + '/analysis/' for folder in exp_folders]
 FIG_RES = 200

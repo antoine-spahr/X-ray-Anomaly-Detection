@@ -24,7 +24,7 @@ def human_format(num, pos=None):
         magnitude += 1
         num /= 1000.0
 
-    return '%.0f%s' % (num, ['', 'K', 'M', 'G', 'T', 'P'][magnitude])
+    return '%.1f%s' % (num, ['', 'K', 'M', 'G', 'T', 'P'][magnitude])
 
 # %% Load info
 ################################################################################

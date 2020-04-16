@@ -50,7 +50,7 @@ class ARAE:
         }
 
     def train(self, dataset, lr=1e-4, lr_adv=1e-2, lr_milestone=(), weight_decay=1e-6,
-              n_epoch=100, n_epoch_adv=15, batch_size=16, device='cuda',
+              n_epoch=100, n_epoch_adv=15, use_PGD=True, batch_size=16, device='cuda',
               n_jobs_dataloader=0, print_batch_progress=False):
         """
         Train the ARAE model.
@@ -64,6 +64,7 @@ class ARAE:
             |---- weight_decay (float) the weight_decay for the Adam optimizer.
             |---- n_epoch (int) the total number of epoch.
             |---- n_epoch_adv (int) the number of epoch for the gradient ascent.
+            |---- use_PGD (bool) whether to use PGD or FGSM.
             |---- batch_size (int) the batch_size to use.
             |---- device (str) the device to work on ('cpu' or 'cuda').
             |---- n_jobs_dataloader (int) number of workers for the dataloader.
@@ -73,8 +74,9 @@ class ARAE:
         """
         self.trainer = ARAE_trainer(self.gamma, self.epsilon, lr=lr, lr_adv=lr_adv,
                                 lr_milestone=lr_milestone, weight_decay=weight_decay,
-                                n_epoch=n_epoch, n_epoch_adv=n_epoch_adv, batch_size=batch_size,
-                                device=device, n_jobs_dataloader=n_jobs_dataloader,
+                                n_epoch=n_epoch, n_epoch_adv=n_epoch_adv, use_PGD=use_PGD,
+                                batch_size=batch_size, device=device,
+                                n_jobs_dataloader=n_jobs_dataloader,
                                 print_batch_progress=print_batch_progress)
         # train ARAE
         self.net = self.trainer.train(dataset, self.net)

@@ -216,8 +216,8 @@ class AE_ResNet18(nn.Module):
         """
         nn.Module.__init__(self)
         self.encoder = ResNet18_Encoder(pretrained=pretrain_ResNetEnc)
-        self.avg_pool = nn.AvgPool2d(kernel_size=3, stride=2, padding=1)
-        self.interp = nn.Upsample(mode='bilinear', scale_factor=2, align_corners=True)
+        #self.avg_pool = nn.AvgPool2d(kernel_size=3, stride=2, padding=1)
+        #self.interp = nn.Upsample(mode='bilinear', scale_factor=2, align_corners=True)
         self.decoder = ResNet18_Decoder(output_channels=output_channels)
         self.encoding_only = False
 
@@ -232,9 +232,9 @@ class AE_ResNet18(nn.Module):
             |---- rec (torch.Tensor) the reconstructed image (B x C' x H x W)
         """
         ae_embedding = self.encoder(input)
-        ae_embedding = self.avg_pool(ae_embedding)
+        #ae_embedding = self.avg_pool(ae_embedding)
         rec = None
         if not self.encoding_only:
-            rec = self.decoder(self.interp(ae_embedding))
+            rec = self.decoder(ae_embedding) #self.interp(ae_embedding))
 
         return rec, ae_embedding
