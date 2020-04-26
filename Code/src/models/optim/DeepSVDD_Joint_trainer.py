@@ -186,7 +186,7 @@ class DeepSVDD_Joint_trainer:
 
         return net
 
-    def train(self, dataset, net):
+    def train(self, dataset, net, valid_dataset=None):
         """
         Train the joint DeepSVDD network on the provided dataset.
         ----------
@@ -292,10 +292,16 @@ class DeepSVDD_Joint_trainer:
             if self.soft_boundary and (epoch + 1 > self.n_epoch_warm_up):
                 self.R.data = torch.tensor(self.get_radius(torch.cat(dist, dim=0)), device=self.device)
 
+            valid_auc = ''
+            if valid_dataset:
+                auc_rec, auc_ad = self.validate(valid_dataset, net, final=False)
+                net.train()
+                valid_auc = f' Rec AUC: {auc_rec:.3%} | AD AUC: {auc_ad:.3%} | R {self.R:.3f} |'
+
             # epoch statistic
             epoch_train_time = time.time() - epoch_start_time
             logger.info(f'| Epoch: {epoch + 1:03}/{self.n_epoch:03} | Train Time: {epoch_train_time:.3f} [s] '
-                        f'| Train Loss: {epoch_loss / n_batch:.6f} |')
+                        f'| Train Loss: {epoch_loss / n_batch:.6f} |' + valid_auc)
 
             # append the epoch loss to results list
             epoch_loss_list.append([epoch+1, epoch_loss/n_batch])
@@ -369,7 +375,7 @@ class DeepSVDD_Joint_trainer:
         """
         return np.quantile(np.sqrt(dist.clone().data.cpu().numpy()), 1 - self.nu)
 
-    def validate(self, dataset, net):
+    def validate(self, dataset, net, final=False):
         """
         Validate the joint DeepSVDD network on the provided dataset and find the
         best threshold on the score to maximize the f1-score.
@@ -381,6 +387,8 @@ class DeepSVDD_Joint_trainer:
             |---- net (nn.Module) The DeepSVDD to validate. The network should be
             |           an autoencoder for which the forward pass returns both the
             |           reconstruction and the embedding of the input.
+            |---- final (bool) whether it is the final validation and the results
+            |           must be saved.
         OUTPUT
             |---- None
         """
@@ -399,7 +407,7 @@ class DeepSVDD_Joint_trainer:
         criterion_ad = self.SVDDLoss(self.space_repr, self.nu, eps=self.eps, soft_boundary=self.soft_boundary)
 
         # Testing
-        logger.info('>>> Start Validating of the joint DeepSVDD and AutoEncoder.')
+        if final: logger.info('>>> Start Validating of the joint DeepSVDD and AutoEncoder.')
         epoch_loss = 0.0
         n_batch = 0
         n_batch_tot = valid_loader.__len__()
@@ -455,29 +463,36 @@ class DeepSVDD_Joint_trainer:
                 if self.print_batch_progress:
                     print_progessbar(b, n_batch_tot, Name='\t\tBatch', Size=20)
 
-        self.valid_time = time.time() - start_time
-        self.valid_scores_rec = idx_label_score_rec
         _, label, rec_score = zip(*idx_label_score_rec)
         label, rec_score = np.array(label), np.array(rec_score)
-        self.valid_auc_rec = roc_auc_score(label, rec_score)
-        self.scores_threhold_rec, self.valid_f1_rec = get_best_threshold(rec_score, label, metric=f1_score)
+        auc_rec = roc_auc_score(label, rec_score)
 
-        self.valid_scores_ad = idx_label_score_ad
         _, label, ad_score = zip(*idx_label_score_ad)
         label, ad_score = np.array(label), np.array(ad_score)
-        self.valid_auc_ad = roc_auc_score(label, ad_score)
-        self.scores_threhold_ad, self.valid_f1_ad = get_best_threshold(ad_score, label, metric=f1_score)
+        auc_ad = roc_auc_score(label, ad_score)
 
-        # add info to logger
-        logger.info(f'>>> Validation Time: {self.valid_time:.3f} [s]')
-        logger.info(f'>>> Validation Loss: {epoch_loss / n_batch:.6f}')
-        logger.info(f'>>> Validation reconstruction AUC: {self.valid_auc_rec:.3%}')
-        logger.info(f'>>> Best Threshold for the reconstruction score maximizing F1-score: {self.scores_threhold_rec:.3f}')
-        logger.info(f'>>> Best F1-score on reconstruction score: {self.valid_f1_rec:.3%}')
-        logger.info(f'>>> Validation DeepSVDD AUC: {self.valid_auc_ad:.3%}')
-        logger.info(f'>>> Best Threshold for the DeepSVDD score maximizing F1-score: {self.scores_threhold_ad:.3f}')
-        logger.info(f'>>> Best F1-score on DeepSVDD score: {self.valid_f1_ad:.3%}')
-        logger.info('>>> Finished validating the Joint DeepSVDD and AutoEncoder.\n')
+        if final:
+            self.valid_time = time.time() - start_time
+            self.valid_scores_rec = idx_label_score_rec
+            self.valid_auc_rec = auc_rec
+            self.scores_threhold_rec, self.valid_f1_rec = get_best_threshold(rec_score, label, metric=f1_score)
+
+            self.valid_scores_ad = idx_label_score_ad
+            self.valid_auc_ad = auc_ad
+            self.scores_threhold_ad, self.valid_f1_ad = get_best_threshold(ad_score, label, metric=f1_score)
+
+            # add info to logger
+            logger.info(f'>>> Validation Time: {self.valid_time:.3f} [s]')
+            logger.info(f'>>> Validation Loss: {epoch_loss / n_batch:.6f}')
+            logger.info(f'>>> Validation reconstruction AUC: {self.valid_auc_rec:.3%}')
+            logger.info(f'>>> Best Threshold for the reconstruction score maximizing F1-score: {self.scores_threhold_rec:.3f}')
+            logger.info(f'>>> Best F1-score on reconstruction score: {self.valid_f1_rec:.3%}')
+            logger.info(f'>>> Validation DeepSVDD AUC: {self.valid_auc_ad:.3%}')
+            logger.info(f'>>> Best Threshold for the DeepSVDD score maximizing F1-score: {self.scores_threhold_ad:.3f}')
+            logger.info(f'>>> Best F1-score on DeepSVDD score: {self.valid_f1_ad:.3%}')
+            logger.info('>>> Finished validating the Joint DeepSVDD and AutoEncoder.\n')
+        else:
+            return auc_rec, auc_ad
 
     def test(self, dataset, net):
         """
