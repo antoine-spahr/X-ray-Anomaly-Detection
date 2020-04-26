@@ -155,7 +155,7 @@ class DeepSVDDLoss(nn.Module):
 
     def forward(self, input, R):
         """
-        Forward pass of the DeepSAD loss.
+        Forward pass of the DSVDD loss.
         ----------
         INPUT
             |---- input (torch.Tensor) the point to compare to the hypershere
@@ -219,4 +219,94 @@ class DeepSVDDLossSubspace(nn.Module):
             loss = R ** 2 + (1 / self.nu) * torch.mean(torch.max(torch.zeros_like(scores), scores))
         else:
             loss = torch.mean(dist)
+        return loss
+
+class DMSVDDLoss(nn.Module):
+    """
+    Implementation of the DMSVDD loss proposed by Ghafoori et al. (2020).
+    """
+    def __init__(self, nu, eps=1e-6, soft_boundary=False):
+        """
+        Constructor of the DMSVDD loss.
+        ----------
+        INPUT
+            |---- nu (float) a priory fraction of outliers.
+            |---- eps (float) epsilon to ensure numerical stability in the
+            |           inverse distance.
+            |---- soft_boundary (bool) whether to use a soft boundary
+        OUTPUT
+            |---- None
+        """
+        nn.Module.__init__(self)
+        self.nu = nu
+        self.eps = eps
+        self.soft_boundary = soft_boundary
+
+    def forward(self, input, c, R):
+        """
+        Forward pass of the DMSVDD loss.
+        ----------
+        INPUT
+            |---- input (torch.Tensor) the point to compare to the hypershere.
+            |           center. (must thus have the same dimension (B x c.dim)).
+            |---- c (torch.Tensor) the centers of the hyperspheres as a multidimensional matrix (Centers x Embdeding).
+            |---- R (float) the radius for the soft boundary (length = nbr of centers).
+        OUTPUT
+            |---- loss (torch.Tensor) the DMSVDD loss.
+        """
+        # distance between the input and the closest center
+        dist, idx = torch.min(torch.sum((c.unsqueeze(0) - input.unsqueeze(1))**2, dim=2), dim=1) # dist and idx by batch
+
+        # compute the loss
+        if self.soft_boundary:
+            #scores = dist - R**2
+            scores = dist - torch.stack([R[i] ** 2 for i in idx], dim=0)
+            #loss = 1/R.shape[0] * torch.sum(R ** 2) + (1 / self.nu) * torch.mean(torch.max(torch.zeros_like(scores), scores))
+            loss = torch.mean(R ** 2) + (1 / self.nu) * torch.mean(torch.max(torch.zeros_like(scores), scores))
+        else:
+            loss = torch.mean(dist)
+        return loss
+
+class DMSADLoss(nn.Module):
+    """
+    Implementation of the DMSAD loss inspired by Ghafoori et al. (2020) and Ruff
+    et al. (2020)
+    """
+    def __init__(self, eta, eps=1e-6):
+        """
+        Constructor of the DMSAD loss.
+        ----------
+        INPUT
+            |---- eta (float) control the importance given to known or unknonw
+            |           samples. 1.0 gives equal weights, <1.0 gives more weight
+            |           to the unknown samples, >1.0 gives more weight to the
+            |           known samples.
+            |---- eps (float) epsilon to ensure numerical stability in the
+            |           inverse distance.
+        OUTPUT
+            |---- None
+        """
+        nn.Module.__init__(self)
+        self.eta = eta
+        self.eps = eps
+
+    def forward(self, input, c, semi_target):
+        """
+        Forward pass of the DMSAD loss.
+        ----------
+        INPUT
+            |---- input (torch.Tensor) the point to compare to the hypershere.
+            |           center. (must thus have the same dimension (B x c.dim)).
+            |---- c (torch.Tensor) the centers of the hyperspheres as a multidimensional matrix (Centers x Embdeding).
+            |---- semi_target (torch.Tensor) the semi-supervized label (0 -> unknown ;
+            |           1 -> known normal ; -1 -> knonw abnormal)
+        OUTPUT
+            |---- loss (torch.Tensor) the DMSAD loss.
+        """
+        # distance between the input and the closest center
+        dist, _ = torch.min(torch.sum((c.unsqueeze(0) - input.unsqueeze(1))**2, dim=2), dim=1) # dist and idx by batch
+        # compute the loss
+        losses = torch.where(semi_target == 0, dist, self.eta * ((dist + self.eps) ** semi_target.float()))
+        loss = torch.mean(losses)
+
         return loss
