@@ -16,7 +16,7 @@ from src.utils.results_processing import metric_barplot
 
 DATA_PATH = r'../../../data/PROCESSED/'
 DATA_INFO_PATH = r'../../../data/data_info.csv'
-OUTPUT_PATH = r'../../../Outputs/JointDeepSVDD_2020_03_23_09h14_milestone4080/'
+OUTPUT_PATH = r'../../../Outputs/JointDMSAD_2020_04_25_09h35/'
 FIGURE_PATH = OUTPUT_PATH + 'analysis/diagnostic/'
 if not os.path.isdir(FIGURE_PATH): os.makedirs(FIGURE_PATH)
 
@@ -37,7 +37,7 @@ df_info = df_info[df_info.low_contrast == 0]
 spliter = MURA.MURA_TrainValidTestSplitter(df_info, train_frac=0.5,
                                            ratio_known_normal=0.05,
                                            ratio_known_abnormal=0.05, random_state=42)
-spliter.split_data(verbose=False)
+spliter.split_data(verbose=True)
 train_df = spliter.get_subset('train')
 valid_df = spliter.get_subset('valid')
 test_df = spliter.get_subset('test')
@@ -50,17 +50,13 @@ N_score = 0
 for i, fname in enumerate(glob.glob(OUTPUT_PATH + 'results/*.json')):
     with open(fname) as f:
         results = json.load(f)
-        df_scores = pd.DataFrame(data=results['embedding']['test']['scores'], columns=['idx', 'label', f'AD_scores_{i+1}']) \
+        df_scores = pd.DataFrame(data=results['embedding']['test']['scores'], columns=['idx', 'label', f'AD_scores_{i+1}', 'Nsphere']) \
                       .set_index('idx') \
                       .drop(columns=['label'])
         df = pd.merge(df, df_scores, how='inner', left_index=True, right_index=True)
         N_score += 1
-
-# merge the data
-#test_df.drop(columns=['patient_any_abnormal', 'body_part_abnormal', 'low_contrast', 'semi_label'], inplace=True)
-#df_scores = pd.DataFrame(data=results['embedding']['test']['scores'], columns=['idx', 'label', 'AD_scores']).set_index('idx')
-#df = pd.merge(test_df.reset_index(), df_scores, how='inner', left_index=True, right_index=True)
 df.head()
+
 #%%#############################################################################
 #                         Score Distribution by body part                      #
 ################################################################################
@@ -104,7 +100,10 @@ for label, low_ad in zip([1,1,0,0], [False, True, False, True]):
 
         for i, ax in enumerate(ax_row):
             img = PIL.Image.open(DATA_PATH + df_high.iloc[i]['filename'])
-            ax.imshow(img_transform(img, None)[0].numpy()[0,:,:], cmap='gray')
+            mask = PIL.Image.open(DATA_PATH + df_high.iloc[i]['mask_filename'])
+            img, mask = img_transform(img, mask)
+            ax.imshow(img.numpy()[0,:,:] * mask.numpy()[0,:,:], cmap='gray')
+            #ax.imshow(img_transform(img, None)[0].numpy()[0,:,:], cmap='gray')
             ax.set_axis_off()
             ax.set_title(f'scores {df_high.iloc[i][f"AD_scores_{j}"]:.0f}', fontsize=10)
 

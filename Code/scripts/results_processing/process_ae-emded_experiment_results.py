@@ -22,8 +22,9 @@ from src.utils.results_processing import metric_barplot, plot_scores_dist1D, plo
 # Path to the experiments folder (outputs of train scripts)
 EXPERIMENT_PATH = r'../../../Outputs/'
 # names of the experiment(s) to process
-exp_folders = ['Joint_DeepSVDD_Subspace_2020_03_28_12h40']
-exp_names = ['DeepSVDD_Subspace']
+exp_folders = ['JointDMSAD_2020_04_25_09h35']
+exp_names = ['DMSAD']
+em_col = ['index', 'label', 'scores', 'Nsphere']
 SAVE_PATHES = [EXPERIMENT_PATH + folder + '/analysis/' for folder in exp_folders]
 FIG_RES = 200
 fontsize=12
@@ -56,8 +57,8 @@ for SAVE_PATH, results_list in zip(SAVE_PATHES, results_all.values()):
 
     for i, results in enumerate(results_list):
         # compute composite score
-        df_v = scores_as_df(results, 'valid')
-        df_t = scores_as_df(results, 'test')
+        df_v = scores_as_df(results, 'valid', em_col=em_col)
+        df_t = scores_as_df(results, 'test', em_col=em_col)
         combiner = ScoresCombiner()
         # fit on validation scores
         v_scores, v_auc = combiner.fit(np.array(df_v.scores_em),
@@ -114,8 +115,8 @@ for SAVE_PATH, results_list in zip(SAVE_PATHES, results_all.values()):
         v_auc[i, 2] = combined_auc_valid[i]
         t_auc[i, 2] = combined_auc_test[i]
 
-        df_v = scores_as_df(results, 'valid')
-        df_t = scores_as_df(results, 'test')
+        df_v = scores_as_df(results, 'valid', em_col=em_col)
+        df_t = scores_as_df(results, 'test', em_col=em_col)
 
         v_auprc[i, 0] = average_precision_score(df_v.label, df_v.scores_em)
         t_auprc[i, 0] = average_precision_score(df_t.label, df_t.scores_em)
@@ -156,13 +157,13 @@ for SAVE_PATH, results_list in zip(SAVE_PATHES, results_all.values()):
 
     fig, axs = plt.subplots(2, 2, figsize=(10,10))
 
-    metric_curves(results_list, 'scores_em', set='valid', curves=['roc', 'prc'], areas=False, ax=axs[0,0])
+    metric_curves(results_list, 'scores_em', set='valid', curves=['roc', 'prc'], areas=False, ax=axs[0,0], em_col=em_col)
     axs[0,0].set_title('Embedding scores validation curves', fontsize=fontsize)
-    metric_curves(results_list, 'scores_em', set='test', curves=['roc', 'prc'], areas=False, ax=axs[1,0])
+    metric_curves(results_list, 'scores_em', set='test', curves=['roc', 'prc'], areas=False, ax=axs[1,0], em_col=em_col)
     axs[1,0].set_title('Embedding scores test curves', fontsize=fontsize)
-    metric_curves(results_list, 'scores_rec', set='valid', curves=['roc', 'prc'], areas=False, ax=axs[0,1])
+    metric_curves(results_list, 'scores_rec', set='valid', curves=['roc', 'prc'], areas=False, ax=axs[0,1], em_col=em_col)
     axs[0,1].set_title('Reconstruction scores validation curves', fontsize=fontsize)
-    metric_curves(results_list, 'scores_rec', set='test', curves=['roc', 'prc'], areas=False, ax=axs[1,1])
+    metric_curves(results_list, 'scores_rec', set='test', curves=['roc', 'prc'], areas=False, ax=axs[1,1], em_col=em_col)
     axs[1,1].set_title('Reconstruction scores test curves', fontsize=fontsize)
 
     fig.tight_layout()
@@ -173,9 +174,9 @@ for SAVE_PATH, results_list in zip(SAVE_PATHES, results_all.values()):
     ############################################################################
     for i, results in enumerate(results_list):
         df = {}
-        df['Validation'] = scores_as_df(results, 'valid')
+        df['Validation'] = scores_as_df(results, 'valid', em_col=em_col)
         df['Validation']['scores_comb'] = combined_scores_valid[i]
-        df['Test'] = scores_as_df(results, 'test')
+        df['Test'] = scores_as_df(results, 'test', em_col=em_col)
         df['Test']['scores_comb'] = combined_scores_test[i]
 
         fig, axs = plt.subplots(2, 4, figsize=(16,8))
