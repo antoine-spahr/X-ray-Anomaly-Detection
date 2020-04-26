@@ -53,7 +53,7 @@ class ARAE_trainer:
         self.n_jobs_dataloader = n_jobs_dataloader
         self.print_batch_progress = print_batch_progress
 
-    def train(self, dataset, net):
+    def train(self, dataset, net, valid_dataset=None):
         """
         Train the ARAE network on the provided dataset.
         ----------
@@ -110,7 +110,7 @@ class ARAE_trainer:
                     adv_input = self.adversarial_search(input, net)
                 else:
                     adv_input = self.FGSM(input, net)
-                    
+
                 # pass the adversarial and normal samples through the network
                 net.encoding_only = True
                 _, lat = net(input)
@@ -131,11 +131,17 @@ class ARAE_trainer:
                 if self.print_batch_progress:
                     print_progessbar(b, n_batch_tot, Name='\t\tBatch', Size=20)
 
+            valid_auc = ''
+            if valid_dataset:
+                auc = self.validate(valid_dataset, net, final=False)
+                net.train()
+                valid_auc = f' Rec AUC {auc:.3%} |'
+
             # epoch statistic
             epoch_train_time = time.time() - epoch_start_time
             logger.info(f'| Epoch: {epoch + 1:03}/{self.n_epoch:03} '
                         f'| Train Time: {epoch_train_time:.3f} [s] '
-                        f'| Train Loss: {epoch_loss / n_batch:.6f} |')
+                        f'| Train Loss: {epoch_loss / n_batch:.6f} |' + valid_auc)
 
             # append the epoch loss to results list
             epoch_loss_list.append([epoch+1, epoch_loss/n_batch])
@@ -217,7 +223,7 @@ class ARAE_trainer:
         net.encoding_only = False
         return (x + delta).detach()
 
-    def validate(self, dataset, net):
+    def validate(self, dataset, net, final=False):
         """
         Validate the ARAE network on the provided dataset.
         ----------
@@ -243,7 +249,7 @@ class ARAE_trainer:
         criterion = MaskedMSELoss(reduction='none')
 
         # Testing
-        logger.info('>>> Start Validating of the ARAE.')
+        if final: logger.info('>>> Start Validating of the ARAE.')
         epoch_loss = 0.0
         n_batch = 0
         n_batch_tot = valid_loader.__len__()
@@ -278,20 +284,25 @@ class ARAE_trainer:
                 if self.print_batch_progress:
                     print_progessbar(b, n_batch_tot, Name='\t\tBatch', Size=20)
 
-        self.valid_time = time.time() - start_time
-        self.valid_scores = idx_label_score
         _, label, ad_score = zip(*idx_label_score)
         label, ad_score = np.array(label), np.array(ad_score)
-        self.valid_auc = roc_auc_score(label, ad_score)
-        self.scores_threshold, self.valid_f1 = get_best_threshold(ad_score, label, metric=f1_score)
+        auc = roc_auc_score(label, ad_score)
 
-        # add info to logger
-        logger.info(f'>>> Validation Time: {self.valid_time:.3f} [s]')
-        logger.info(f'>>> Validation Loss: {epoch_loss / n_batch:.6f}')
-        logger.info(f'>>> Validation AUC: {self.valid_auc:.3%}')
-        logger.info(f'>>> Best Threshold for the score maximizing F1-score: {self.scores_threshold:.3f}')
-        logger.info(f'>>> Best F1-score: {self.valid_f1:.3%}')
-        logger.info('>>> Finished validating the ARAE.\n')
+        if final:
+            self.valid_time = time.time() - start_time
+            self.valid_scores = idx_label_score
+            self.valid_auc = auc
+            self.scores_threshold, self.valid_f1 = get_best_threshold(ad_score, label, metric=f1_score)
+
+            # add info to logger
+            logger.info(f'>>> Validation Time: {self.valid_time:.3f} [s]')
+            logger.info(f'>>> Validation Loss: {epoch_loss / n_batch:.6f}')
+            logger.info(f'>>> Validation AUC: {self.valid_auc:.3%}')
+            logger.info(f'>>> Best Threshold for the score maximizing F1-score: {self.scores_threshold:.3f}')
+            logger.info(f'>>> Best F1-score: {self.valid_f1:.3%}')
+            logger.info('>>> Finished validating the ARAE.\n')
+        else:
+            return auc
 
     def test(self, dataset, net):
         """

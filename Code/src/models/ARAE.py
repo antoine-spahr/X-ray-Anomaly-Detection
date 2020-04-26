@@ -49,7 +49,7 @@ class ARAE:
             }
         }
 
-    def train(self, dataset, lr=1e-4, lr_adv=1e-2, lr_milestone=(), weight_decay=1e-6,
+    def train(self, dataset, valid_dataset=None, lr=1e-4, lr_adv=1e-2, lr_milestone=(), weight_decay=1e-6,
               n_epoch=100, n_epoch_adv=15, use_PGD=True, batch_size=16, device='cuda',
               n_jobs_dataloader=0, print_batch_progress=False):
         """
@@ -79,7 +79,7 @@ class ARAE:
                                 n_jobs_dataloader=n_jobs_dataloader,
                                 print_batch_progress=print_batch_progress)
         # train ARAE
-        self.net = self.trainer.train(dataset, self.net)
+        self.net = self.trainer.train(dataset, self.net, valid_dataset=valid_dataset)
         # get results
         self.results['train']['time'] = self.trainer.train_time
         self.results['train']['loss'] = self.trainer.train_loss
@@ -102,7 +102,7 @@ class ARAE:
                                     n_jobs_dataloader=n_jobs_dataloader,
                                     print_batch_progress=print_batch_progress)
         # validate ARAE
-        self.trainer.validate(dataset, self.net)
+        self.trainer.validate(dataset, self.net, final=True)
         # get results
         self.results['valid']['time'] = self.trainer.valid_time
         self.results['valid']['auc'] = self.trainer.valid_auc

@@ -1,0 +1,269 @@
+2020-04-04 08:49:21,260 | INFO | Brief summary of experiment : 
+
+    Implementation of the semi-supervised DROCC-LF model proposed by Goyal et al (2020).
+    The model uses a binary classifier with a ResNet18 backbone. The output is a
+    logit that serves as anomaly score. The loss is computed as Binary Cross
+    Entropy loss with logit. The training consist of few epoch trained only with
+    the normal samples. Then each epoch starts with the generation of adversarial
+    examples. The adversarial search is performed only on normal samples as we
+    want the network to learn the manifold of normal samples. It uses a slightly
+    modifided projection gradient descent algorithm (the sample is projected on
+    a learnable elipsoid). Then the samples and adversarial samples are passed
+    through the network similarly to a standard classification task. Note that
+    the input samples are masked with the mask generated in the preprocesing steps.
+    
+2020-04-04 08:49:21,260 | INFO | Log file : ../../../Outputs/DROCC-LF_2020_04_04_08h49/logs/log_1.txt
+2020-04-04 08:49:21,260 | INFO | Data path : ../../../data/PROCESSED/
+2020-04-04 08:49:21,261 | INFO | Outputs path : ../../../Outputs/DROCC-LF_2020_04_04_08h49/
+
+2020-04-04 08:49:25,064 | INFO | Train fraction : 50%
+2020-04-04 08:49:25,064 | INFO | Fraction knonw normal : 5%
+2020-04-04 08:49:25,064 | INFO | Fraction known abnormal : 5%
+2020-04-04 08:49:25,096 | INFO | Split Summary 
++-------+----------------+------------+--------------+
+| Set   | Name           | Number [-] | Fraction [%] |
++-------+----------------+------------+--------------+
+| train | Normal         | 18033      | 94.73%       |
+| train | Abnormal       | 1004       | 5.27%        |
+| train | Normal known   | 961        | 5.05%        |
+| train | Abnormal known | 1004       | 5.27%        |
+| train | Unknown        | 17072      | 89.68%       |
+| ----  | ----           | ----       | ----         |
+| valid | Normal         | 2772       | 26.66%       |
+| valid | Abnormal       | 7627       | 73.34%       |
+| valid | Normal known   | 489        | 4.70%        |
+| valid | Abnormal known | 506        | 4.87%        |
+| valid | Unknown        | 9404       | 90.43%       |
+| ----  | ----           | ----       | ----         |
+| test  | Normal         | 2763       | 26.29%       |
+| test  | Abnormal       | 7748       | 73.71%       |
+| test  | Normal known   | 506        | 4.81%        |
+| test  | Abnormal known | 498        | 4.74%        |
+| test  | Unknown        | 9507       | 90.45%       |
++-------+----------------+------------+--------------+
+2020-04-04 08:49:25,096 | INFO | Online preprocessing pipeline : 
+             Grayscale()              
+                  |                   
+                  V                   
+        AutoContrast(cutoff=1)        
+                  |                   
+                  V                   
+     RandomHorizontalFlip(p=0.5)      
+                  |                   
+                  V                   
+      RandomVerticalFlip(p=0.5)       
+                  |                   
+                  V                   
+RandomBrightness(lower=0.8, upper=1.2)
+                  |                   
+                  V                   
+RandomScaling(scale_range=(0.8, 1.2)) 
+                  |                   
+                  V                   
+RandomRotation(degree_range=(-20, 20))
+                  |                   
+                  V                   
+        ResizeMax(max_len=512)        
+                  |                   
+                  V                   
+            PadToSquare()             
+                  |                   
+                  V                   
+ MinMaxNormalization(vmin=0, vmax=1)  
+                  |                   
+                  V                   
+           ToTorchTensor()            
+
+2020-04-04 08:49:25,097 | INFO | Set seed 01/02 to 1
+2020-04-04 08:49:25,097 | INFO | Device : cuda
+2020-04-04 08:49:25,097 | INFO | Number of thread : 0
+2020-04-04 08:49:25,097 | INFO | Number of dataloader worker for DROCC-LF : 8
+
+2020-04-04 08:49:27,396 | INFO | Network : ResNet18_binary
+2020-04-04 08:49:27,396 | INFO | ResNet18 pretrained on ImageNet : False
+2020-04-04 08:49:27,678 | INFO | Network architecture: 
+----------------------------------------------------------------
+        Layer (type)               Output Shape         Param #
+================================================================
+            Conv2d-1         [16, 64, 256, 256]           9,408
+       BatchNorm2d-2         [16, 64, 256, 256]               0
+              ReLU-3         [16, 64, 256, 256]               0
+         MaxPool2d-4         [16, 64, 128, 128]               0
+            Conv2d-5         [16, 64, 128, 128]          36,864
+       BatchNorm2d-6         [16, 64, 128, 128]               0
+              ReLU-7         [16, 64, 128, 128]               0
+            Conv2d-8         [16, 64, 128, 128]          36,864
+       BatchNorm2d-9         [16, 64, 128, 128]               0
+             ReLU-10         [16, 64, 128, 128]               0
+     DownResBlock-11         [16, 64, 128, 128]               0
+           Conv2d-12         [16, 64, 128, 128]          36,864
+      BatchNorm2d-13         [16, 64, 128, 128]               0
+             ReLU-14         [16, 64, 128, 128]               0
+           Conv2d-15         [16, 64, 128, 128]          36,864
+      BatchNorm2d-16         [16, 64, 128, 128]               0
+             ReLU-17         [16, 64, 128, 128]               0
+     DownResBlock-18         [16, 64, 128, 128]               0
+           Conv2d-19          [16, 128, 64, 64]           8,192
+      BatchNorm2d-20          [16, 128, 64, 64]               0
+           Conv2d-21          [16, 128, 64, 64]          73,728
+      BatchNorm2d-22          [16, 128, 64, 64]               0
+             ReLU-23          [16, 128, 64, 64]               0
+           Conv2d-24          [16, 128, 64, 64]         147,456
+      BatchNorm2d-25          [16, 128, 64, 64]               0
+             ReLU-26          [16, 128, 64, 64]               0
+     DownResBlock-27          [16, 128, 64, 64]               0
+           Conv2d-28          [16, 128, 64, 64]         147,456
+      BatchNorm2d-29          [16, 128, 64, 64]               0
+             ReLU-30          [16, 128, 64, 64]               0
+           Conv2d-31          [16, 128, 64, 64]         147,456
+      BatchNorm2d-32          [16, 128, 64, 64]               0
+             ReLU-33          [16, 128, 64, 64]               0
+     DownResBlock-34          [16, 128, 64, 64]               0
+           Conv2d-35          [16, 256, 32, 32]          32,768
+      BatchNorm2d-36          [16, 256, 32, 32]               0
+           Conv2d-37          [16, 256, 32, 32]         294,912
+      BatchNorm2d-38          [16, 256, 32, 32]               0
+             ReLU-39          [16, 256, 32, 32]               0
+           Conv2d-40          [16, 256, 32, 32]         589,824
+      BatchNorm2d-41          [16, 256, 32, 32]               0
+             ReLU-42          [16, 256, 32, 32]               0
+     DownResBlock-43          [16, 256, 32, 32]               0
+           Conv2d-44          [16, 256, 32, 32]         589,824
+      BatchNorm2d-45          [16, 256, 32, 32]               0
+             ReLU-46          [16, 256, 32, 32]               0
+           Conv2d-47          [16, 256, 32, 32]         589,824
+      BatchNorm2d-48          [16, 256, 32, 32]               0
+             ReLU-49          [16, 256, 32, 32]               0
+     DownResBlock-50          [16, 256, 32, 32]               0
+           Conv2d-51          [16, 512, 16, 16]         131,072
+      BatchNorm2d-52          [16, 512, 16, 16]               0
+           Conv2d-53          [16, 512, 16, 16]       1,179,648
+      BatchNorm2d-54          [16, 512, 16, 16]               0
+             ReLU-55          [16, 512, 16, 16]               0
+           Conv2d-56          [16, 512, 16, 16]       2,359,296
+      BatchNorm2d-57          [16, 512, 16, 16]               0
+             ReLU-58          [16, 512, 16, 16]               0
+     DownResBlock-59          [16, 512, 16, 16]               0
+           Conv2d-60          [16, 512, 16, 16]       2,359,296
+      BatchNorm2d-61          [16, 512, 16, 16]               0
+             ReLU-62          [16, 512, 16, 16]               0
+           Conv2d-63          [16, 512, 16, 16]       2,359,296
+      BatchNorm2d-64          [16, 512, 16, 16]               0
+             ReLU-65          [16, 512, 16, 16]               0
+     DownResBlock-66          [16, 512, 16, 16]               0
+AdaptiveAvgPool2d-67            [16, 512, 1, 1]               0
+           Linear-68                    [16, 1]             512
+================================================================
+Total params: 11,167,424
+Trainable params: 11,167,424
+Non-trainable params: 0
+----------------------------------------------------------------
+Input size (MB): 16.00
+Forward/backward pass size (MB): 5248.06
+Params size (MB): 42.60
+Estimated Total Size (MB): 5306.66
+----------------------------------------------------------------
+
+
+2020-04-04 08:49:27,678 | INFO | DROCC-LF radius r : 256.0
+2020-04-04 08:49:27,678 | INFO | DROCC-LF gamma : 0.5
+2020-04-04 08:49:27,678 | INFO | DROCC-LF adversarial importance mu : 0.25
+2020-04-04 08:49:27,678 | INFO | DROCC-LF number of initial epoch : 5
+2020-04-04 08:49:27,678 | INFO | DROCC-LF number of epoch : 65
+2020-04-04 08:49:27,678 | INFO | DROCC-LF number of adversarial search epoch: 5
+2020-04-04 08:49:27,678 | INFO | DROCC-LF learning rate : 0.001
+2020-04-04 08:49:27,679 | INFO | DROCC-LF adversarial search learning rate : 0.1
+2020-04-04 08:49:27,679 | INFO | DROCC-LF learning rate milestone : [25, 50]
+2020-04-04 08:49:27,679 | INFO | DROCC-LF weight_decay : 1e-06
+2020-04-04 08:49:27,679 | INFO | DROCC-LF optimizer : Adam
+2020-04-04 08:49:27,679 | INFO | DROCC-LF batch_size 16
+2020-04-04 08:49:27,679 | INFO | DROCC-LF number of dataloader worker : 8
+2020-04-04 08:49:27,680 | INFO | >>> Start Training the DROCC.
+2020-04-04 08:52:37,881 | INFO | | Epoch: 001/065 | Train Time: 190.200 [s] | Train Loss: 0.213571 |
+2020-04-04 08:55:49,216 | INFO | | Epoch: 002/065 | Train Time: 191.335 [s] | Train Loss: 0.211604 |
+2020-04-04 08:59:01,014 | INFO | | Epoch: 003/065 | Train Time: 191.797 [s] | Train Loss: 0.212263 |
+2020-04-04 09:02:12,883 | INFO | | Epoch: 004/065 | Train Time: 191.869 [s] | Train Loss: 0.211315 |
+2020-04-04 09:05:24,608 | INFO | | Epoch: 005/065 | Train Time: 191.724 [s] | Train Loss: 0.212873 |
+2020-04-04 09:32:35,995 | INFO | | Epoch: 006/065 | Train Time: 1631.387 [s] | Train Loss: 0.273546 |
+2020-04-04 09:59:46,093 | INFO | | Epoch: 007/065 | Train Time: 1630.097 [s] | Train Loss: 0.212515 |
+2020-04-04 10:26:56,443 | INFO | | Epoch: 008/065 | Train Time: 1630.350 [s] | Train Loss: 0.211937 |
+2020-04-04 10:54:09,647 | INFO | | Epoch: 009/065 | Train Time: 1633.204 [s] | Train Loss: 0.224009 |
+2020-04-04 11:21:21,598 | INFO | | Epoch: 010/065 | Train Time: 1631.950 [s] | Train Loss: 0.211762 |
+2020-04-04 11:48:30,046 | INFO | | Epoch: 011/065 | Train Time: 1628.447 [s] | Train Loss: 0.211469 |
+2020-04-04 12:15:41,170 | INFO | | Epoch: 012/065 | Train Time: 1631.124 [s] | Train Loss: 0.211650 |
+2020-04-04 12:42:51,612 | INFO | | Epoch: 013/065 | Train Time: 1630.441 [s] | Train Loss: 0.209997 |
+2020-04-04 13:10:02,583 | INFO | | Epoch: 014/065 | Train Time: 1630.970 [s] | Train Loss: 0.216324 |
+2020-04-04 13:37:16,110 | INFO | | Epoch: 015/065 | Train Time: 1633.526 [s] | Train Loss: 0.210887 |
+2020-04-04 14:04:25,681 | INFO | | Epoch: 016/065 | Train Time: 1629.571 [s] | Train Loss: 0.211564 |
+2020-04-04 14:31:37,061 | INFO | | Epoch: 017/065 | Train Time: 1631.379 [s] | Train Loss: 0.211311 |
+2020-04-04 14:58:47,611 | INFO | | Epoch: 018/065 | Train Time: 1630.550 [s] | Train Loss: 0.211634 |
+2020-04-04 15:25:59,943 | INFO | | Epoch: 019/065 | Train Time: 1632.331 [s] | Train Loss: 0.210761 |
+2020-04-04 15:53:12,163 | INFO | | Epoch: 020/065 | Train Time: 1632.219 [s] | Train Loss: 0.210775 |
+2020-04-04 16:20:25,302 | INFO | | Epoch: 021/065 | Train Time: 1633.139 [s] | Train Loss: 0.218472 |
+2020-04-04 16:47:37,242 | INFO | | Epoch: 022/065 | Train Time: 1631.939 [s] | Train Loss: 0.210469 |
+2020-04-04 17:14:49,463 | INFO | | Epoch: 023/065 | Train Time: 1632.221 [s] | Train Loss: 0.240405 |
+2020-04-04 17:42:02,834 | INFO | | Epoch: 024/065 | Train Time: 1633.370 [s] | Train Loss: 0.211684 |
+2020-04-04 18:09:13,634 | INFO | | Epoch: 025/065 | Train Time: 1630.800 [s] | Train Loss: 0.210431 |
+2020-04-04 18:09:13,635 | INFO | >>> LR Scheduler : new learning rate 1e-05
+2020-04-04 18:36:24,024 | INFO | | Epoch: 026/065 | Train Time: 1630.389 [s] | Train Loss: 0.207401 |
+2020-04-04 19:03:35,812 | INFO | | Epoch: 027/065 | Train Time: 1631.787 [s] | Train Loss: 0.206719 |
+2020-04-04 19:30:50,175 | INFO | | Epoch: 028/065 | Train Time: 1634.363 [s] | Train Loss: 0.206865 |
+2020-04-04 19:58:00,526 | INFO | | Epoch: 029/065 | Train Time: 1630.351 [s] | Train Loss: 0.206222 |
+2020-04-04 20:25:09,701 | INFO | | Epoch: 030/065 | Train Time: 1629.174 [s] | Train Loss: 0.206707 |
+2020-04-04 20:52:19,779 | INFO | | Epoch: 031/065 | Train Time: 1630.077 [s] | Train Loss: 0.206311 |
+2020-04-04 21:19:31,589 | INFO | | Epoch: 032/065 | Train Time: 1631.810 [s] | Train Loss: 0.206652 |
+2020-04-04 21:46:42,969 | INFO | | Epoch: 033/065 | Train Time: 1631.380 [s] | Train Loss: 0.206644 |
+2020-04-04 22:13:53,875 | INFO | | Epoch: 034/065 | Train Time: 1630.905 [s] | Train Loss: 0.206571 |
+2020-04-04 22:41:06,623 | INFO | | Epoch: 035/065 | Train Time: 1632.747 [s] | Train Loss: 0.206265 |
+2020-04-04 23:08:16,155 | INFO | | Epoch: 036/065 | Train Time: 1629.531 [s] | Train Loss: 0.206363 |
+2020-04-04 23:35:27,234 | INFO | | Epoch: 037/065 | Train Time: 1631.078 [s] | Train Loss: 0.206121 |
+2020-04-05 00:02:37,638 | INFO | | Epoch: 038/065 | Train Time: 1630.403 [s] | Train Loss: 0.206534 |
+2020-04-05 00:29:47,684 | INFO | | Epoch: 039/065 | Train Time: 1630.046 [s] | Train Loss: 0.206082 |
+2020-04-05 00:56:59,470 | INFO | | Epoch: 040/065 | Train Time: 1631.785 [s] | Train Loss: 0.206541 |
+2020-04-05 01:24:09,600 | INFO | | Epoch: 041/065 | Train Time: 1630.130 [s] | Train Loss: 0.205986 |
+2020-04-05 01:51:16,172 | INFO | | Epoch: 042/065 | Train Time: 1626.572 [s] | Train Loss: 0.206343 |
+2020-04-05 02:18:28,066 | INFO | | Epoch: 043/065 | Train Time: 1631.893 [s] | Train Loss: 0.205773 |
+2020-04-05 02:45:33,641 | INFO | | Epoch: 044/065 | Train Time: 1625.575 [s] | Train Loss: 0.206478 |
+2020-04-05 03:12:43,436 | INFO | | Epoch: 045/065 | Train Time: 1629.794 [s] | Train Loss: 0.205872 |
+2020-04-05 03:39:52,794 | INFO | | Epoch: 046/065 | Train Time: 1629.357 [s] | Train Loss: 0.205573 |
+2020-04-05 04:07:03,658 | INFO | | Epoch: 047/065 | Train Time: 1630.864 [s] | Train Loss: 0.205610 |
+2020-04-05 04:34:12,578 | INFO | | Epoch: 048/065 | Train Time: 1628.919 [s] | Train Loss: 0.205189 |
+2020-04-05 05:01:23,317 | INFO | | Epoch: 049/065 | Train Time: 1630.739 [s] | Train Loss: 0.205424 |
+2020-04-05 05:28:34,323 | INFO | | Epoch: 050/065 | Train Time: 1631.004 [s] | Train Loss: 0.205958 |
+2020-04-05 05:28:34,323 | INFO | >>> LR Scheduler : new learning rate 1e-06
+2020-04-05 05:55:45,039 | INFO | | Epoch: 051/065 | Train Time: 1630.715 [s] | Train Loss: 0.204021 |
+2020-04-05 06:22:53,953 | INFO | | Epoch: 052/065 | Train Time: 1628.913 [s] | Train Loss: 0.203863 |
+2020-04-05 06:50:03,210 | INFO | | Epoch: 053/065 | Train Time: 1629.257 [s] | Train Loss: 0.203617 |
+2020-04-05 07:17:13,432 | INFO | | Epoch: 054/065 | Train Time: 1630.221 [s] | Train Loss: 0.203551 |
+2020-04-05 07:44:21,619 | INFO | | Epoch: 055/065 | Train Time: 1628.187 [s] | Train Loss: 0.203861 |
+2020-04-05 08:11:29,734 | INFO | | Epoch: 056/065 | Train Time: 1628.115 [s] | Train Loss: 0.203581 |
+2020-04-05 08:38:39,776 | INFO | | Epoch: 057/065 | Train Time: 1630.041 [s] | Train Loss: 0.202904 |
+2020-04-05 09:05:52,369 | INFO | | Epoch: 058/065 | Train Time: 1632.593 [s] | Train Loss: 0.202538 |
+2020-04-05 09:33:02,975 | INFO | | Epoch: 059/065 | Train Time: 1630.605 [s] | Train Loss: 0.203001 |
+2020-04-05 10:00:14,334 | INFO | | Epoch: 060/065 | Train Time: 1631.358 [s] | Train Loss: 0.203087 |
+2020-04-05 10:27:24,484 | INFO | | Epoch: 061/065 | Train Time: 1630.150 [s] | Train Loss: 0.202175 |
+2020-04-05 10:54:35,949 | INFO | | Epoch: 062/065 | Train Time: 1631.465 [s] | Train Loss: 0.201843 |
+2020-04-05 11:21:49,184 | INFO | | Epoch: 063/065 | Train Time: 1633.235 [s] | Train Loss: 0.202156 |
+2020-04-05 11:48:57,445 | INFO | | Epoch: 064/065 | Train Time: 1628.260 [s] | Train Loss: 0.202395 |
+2020-04-05 12:16:09,558 | INFO | | Epoch: 065/065 | Train Time: 1632.113 [s] | Train Loss: 0.201355 |
+2020-04-05 12:16:09,559 | INFO | >>> Training Time of DROCC: 98801.878 [s]
+2020-04-05 12:16:09,559 | INFO | >>> Finished DROCC Training.
+
+2020-04-05 12:16:09,566 | INFO | >>> Start Validating of the DROCC.
+2020-04-05 12:16:55,222 | INFO | >>> Validation Time: 45.455 [s]
+2020-04-05 12:16:55,222 | INFO | >>> Validation Loss: 2.099116
+2020-04-05 12:16:55,222 | INFO | >>> Validation AUC: 53.203%
+2020-04-05 12:16:55,222 | INFO | >>> Best Threshold for the score maximizing F1-score: 1.000
+2020-04-05 12:16:55,222 | INFO | >>> Best F1-score: 84.616%
+2020-04-05 12:16:55,222 | INFO | >>> Finished validating the DROCC.
+
+2020-04-05 12:16:55,229 | INFO | >>> Start Testing of the DROCC.
+2020-04-05 12:17:44,189 | INFO | >>> Testing Time: 48.944 [s]
+2020-04-05 12:17:44,189 | INFO | >>> Test Loss: 2.069084
+2020-04-05 12:17:44,189 | INFO | >>> Test AUC: 54.998%
+2020-04-05 12:17:44,189 | INFO | >>> Test F1-score: 84.877%
+2020-04-05 12:17:44,189 | INFO | >>> Finished testing the DROCC.
+
+2020-04-05 12:17:44,354 | INFO | Test results saved at ../../../Outputs/DROCC-LF_2020_04_04_08h49/results/DROCC-LF_results_1.json
+
+2020-04-05 12:17:44,397 | INFO | Model saved at ../../../Outputs/DROCC-LF_2020_04_04_08h49/model/DROCC-LF_model_1.pt

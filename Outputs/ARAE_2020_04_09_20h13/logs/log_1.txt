@@ -1,0 +1,372 @@
+2020-04-09 20:13:43,651 | INFO | Brief summary of experiment : 
+
+    Implementation of the unsupervised ARAE model proposed by Salehi et al (2020).
+    This unsupervised method apply a projected gradient descent algorithm to find
+    a more meaningful lattent space for the autoencoder. The encoder composed of
+    a ResNet18 encoder. The decoder is composed of a mirrored ResNet18. The latent
+    space has dimension (16,16,512).
+    
+2020-04-09 20:13:43,652 | INFO | Log file : ../../../Outputs/ARAE_2020_04_09_20h13/logs/log_1.txt
+2020-04-09 20:13:43,652 | INFO | Data path : ../../../data/PROCESSED/
+2020-04-09 20:13:43,652 | INFO | Outputs path : ../../../Outputs/ARAE_2020_04_09_20h13/
+
+2020-04-09 20:13:47,332 | INFO | Train fraction : 50%
+2020-04-09 20:13:47,332 | INFO | Fraction knonw normal : 0%
+2020-04-09 20:13:47,332 | INFO | Fraction known abnormal : 0%
+2020-04-09 20:13:47,362 | INFO | Split Summary 
++-------+----------------+------------+--------------+
+| Set   | Name           | Number [-] | Fraction [%] |
++-------+----------------+------------+--------------+
+| train | Normal         | 18975      | 100.00%      |
+| train | Abnormal       | 0          | 0.00%        |
+| train | Normal known   | 0          | 0.00%        |
+| train | Abnormal known | 0          | 0.00%        |
+| train | Unknown        | 18975      | 100.00%      |
+| ----  | ----           | ----       | ----         |
+| valid | Normal         | 2282       | 21.92%       |
+| valid | Abnormal       | 8128       | 78.08%       |
+| valid | Normal known   | 0          | 0.00%        |
+| valid | Abnormal known | 0          | 0.00%        |
+| valid | Unknown        | 10410      | 100.00%      |
+| ----  | ----           | ----       | ----         |
+| test  | Normal         | 2311       | 21.88%       |
+| test  | Abnormal       | 8251       | 78.12%       |
+| test  | Normal known   | 0          | 0.00%        |
+| test  | Abnormal known | 0          | 0.00%        |
+| test  | Unknown        | 10562      | 100.00%      |
++-------+----------------+------------+--------------+
+2020-04-09 20:13:47,362 | INFO | Online preprocessing pipeline : 
+             Grayscale()              
+                  |                   
+                  V                   
+        AutoContrast(cutoff=1)        
+                  |                   
+                  V                   
+     RandomHorizontalFlip(p=0.5)      
+                  |                   
+                  V                   
+      RandomVerticalFlip(p=0.5)       
+                  |                   
+                  V                   
+RandomBrightness(lower=0.8, upper=1.2)
+                  |                   
+                  V                   
+RandomScaling(scale_range=(0.8, 1.2)) 
+                  |                   
+                  V                   
+RandomRotation(degree_range=(-20, 20))
+                  |                   
+                  V                   
+        ResizeMax(max_len=512)        
+                  |                   
+                  V                   
+            PadToSquare()             
+                  |                   
+                  V                   
+ MinMaxNormalization(vmin=0, vmax=1)  
+                  |                   
+                  V                   
+           ToTorchTensor()            
+
+2020-04-09 20:13:47,362 | INFO | Set seed 01/01 to 1
+2020-04-09 20:13:47,363 | INFO | Device : cuda
+2020-04-09 20:13:47,363 | INFO | Number of thread : 0
+2020-04-09 20:13:47,363 | INFO | Number of dataloader worker for ARAE : 8
+
+2020-04-09 20:13:49,728 | INFO | Network : AE_ResNet18
+2020-04-09 20:13:49,729 | INFO | ResNet18 pretrained on ImageNet : False
+2020-04-09 20:13:49,999 | INFO | Network architecture: 
+----------------------------------------------------------------
+        Layer (type)               Output Shape         Param #
+================================================================
+            Conv2d-1         [16, 64, 256, 256]           9,408
+       BatchNorm2d-2         [16, 64, 256, 256]               0
+              ReLU-3         [16, 64, 256, 256]               0
+         MaxPool2d-4         [16, 64, 128, 128]               0
+            Conv2d-5         [16, 64, 128, 128]          36,864
+       BatchNorm2d-6         [16, 64, 128, 128]               0
+              ReLU-7         [16, 64, 128, 128]               0
+            Conv2d-8         [16, 64, 128, 128]          36,864
+       BatchNorm2d-9         [16, 64, 128, 128]               0
+             ReLU-10         [16, 64, 128, 128]               0
+     DownResBlock-11         [16, 64, 128, 128]               0
+           Conv2d-12         [16, 64, 128, 128]          36,864
+      BatchNorm2d-13         [16, 64, 128, 128]               0
+             ReLU-14         [16, 64, 128, 128]               0
+           Conv2d-15         [16, 64, 128, 128]          36,864
+      BatchNorm2d-16         [16, 64, 128, 128]               0
+             ReLU-17         [16, 64, 128, 128]               0
+     DownResBlock-18         [16, 64, 128, 128]               0
+           Conv2d-19          [16, 128, 64, 64]           8,192
+      BatchNorm2d-20          [16, 128, 64, 64]               0
+           Conv2d-21          [16, 128, 64, 64]          73,728
+      BatchNorm2d-22          [16, 128, 64, 64]               0
+             ReLU-23          [16, 128, 64, 64]               0
+           Conv2d-24          [16, 128, 64, 64]         147,456
+      BatchNorm2d-25          [16, 128, 64, 64]               0
+             ReLU-26          [16, 128, 64, 64]               0
+     DownResBlock-27          [16, 128, 64, 64]               0
+           Conv2d-28          [16, 128, 64, 64]         147,456
+      BatchNorm2d-29          [16, 128, 64, 64]               0
+             ReLU-30          [16, 128, 64, 64]               0
+           Conv2d-31          [16, 128, 64, 64]         147,456
+      BatchNorm2d-32          [16, 128, 64, 64]               0
+             ReLU-33          [16, 128, 64, 64]               0
+     DownResBlock-34          [16, 128, 64, 64]               0
+           Conv2d-35          [16, 256, 32, 32]          32,768
+      BatchNorm2d-36          [16, 256, 32, 32]               0
+           Conv2d-37          [16, 256, 32, 32]         294,912
+      BatchNorm2d-38          [16, 256, 32, 32]               0
+             ReLU-39          [16, 256, 32, 32]               0
+           Conv2d-40          [16, 256, 32, 32]         589,824
+      BatchNorm2d-41          [16, 256, 32, 32]               0
+             ReLU-42          [16, 256, 32, 32]               0
+     DownResBlock-43          [16, 256, 32, 32]               0
+           Conv2d-44          [16, 256, 32, 32]         589,824
+      BatchNorm2d-45          [16, 256, 32, 32]               0
+             ReLU-46          [16, 256, 32, 32]               0
+           Conv2d-47          [16, 256, 32, 32]         589,824
+      BatchNorm2d-48          [16, 256, 32, 32]               0
+             ReLU-49          [16, 256, 32, 32]               0
+     DownResBlock-50          [16, 256, 32, 32]               0
+           Conv2d-51          [16, 512, 16, 16]         131,072
+      BatchNorm2d-52          [16, 512, 16, 16]               0
+           Conv2d-53          [16, 512, 16, 16]       1,179,648
+      BatchNorm2d-54          [16, 512, 16, 16]               0
+             ReLU-55          [16, 512, 16, 16]               0
+           Conv2d-56          [16, 512, 16, 16]       2,359,296
+      BatchNorm2d-57          [16, 512, 16, 16]               0
+             ReLU-58          [16, 512, 16, 16]               0
+     DownResBlock-59          [16, 512, 16, 16]               0
+           Conv2d-60          [16, 512, 16, 16]       2,359,296
+      BatchNorm2d-61          [16, 512, 16, 16]               0
+             ReLU-62          [16, 512, 16, 16]               0
+           Conv2d-63          [16, 512, 16, 16]       2,359,296
+      BatchNorm2d-64          [16, 512, 16, 16]               0
+             ReLU-65          [16, 512, 16, 16]               0
+     DownResBlock-66          [16, 512, 16, 16]               0
+ ResNet18_Encoder-67          [16, 512, 16, 16]               0
+           Conv2d-68          [16, 512, 16, 16]       2,359,296
+      BatchNorm2d-69          [16, 512, 16, 16]               0
+             ReLU-70          [16, 512, 16, 16]               0
+           Conv2d-71          [16, 512, 16, 16]       2,359,296
+      BatchNorm2d-72          [16, 512, 16, 16]               0
+             ReLU-73          [16, 512, 16, 16]               0
+       UpResBlock-74          [16, 512, 16, 16]               0
+           Conv2d-75          [16, 512, 16, 16]       2,359,296
+      BatchNorm2d-76          [16, 512, 16, 16]               0
+             ReLU-77          [16, 512, 16, 16]               0
+         Upsample-78          [16, 512, 32, 32]               0
+           Conv2d-79          [16, 256, 32, 32]         131,072
+      BatchNorm2d-80          [16, 256, 32, 32]               0
+         Upsample-81          [16, 512, 32, 32]               0
+           Conv2d-82          [16, 256, 32, 32]         131,072
+      BatchNorm2d-83          [16, 256, 32, 32]               0
+             ReLU-84          [16, 256, 32, 32]               0
+       UpResBlock-85          [16, 256, 32, 32]               0
+           Conv2d-86          [16, 256, 32, 32]         589,824
+      BatchNorm2d-87          [16, 256, 32, 32]               0
+             ReLU-88          [16, 256, 32, 32]               0
+           Conv2d-89          [16, 256, 32, 32]         589,824
+      BatchNorm2d-90          [16, 256, 32, 32]               0
+             ReLU-91          [16, 256, 32, 32]               0
+       UpResBlock-92          [16, 256, 32, 32]               0
+           Conv2d-93          [16, 256, 32, 32]         589,824
+      BatchNorm2d-94          [16, 256, 32, 32]               0
+             ReLU-95          [16, 256, 32, 32]               0
+         Upsample-96          [16, 256, 64, 64]               0
+           Conv2d-97          [16, 128, 64, 64]          32,768
+      BatchNorm2d-98          [16, 128, 64, 64]               0
+         Upsample-99          [16, 256, 64, 64]               0
+          Conv2d-100          [16, 128, 64, 64]          32,768
+     BatchNorm2d-101          [16, 128, 64, 64]               0
+            ReLU-102          [16, 128, 64, 64]               0
+      UpResBlock-103          [16, 128, 64, 64]               0
+          Conv2d-104          [16, 128, 64, 64]         147,456
+     BatchNorm2d-105          [16, 128, 64, 64]               0
+            ReLU-106          [16, 128, 64, 64]               0
+          Conv2d-107          [16, 128, 64, 64]         147,456
+     BatchNorm2d-108          [16, 128, 64, 64]               0
+            ReLU-109          [16, 128, 64, 64]               0
+      UpResBlock-110          [16, 128, 64, 64]               0
+          Conv2d-111          [16, 128, 64, 64]         147,456
+     BatchNorm2d-112          [16, 128, 64, 64]               0
+            ReLU-113          [16, 128, 64, 64]               0
+        Upsample-114        [16, 128, 128, 128]               0
+          Conv2d-115         [16, 64, 128, 128]           8,192
+     BatchNorm2d-116         [16, 64, 128, 128]               0
+        Upsample-117        [16, 128, 128, 128]               0
+          Conv2d-118         [16, 64, 128, 128]           8,192
+     BatchNorm2d-119         [16, 64, 128, 128]               0
+            ReLU-120         [16, 64, 128, 128]               0
+      UpResBlock-121         [16, 64, 128, 128]               0
+          Conv2d-122         [16, 64, 128, 128]          36,864
+     BatchNorm2d-123         [16, 64, 128, 128]               0
+            ReLU-124         [16, 64, 128, 128]               0
+          Conv2d-125         [16, 64, 128, 128]          36,864
+     BatchNorm2d-126         [16, 64, 128, 128]               0
+            ReLU-127         [16, 64, 128, 128]               0
+      UpResBlock-128         [16, 64, 128, 128]               0
+          Conv2d-129         [16, 64, 128, 128]          36,864
+     BatchNorm2d-130         [16, 64, 128, 128]               0
+            ReLU-131         [16, 64, 128, 128]               0
+        Upsample-132         [16, 64, 256, 256]               0
+          Conv2d-133         [16, 64, 256, 256]           4,096
+     BatchNorm2d-134         [16, 64, 256, 256]               0
+        Upsample-135         [16, 64, 256, 256]               0
+          Conv2d-136         [16, 64, 256, 256]           4,096
+     BatchNorm2d-137         [16, 64, 256, 256]               0
+            ReLU-138         [16, 64, 256, 256]               0
+      UpResBlock-139         [16, 64, 256, 256]               0
+        Upsample-140         [16, 64, 512, 512]               0
+          Conv2d-141          [16, 1, 512, 512]              64
+            Tanh-142          [16, 1, 512, 512]               0
+ResNet18_Decoder-143          [16, 1, 512, 512]               0
+================================================================
+Total params: 20,919,552
+Trainable params: 20,919,552
+Non-trainable params: 0
+----------------------------------------------------------------
+Input size (MB): 16.00
+Forward/backward pass size (MB): 16144.00
+Params size (MB): 79.80
+Estimated Total Size (MB): 16239.80
+----------------------------------------------------------------
+
+
+2020-04-09 20:13:49,999 | INFO | ARAE epsilon : 0.05
+2020-04-09 20:13:50,000 | INFO | ARAE adversarial importance gamma : 0.1
+2020-04-09 20:13:50,000 | INFO | ARAE number of epoch : 100
+2020-04-09 20:13:50,000 | INFO | ARAE number of adversarial search epoch: 4
+2020-04-09 20:13:50,000 | INFO | ARAE learning rate : 0.001
+2020-04-09 20:13:50,000 | INFO | ARAE adversarial search learning rate : 0.1
+2020-04-09 20:13:50,000 | INFO | ARAE learning rate milestone : [30, 50, 70]
+2020-04-09 20:13:50,000 | INFO | ARAE weight_decay : 1e-06
+2020-04-09 20:13:50,000 | INFO | ARAE optimizer : Adam
+2020-04-09 20:13:50,000 | INFO | ARAE batch_size 16
+2020-04-09 20:13:50,000 | INFO | ARAE number of dataloader worker : 8
+2020-04-09 20:13:50,002 | INFO | >>> Start Training the ARAE.
+2020-04-09 20:44:08,149 | INFO | | Epoch: 001/100 | Train Time: 1818.145 [s] | Train Loss: 0.015316 |
+2020-04-09 21:14:42,607 | INFO | | Epoch: 002/100 | Train Time: 1834.458 [s] | Train Loss: 0.009710 |
+2020-04-09 21:45:19,330 | INFO | | Epoch: 003/100 | Train Time: 1836.723 [s] | Train Loss: 0.007930 |
+2020-04-09 22:15:54,231 | INFO | | Epoch: 004/100 | Train Time: 1834.900 [s] | Train Loss: 0.007202 |
+2020-04-09 22:46:26,675 | INFO | | Epoch: 005/100 | Train Time: 1832.443 [s] | Train Loss: 0.007147 |
+2020-04-09 23:16:58,585 | INFO | | Epoch: 006/100 | Train Time: 1831.909 [s] | Train Loss: 0.006536 |
+2020-04-09 23:47:28,260 | INFO | | Epoch: 007/100 | Train Time: 1829.674 [s] | Train Loss: 0.006326 |
+2020-04-10 00:17:58,355 | INFO | | Epoch: 008/100 | Train Time: 1830.095 [s] | Train Loss: 0.005985 |
+2020-04-10 00:48:27,409 | INFO | | Epoch: 009/100 | Train Time: 1829.053 [s] | Train Loss: 0.005530 |
+2020-04-10 01:18:55,163 | INFO | | Epoch: 010/100 | Train Time: 1827.754 [s] | Train Loss: 0.005224 |
+2020-04-10 01:49:21,578 | INFO | | Epoch: 011/100 | Train Time: 1826.415 [s] | Train Loss: 0.010541 |
+2020-04-10 02:19:47,610 | INFO | | Epoch: 012/100 | Train Time: 1826.031 [s] | Train Loss: 0.007682 |
+2020-04-10 02:50:13,364 | INFO | | Epoch: 013/100 | Train Time: 1825.753 [s] | Train Loss: 0.006123 |
+2020-04-10 03:20:38,882 | INFO | | Epoch: 014/100 | Train Time: 1825.518 [s] | Train Loss: 0.005591 |
+2020-04-10 03:51:03,011 | INFO | | Epoch: 015/100 | Train Time: 1824.128 [s] | Train Loss: 0.005276 |
+2020-04-10 04:21:26,810 | INFO | | Epoch: 016/100 | Train Time: 1823.799 [s] | Train Loss: 0.004846 |
+2020-04-10 04:51:51,213 | INFO | | Epoch: 017/100 | Train Time: 1824.402 [s] | Train Loss: 0.004547 |
+2020-04-10 05:22:15,085 | INFO | | Epoch: 018/100 | Train Time: 1823.871 [s] | Train Loss: 0.004472 |
+2020-04-10 05:52:38,415 | INFO | | Epoch: 019/100 | Train Time: 1823.329 [s] | Train Loss: 0.004263 |
+2020-04-10 06:23:00,881 | INFO | | Epoch: 020/100 | Train Time: 1822.465 [s] | Train Loss: 0.004091 |
+2020-04-10 06:53:23,152 | INFO | | Epoch: 021/100 | Train Time: 1822.270 [s] | Train Loss: 0.004172 |
+2020-04-10 07:23:43,898 | INFO | | Epoch: 022/100 | Train Time: 1820.746 [s] | Train Loss: 0.003924 |
+2020-04-10 07:54:04,425 | INFO | | Epoch: 023/100 | Train Time: 1820.526 [s] | Train Loss: 0.004052 |
+2020-04-10 08:24:26,035 | INFO | | Epoch: 024/100 | Train Time: 1821.609 [s] | Train Loss: 0.003970 |
+2020-04-10 08:54:47,617 | INFO | | Epoch: 025/100 | Train Time: 1821.582 [s] | Train Loss: 0.003956 |
+2020-04-10 09:25:10,429 | INFO | | Epoch: 026/100 | Train Time: 1822.811 [s] | Train Loss: 0.003928 |
+2020-04-10 09:55:31,445 | INFO | | Epoch: 027/100 | Train Time: 1821.016 [s] | Train Loss: 0.003749 |
+2020-04-10 10:25:52,118 | INFO | | Epoch: 028/100 | Train Time: 1820.673 [s] | Train Loss: 0.003851 |
+2020-04-10 10:56:14,099 | INFO | | Epoch: 029/100 | Train Time: 1821.980 [s] | Train Loss: 0.003754 |
+2020-04-10 11:26:36,836 | INFO | | Epoch: 030/100 | Train Time: 1822.736 [s] | Train Loss: 0.003650 |
+2020-04-10 11:26:36,836 | INFO | >>> LR Scheduler : new learning rate 1e-05
+2020-04-10 11:57:00,467 | INFO | | Epoch: 031/100 | Train Time: 1823.631 [s] | Train Loss: 0.003037 |
+2020-04-10 12:27:23,379 | INFO | | Epoch: 032/100 | Train Time: 1822.911 [s] | Train Loss: 0.002968 |
+2020-04-10 12:57:46,700 | INFO | | Epoch: 033/100 | Train Time: 1823.320 [s] | Train Loss: 0.002821 |
+2020-04-10 13:28:11,254 | INFO | | Epoch: 034/100 | Train Time: 1824.553 [s] | Train Loss: 0.002720 |
+2020-04-10 13:58:36,804 | INFO | | Epoch: 035/100 | Train Time: 1825.549 [s] | Train Loss: 0.002661 |
+2020-04-10 14:29:02,983 | INFO | | Epoch: 036/100 | Train Time: 1826.179 [s] | Train Loss: 0.002666 |
+2020-04-10 14:59:30,772 | INFO | | Epoch: 037/100 | Train Time: 1827.789 [s] | Train Loss: 0.002614 |
+2020-04-10 15:29:59,941 | INFO | | Epoch: 038/100 | Train Time: 1829.168 [s] | Train Loss: 0.002618 |
+2020-04-10 16:00:29,370 | INFO | | Epoch: 039/100 | Train Time: 1829.429 [s] | Train Loss: 0.002578 |
+2020-04-10 16:31:01,248 | INFO | | Epoch: 040/100 | Train Time: 1831.877 [s] | Train Loss: 0.002500 |
+2020-04-10 17:01:35,859 | INFO | | Epoch: 041/100 | Train Time: 1834.611 [s] | Train Loss: 0.002453 |
+2020-04-10 17:32:11,067 | INFO | | Epoch: 042/100 | Train Time: 1835.208 [s] | Train Loss: 0.002399 |
+2020-04-10 18:02:46,843 | INFO | | Epoch: 043/100 | Train Time: 1835.775 [s] | Train Loss: 0.002383 |
+2020-04-10 18:33:22,213 | INFO | | Epoch: 044/100 | Train Time: 1835.370 [s] | Train Loss: 0.002322 |
+2020-04-10 19:03:58,491 | INFO | | Epoch: 045/100 | Train Time: 1836.276 [s] | Train Loss: 0.002310 |
+2020-04-10 19:34:35,201 | INFO | | Epoch: 046/100 | Train Time: 1836.710 [s] | Train Loss: 0.002298 |
+2020-04-10 20:05:12,166 | INFO | | Epoch: 047/100 | Train Time: 1836.964 [s] | Train Loss: 0.002287 |
+2020-04-10 20:35:49,281 | INFO | | Epoch: 048/100 | Train Time: 1837.115 [s] | Train Loss: 0.002262 |
+2020-04-10 21:06:25,738 | INFO | | Epoch: 049/100 | Train Time: 1836.456 [s] | Train Loss: 0.002243 |
+2020-04-10 21:37:01,204 | INFO | | Epoch: 050/100 | Train Time: 1835.465 [s] | Train Loss: 0.002205 |
+2020-04-10 21:37:01,204 | INFO | >>> LR Scheduler : new learning rate 1e-06
+2020-04-10 22:07:35,800 | INFO | | Epoch: 051/100 | Train Time: 1834.596 [s] | Train Loss: 0.002066 |
+2020-04-10 22:38:08,699 | INFO | | Epoch: 052/100 | Train Time: 1832.898 [s] | Train Loss: 0.002060 |
+2020-04-10 23:08:42,062 | INFO | | Epoch: 053/100 | Train Time: 1833.362 [s] | Train Loss: 0.002047 |
+2020-04-10 23:39:13,962 | INFO | | Epoch: 054/100 | Train Time: 1831.900 [s] | Train Loss: 0.002050 |
+2020-04-11 00:09:43,720 | INFO | | Epoch: 055/100 | Train Time: 1829.757 [s] | Train Loss: 0.002060 |
+2020-04-11 00:40:11,180 | INFO | | Epoch: 056/100 | Train Time: 1827.460 [s] | Train Loss: 0.002048 |
+2020-04-11 01:10:38,691 | INFO | | Epoch: 057/100 | Train Time: 1827.510 [s] | Train Loss: 0.002061 |
+2020-04-11 01:41:03,401 | INFO | | Epoch: 058/100 | Train Time: 1824.709 [s] | Train Loss: 0.002070 |
+2020-04-11 02:11:28,082 | INFO | | Epoch: 059/100 | Train Time: 1824.680 [s] | Train Loss: 0.002077 |
+2020-04-11 02:41:51,762 | INFO | | Epoch: 060/100 | Train Time: 1823.679 [s] | Train Loss: 0.002087 |
+2020-04-11 03:12:15,454 | INFO | | Epoch: 061/100 | Train Time: 1823.691 [s] | Train Loss: 0.002132 |
+2020-04-11 03:42:39,587 | INFO | | Epoch: 062/100 | Train Time: 1824.132 [s] | Train Loss: 0.002107 |
+2020-04-11 04:13:03,047 | INFO | | Epoch: 063/100 | Train Time: 1823.459 [s] | Train Loss: 0.002114 |
+2020-04-11 04:43:26,609 | INFO | | Epoch: 064/100 | Train Time: 1823.561 [s] | Train Loss: 0.002186 |
+2020-04-11 05:13:51,308 | INFO | | Epoch: 065/100 | Train Time: 1824.698 [s] | Train Loss: 0.002148 |
+2020-04-11 05:44:17,919 | INFO | | Epoch: 066/100 | Train Time: 1826.611 [s] | Train Loss: 0.002175 |
+2020-04-11 06:14:43,983 | INFO | | Epoch: 067/100 | Train Time: 1826.062 [s] | Train Loss: 0.002142 |
+2020-04-11 06:45:08,342 | INFO | | Epoch: 068/100 | Train Time: 1824.359 [s] | Train Loss: 0.002161 |
+2020-04-11 07:15:29,161 | INFO | | Epoch: 069/100 | Train Time: 1820.819 [s] | Train Loss: 0.002143 |
+2020-04-11 07:45:48,450 | INFO | | Epoch: 070/100 | Train Time: 1819.288 [s] | Train Loss: 0.002140 |
+2020-04-11 07:45:48,450 | INFO | >>> LR Scheduler : new learning rate 1e-07
+2020-04-11 08:16:06,843 | INFO | | Epoch: 071/100 | Train Time: 1818.392 [s] | Train Loss: 0.002095 |
+2020-04-11 08:46:26,421 | INFO | | Epoch: 072/100 | Train Time: 1819.578 [s] | Train Loss: 0.002081 |
+2020-04-11 09:16:47,581 | INFO | | Epoch: 073/100 | Train Time: 1821.159 [s] | Train Loss: 0.002088 |
+2020-04-11 09:47:09,502 | INFO | | Epoch: 074/100 | Train Time: 1821.921 [s] | Train Loss: 0.002089 |
+2020-04-11 10:17:31,485 | INFO | | Epoch: 075/100 | Train Time: 1821.982 [s] | Train Loss: 0.002084 |
+2020-04-11 10:47:54,271 | INFO | | Epoch: 076/100 | Train Time: 1822.786 [s] | Train Loss: 0.002092 |
+2020-04-11 11:18:17,672 | INFO | | Epoch: 077/100 | Train Time: 1823.399 [s] | Train Loss: 0.002093 |
+2020-04-11 11:48:41,254 | INFO | | Epoch: 078/100 | Train Time: 1823.582 [s] | Train Loss: 0.002100 |
+2020-04-11 12:19:05,983 | INFO | | Epoch: 079/100 | Train Time: 1824.728 [s] | Train Loss: 0.002102 |
+2020-04-11 12:49:31,623 | INFO | | Epoch: 080/100 | Train Time: 1825.639 [s] | Train Loss: 0.002095 |
+2020-04-11 13:19:57,894 | INFO | | Epoch: 081/100 | Train Time: 1826.271 [s] | Train Loss: 0.002100 |
+2020-04-11 13:50:25,267 | INFO | | Epoch: 082/100 | Train Time: 1827.372 [s] | Train Loss: 0.002105 |
+2020-04-11 14:20:53,106 | INFO | | Epoch: 083/100 | Train Time: 1827.839 [s] | Train Loss: 0.002105 |
+2020-04-11 14:51:27,495 | INFO | | Epoch: 084/100 | Train Time: 1834.389 [s] | Train Loss: 0.002107 |
+2020-04-11 15:22:03,675 | INFO | | Epoch: 085/100 | Train Time: 1836.180 [s] | Train Loss: 0.002106 |
+2020-04-11 15:52:36,674 | INFO | | Epoch: 086/100 | Train Time: 1832.998 [s] | Train Loss: 0.002105 |
+2020-04-11 16:23:15,340 | INFO | | Epoch: 087/100 | Train Time: 1838.665 [s] | Train Loss: 0.002087 |
+2020-04-11 16:53:55,891 | INFO | | Epoch: 088/100 | Train Time: 1840.550 [s] | Train Loss: 0.002093 |
+2020-04-11 17:24:32,738 | INFO | | Epoch: 089/100 | Train Time: 1836.847 [s] | Train Loss: 0.002107 |
+2020-04-11 17:55:08,672 | INFO | | Epoch: 090/100 | Train Time: 1835.934 [s] | Train Loss: 0.002116 |
+2020-04-11 18:25:42,824 | INFO | | Epoch: 091/100 | Train Time: 1834.150 [s] | Train Loss: 0.002101 |
+2020-04-11 18:56:18,560 | INFO | | Epoch: 092/100 | Train Time: 1835.736 [s] | Train Loss: 0.002096 |
+2020-04-11 19:26:55,711 | INFO | | Epoch: 093/100 | Train Time: 1837.150 [s] | Train Loss: 0.002100 |
+2020-04-11 19:57:33,905 | INFO | | Epoch: 094/100 | Train Time: 1838.194 [s] | Train Loss: 0.002103 |
+2020-04-11 20:28:11,532 | INFO | | Epoch: 095/100 | Train Time: 1837.626 [s] | Train Loss: 0.002103 |
+2020-04-11 20:58:49,110 | INFO | | Epoch: 096/100 | Train Time: 1837.577 [s] | Train Loss: 0.002093 |
+2020-04-11 21:29:25,877 | INFO | | Epoch: 097/100 | Train Time: 1836.767 [s] | Train Loss: 0.002098 |
+2020-04-11 22:00:01,790 | INFO | | Epoch: 098/100 | Train Time: 1835.912 [s] | Train Loss: 0.002087 |
+2020-04-11 22:30:36,867 | INFO | | Epoch: 099/100 | Train Time: 1835.076 [s] | Train Loss: 0.002084 |
+2020-04-11 23:01:12,368 | INFO | | Epoch: 100/100 | Train Time: 1835.500 [s] | Train Loss: 0.002082 |
+2020-04-11 23:01:12,368 | INFO | >>> Training Time of ARAE: 182842.365 [s]
+2020-04-11 23:01:12,368 | INFO | >>> Finished ARAE Training.
+
+2020-04-11 23:01:12,375 | INFO | >>> Start Validating of the ARAE.
+2020-04-11 23:02:22,368 | INFO | >>> Validation Time: 69.770 [s]
+2020-04-11 23:02:22,368 | INFO | >>> Validation Loss: 0.002411
+2020-04-11 23:02:22,368 | INFO | >>> Validation AUC: 52.411%
+2020-04-11 23:02:22,368 | INFO | >>> Best Threshold for the score maximizing F1-score: 0.000
+2020-04-11 23:02:22,368 | INFO | >>> Best F1-score: 87.662%
+2020-04-11 23:02:22,369 | INFO | >>> Finished validating the ARAE.
+
+2020-04-11 23:02:22,375 | INFO | >>> Start Testing of the ARAE.
+2020-04-11 23:03:34,194 | INFO | >>> Testing Time: 71.796 [s]
+2020-04-11 23:03:34,194 | INFO | >>> Test Loss: 0.002397
+2020-04-11 23:03:34,194 | INFO | >>> Test AUC: 53.349%
+2020-04-11 23:03:34,194 | INFO | >>> Test F1-score: 87.667%
+2020-04-11 23:03:34,194 | INFO | >>> Finished testing the ARAE.
+
+2020-04-11 23:03:34,388 | INFO | Test results saved at ../../../Outputs/ARAE_2020_04_09_20h13/results/ARAE_results_1.json
+
+2020-04-11 23:03:34,464 | INFO | Model saved at ../../../Outputs/ARAE_2020_04_09_20h13/model/ARAE_model_1.pt
