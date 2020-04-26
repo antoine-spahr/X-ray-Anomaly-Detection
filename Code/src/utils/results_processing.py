@@ -34,7 +34,7 @@ def load_experiment_results(path, exp_folders, exp_names):
 
     return results_all
 
-def scores_as_df(results_json, set):
+def scores_as_df(results_json, set, em_col=['index', 'label', 'scores']):
     """
     Make a pandas Dataframe from the scores in the JSON results object for the
     given set.
@@ -46,7 +46,7 @@ def scores_as_df(results_json, set):
         |---- df (pd.DataFrame) the scores in a Dataframe.
     """
     df_em = pd.DataFrame(data=np.array(results_json['embedding'][set]['scores']),
-                         columns=['index', 'label', 'scores'])
+                         columns=em_col)
     df_rec = pd.DataFrame(data=np.array(results_json['reconstruction'][set]['scores']),
                           columns=['index', 'label', 'scores'])
     df = pd.merge(df_em, df_rec, how='inner', left_on='index', right_on='index', suffixes=('_em', '_rec'))
@@ -194,11 +194,11 @@ def plot_scores_dist1D(scores, labels, ax=None, colors=['forestgreen', 'tomato']
     scores_1 = scores[labels == 1]
 
     # abnormal distribution
-    ax.hist(scores_1, bins=nbin, log=True, density=density, histtype='bar', color=colors[1], alpha=alpha)
+    ax.hist(scores_1, bins=nbin, log=True, density=density, histtype='bar', color=colors[1], alpha=alpha, range=(scores.min(), scores.max()))
     #ax.hist(scores_1, bins=nbin, log=True, density=density, histtype='step', color=colors[1])
 
     # normal distribution
-    ax.hist(scores_0, bins=nbin, log=True, density=density, histtype='bar', color=colors[0], alpha=alpha)
+    ax.hist(scores_0, bins=nbin, log=True, density=density, histtype='bar', color=colors[0], alpha=alpha, range=(scores.min(), scores.max()))
     #ax.hist(scores_0, bins=nbin, log=True, density=density, histtype='step', color=colors[0])
 
     ax.set_ylim(ax.get_ylim())
@@ -255,7 +255,7 @@ def plot_scores_dist2D(scores_1, scores_2, labels, kde=True, scatter=True, ax=No
     ax.spines['right'].set_visible(False)
     ax.tick_params(labelsize=fontsize)
 
-def metric_curves(results_list, scores_name=None, set='valid', curves=['roc', 'prc'], areas=False, ax=None, fontsize=12):
+def metric_curves(results_list, scores_name=None, set='valid', curves=['roc', 'prc'], areas=False, ax=None, fontsize=12, em_col=['index', 'label', 'scores', 'Nsphere']):
     """
     Plot the ROC and/or Precision recall curves on the given axes for all the
     replicates on results_list.
@@ -269,10 +269,10 @@ def metric_curves(results_list, scores_name=None, set='valid', curves=['roc', 'p
     for results in results_list:
         if scores_name is None:
             df = pd.DataFrame(data=np.array(results[set]['scores']),
-                              columns=['index', 'label', 'scores'])
+                              columns=em_col)
             scores_name_tmp = 'scores'
         else:
-            df = scores_as_df(results, set)
+            df = scores_as_df(results, set, em_col=em_col)
             scores_name_tmp = scores_name
 
 

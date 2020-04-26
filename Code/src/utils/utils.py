@@ -7,9 +7,9 @@ from collections import OrderedDict
 import numpy as np
 
 import warnings
+import os
 
-
-def print_progessbar(N, Max, Name='', Size=10, end_char=''):
+def print_progessbar(N, Max, Name='', Size=10, end_char='', erase=False):
     """
     Print a progress bar. To be used in a for-loop and called at each iteration
     with the iteration number and the max number of iteration.
@@ -20,16 +20,20 @@ def print_progessbar(N, Max, Name='', Size=10, end_char=''):
         |---- Name (str) an optional name for the progress bar
         |---- Size (int) the size of the progress bar
         |---- end_char (str) the print end parameter to used in the end of the
-        |                    of the progress bar (default is '')
+        |                    progress bar (default is '')
+        |---- erase (bool) whether to erase the progress bar when 100% is reached.
     OUTPUT
         |---- None
     """
-    print(f'\r{Name} {N+1:04d}/{Max:04d}'.ljust(len(Name) + 12) \
-        + f'[{"#"*int(Size*(N+1)/Max)}'.ljust(Size+1) + f'] {(N+1)/Max:.1%}'.ljust(6), \
-        end=end_char)
-    # int(100*(N+1)/Max)
+    print(f'{Name} {N+1:04d}/{Max:04d}'.ljust(len(Name) + 12) \
+        + f'|{"█"*int(Size*(N+1)/Max)}'.ljust(Size+1) + f'| {(N+1)/Max:.1%}'.ljust(6), \
+        end='\r')
+
     if N+1 == Max:
-        print('')
+        if erase:
+            print(' '.ljust(len(Name) + Size + 40), end='\r')
+        else:
+            print('')
 
 def print_param_summary(**params):
     """
@@ -218,7 +222,7 @@ def get_best_threshold(scores, label, metric):
         |           the best_threshold.
     """
     thresholds = np.linspace(scores.min(), scores.max(), 50)
-    best_threshold = None
+    best_threshold = scores.min()
     best_metric_val = 0.0
 
     for t in thresholds:
@@ -227,7 +231,7 @@ def get_best_threshold(scores, label, metric):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             val = metric(label, pred)
-        if val > best_metric_val:
+        if val >= best_metric_val:
             best_metric_val, best_threshold = val, t
 
     return best_threshold, best_metric_val

@@ -16,7 +16,7 @@ class MURA_Dataset(data.Dataset):
     handle the loading of a mask and semi.supervized labels.
     """
     def __init__(self, sample_df, data_path, load_semilabels=True, load_mask=True,
-                 output_size=512):
+                 output_size=512, data_augmentation=True):
         """
         Constructor of the dataset.
         ----------
@@ -27,23 +27,32 @@ class MURA_Dataset(data.Dataset):
             |---- load_semilabels (bool) whether to load the semi-supervized labels.
             |---- load_mask (bool) whether to load the mask.
             |---- output_size (int) the size of the output squared image.
+            |---- data_augmentation (bool) whether to perform data augmentation.
         """
         data.Dataset.__init__(self)
         self.sample_df = sample_df
         self.data_path = data_path
         self.load_semilabels = load_semilabels
         self.load_mask = load_mask
-        self.transform = tf.Compose(tf.Grayscale(), \
-                                    tf.AutoContrast(cutoff=1), \
-                                    tf.RandomHorizontalFlip(p=0.5), \
-                                    tf.RandomVerticalFlip(p=0.5), \
-                                    tf.RandomBrightness(lower=0.8, upper=1.2), \
-                                    tf.RandomScaling(scale_range=(0.8,1.2)), \
-                                    tf.RandomRotation(degree_range=(-20,20)), \
-                                    tf.ResizeMax(output_size), \
-                                    tf.PadToSquare(), \
-                                    tf.MinMaxNormalization(), \
-                                    tf.ToTorchTensor())
+        if data_augmentation:
+            self.transform = tf.Compose(tf.Grayscale(), \
+                                        tf.AutoContrast(cutoff=1), \
+                                        tf.RandomHorizontalFlip(p=0.5), \
+                                        tf.RandomVerticalFlip(p=0.5), \
+                                        tf.RandomBrightness(lower=0.8, upper=1.2), \
+                                        tf.RandomScaling(scale_range=(0.8,1.2)), \
+                                        tf.RandomRotation(degree_range=(-20,20)), \
+                                        tf.ResizeMax(output_size), \
+                                        tf.PadToSquare(), \
+                                        tf.MinMaxNormalization(), \
+                                        tf.ToTorchTensor())
+        else:
+            self.transform = tf.Compose(tf.Grayscale(), \
+                                        tf.AutoContrast(cutoff=1), \
+                                        tf.ResizeMax(output_size), \
+                                        tf.PadToSquare(), \
+                                        tf.MinMaxNormalization(), \
+                                        tf.ToTorchTensor())
 
     def __len__(self):
         """
