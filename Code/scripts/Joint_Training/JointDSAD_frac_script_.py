@@ -18,7 +18,7 @@ from src.utils.utils import summary_string
 #                                Settings                                      #
 ################################################################################
 # Import Export
-Experiment_Name = 'JointDSAD_Elbow01%'
+Experiment_Name = 'JointDSAD_Frac'
 DATA_PATH = r'../../../data/PROCESSED/'
 DATA_INFO_PATH = r'../../../data/data_info.csv'
 OUTPUT_PATH = r'../../../Outputs/' + Experiment_Name + '_' + datetime.today().strftime('%Y_%m_%d_%Hh%M')+'/'
@@ -30,14 +30,13 @@ if not os.path.isdir(OUTPUT_PATH+'logs/'): os.makedirs(OUTPUT_PATH+'logs/')
 # General
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 n_thread = 0
-n_seeds = 1
-seeds = [int(''.join(['1']*(i+1))) for i in range(n_seeds)]
+seed = 1
 print_batch_progress = True
 
 # Datasets
 train_frac = 0.5
-ratio_known_normal = 0.0025
-ratio_known_abnormal = 0.0025
+ratio_known_normal = 0.05
+ratio_known_abnormal = [0.000, 0.0025, 0.005, 0.010, 0.050, 0.100]
 n_jobs_dataloader = 8
 batch_size = 16
 img_size = 512
@@ -48,11 +47,11 @@ lr_milestone = [40,80]
 n_epoch = 100
 n_epoch_pretrain = 5
 weight_decay = 1e-6
-criterion_weight = (0.6, 0.4)
+criterion_weight = (0.5, 0.5)
 model_path_to_load = None
 
 # Network
-eta = 1.0
+eta = 1.0 # <<<<< change to zero to get DeepSVDD (only unsupervized)
 ae_pretrain = False
 ae_out_size = (1, img_size, img_size)
 
@@ -60,26 +59,10 @@ ae_out_size = (1, img_size, img_size)
 #                                Training                                      #
 ################################################################################
 
-def main(seed_i):
+def main(ratio_known_abnormal_i):
     """
-    Train jointly the AutoEncoder and the DeepSAD model following Lukas Ruff et
-    al. (2019) work adapted to the MURA dataset (preprocessing inspired from the
-    work of Davletshina et al. (2020)). The network structure is a ResNet18
-    AutoEncoder until the Adaptative average pooling layer. The AE embdedding is
-    thus (512, 16, 16). This embdedding is further processed through 3 convolutional
-    layers (specific to the SVDD embdedding generation) to provide the SVDD
-    embdedding of 512. The network is trained with two loss functions: a masked MSE
-    loss for the reconstruction and the DeepSAD loss on the embedding. The two
-    losses are scaled to be comparable by perfoming one forward pass prior the
-    training. The Encoder is not initialized with weights trained on ImageNet.
-    The AE masked reconstruction loss is not computed for known abnormal sample
-    so that the AE learn to reconstruct normal samples only. The network input is
-    masked with the mask : only the body part is kept and the background is set
-    to zero. The AE is pretrained over 5 epochs in order to improve the initialization
-    of the hypersphere center (we hypothetize that with a pretrained AE the
-    hypersphere center estimation will be more meaningful). The DSAD is only
-    trained with hand images to observe the perofrmance with less modes in the
-    data distributions.
+    Joint DSAD experiment with different fraction of known abnormal sample : 0.0%
+    0.25% 0.5% 1.0% 5.0% and 10.0% over a single replicate.
     """
     # initialize logger
     logging.basicConfig(level=logging.INFO)
@@ -91,7 +74,7 @@ def main(seed_i):
         pass
     logger.setLevel(logging.INFO)
     formatter = logging.Formatter('%(asctime)s | %(levelname)s | %(message)s')
-    log_file = OUTPUT_PATH + 'logs/' + f'log_{seed_i+1}.txt'
+    log_file = OUTPUT_PATH + 'logs/' + f'log_{ratio_known_abnormal_i:.2%}.txt'
     file_handler = logging.FileHandler(log_file)
     file_handler.setLevel(logging.INFO)
     file_handler.setFormatter(formatter)
@@ -109,13 +92,11 @@ def main(seed_i):
     df_info = df_info.drop(df_info.columns[0], axis=1)
     # remove low contrast images (all black)
     df_info = df_info[df_info.low_contrast == 0]
-    # keep only hands images
-    df_info = df_info[df_info.body_part == 'ELBOW']
 
     # Train Validation Test Split
     spliter = MURA_TrainValidTestSplitter(df_info, train_frac=train_frac,
                                           ratio_known_normal=ratio_known_normal,
-                                          ratio_known_abnormal=ratio_known_abnormal, random_state=42)
+                                          ratio_known_abnormal=ratio_known_abnormal_i, random_state=42)
     spliter.split_data(verbose=False)
     train_df = spliter.get_subset('train')
     valid_df = spliter.get_subset('valid')
@@ -133,22 +114,19 @@ def main(seed_i):
     # print info to logger
     logger.info(f'Train fraction : {train_frac:.0%}')
     logger.info(f'Fraction knonw normal : {ratio_known_normal:.0%}')
-    logger.info(f'Fraction known abnormal : {ratio_known_abnormal:.0%}')
+    logger.info(f'Fraction known abnormal : {ratio_known_abnormal_i:.0%}')
     logger.info('Split Summary \n' + str(spliter.print_stat(returnTable=True)))
     logger.info('Online preprocessing pipeline : \n' + str(train_dataset.transform) + '\n')
 
     ################################ Set Up ####################################
     # Set seed
-    seed = seeds[seed_i]
     if seed != -1:
         random.seed(seed)
         np.random.seed(seed)
         torch.manual_seed(seed)
         torch.cuda.manual_seed(seed)
-        #torch.cuda.manual_seed_all(seed)
         torch.backends.cudnn.deterministic = True
-        #torch.backends.cudnn.benchmark = False
-        logger.info(f'Set seed {seed_i+1:02}/{n_seeds:02} to {seed}')
+        logger.info(f'Set seed to {seed}')
 
     # set number of thread
     if n_thread > 0:
@@ -192,7 +170,8 @@ def main(seed_i):
     jointDeepSAD.train(train_dataset, lr=lr, n_epoch=n_epoch, n_epoch_pretrain=n_epoch_pretrain,
                   lr_milestone=lr_milestone, batch_size=batch_size, weight_decay=weight_decay,
                   device=device, n_jobs_dataloader=n_jobs_dataloader,
-                  print_batch_progress=print_batch_progress, criterion_weight=criterion_weight, valid_dataset=valid_dataset)
+                  print_batch_progress=print_batch_progress, criterion_weight=criterion_weight,
+                  valid_dataset=None)
 
     # validate DeepSAD
     jointDeepSAD.validate(valid_dataset, device=device, n_jobs_dataloader=n_jobs_dataloader,
@@ -203,14 +182,14 @@ def main(seed_i):
                  print_batch_progress=print_batch_progress, criterion_weight=criterion_weight)
 
     # save results
-    jointDeepSAD.save_results(OUTPUT_PATH + f'results/JointDeepSAD_results_{seed_i+1}.json')
-    logger.info('Test results saved at ' + OUTPUT_PATH + f'results/JointDeepSAD_results_{seed_i+1}.json' + '\n')
+    jointDeepSAD.save_results(OUTPUT_PATH + f'results/JointDeepSAD_results_{ratio_known_abnormal_i:.2%}.json')
+    logger.info('Test results saved at ' + OUTPUT_PATH + f'results/JointDeepSAD_results_{ratio_known_abnormal_i:.2%}.json')
 
     # save model
-    jointDeepSAD.save_model(OUTPUT_PATH + f'model/JointDeepSAD_model_{seed_i+1}.pt')
-    logger.info('Model saved at ' + OUTPUT_PATH + f'model/JointDeepSAD_model_{seed_i+1}.pt')
+    jointDeepSAD.save_model(OUTPUT_PATH + f'model/JointDeepSAD_model_{ratio_known_abnormal_i:.2%}.pt')
+    logger.info('Model saved at ' + OUTPUT_PATH + f'model/JointDeepSAD_model_{ratio_known_abnormal_i:.2%}.pt')
 
 if __name__ == '__main__':
-    # experiment for each seeds
-    for i in range(n_seeds):
-        main(i)
+    # experiment for each ratio of known abnormal
+    for ratio_i in ratio_known_abnormal:
+        main(ratio_i)

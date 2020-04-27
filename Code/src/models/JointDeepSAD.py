@@ -82,7 +82,7 @@ class JointDeepSAD:
 
     def train(self, dataset, lr=0.0001, n_epoch=150, n_epoch_pretrain=10, lr_milestone=(), batch_size=64,
               weight_decay=1e-6, device='cuda', n_jobs_dataloader=0, print_batch_progress=False,
-              criterion_weight=(0.5,0.5)):
+              criterion_weight=(0.5,0.5), valid_dataset=None):
         """
         Train the joint DeepSAD model on the provided dataset with the provided
         parameters.
@@ -122,7 +122,7 @@ class JointDeepSAD:
             self.results['pretrain']['loss'] = self.trainer.pretrain_loss
 
         # train Joint DeepSAD
-        self.net = self.trainer.train(dataset, self.net)
+        self.net = self.trainer.train(dataset, self.net, valid_dataset=valid_dataset)
         # get results
         self.results['train']['time'] = self.trainer.train_time
         self.results['train']['loss'] = self.trainer.train_loss
@@ -149,7 +149,7 @@ class JointDeepSAD:
                                     print_batch_progress=print_batch_progress,
                                     criterion_weight=criterion_weight, use_subspace=self.use_subspace)
         # test the network
-        self.trainer.validate(dataset, self.net)
+        self.trainer.evaluate(self.net, dataset, mode='valid', final=True)#validate(dataset, self.net)
         # get results
         self.results['embedding']['valid']['time'] = self.trainer.valid_time
         self.results['embedding']['valid']['auc'] = self.trainer.valid_auc_ad
@@ -183,7 +183,7 @@ class JointDeepSAD:
                                     print_batch_progress=print_batch_progress,
                                     criterion_weight=criterion_weight, use_subspace=self.use_subspace)
         # test the network
-        self.trainer.test(dataset, self.net)
+        self.trainer.evaluate(self.net, dataset, mode='test')#test(dataset, self.net)
         # get results
         self.results['embedding']['test']['time'] = self.trainer.test_time
         self.results['embedding']['test']['auc'] = self.trainer.test_auc_ad
