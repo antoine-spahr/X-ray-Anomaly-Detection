@@ -16,7 +16,7 @@ from src.utils.results_processing import metric_barplot
 
 DATA_PATH = r'../../../data/PROCESSED/'
 DATA_INFO_PATH = r'../../../data/data_info.csv'
-OUTPUT_PATH = r'../../../Outputs/JointDMSAD_2020_04_25_09h35/'
+OUTPUT_PATH = r'../../../Outputs/JointDMSAD_2020_04_27_08h40/'
 FIGURE_PATH = OUTPUT_PATH + 'analysis/diagnostic/'
 if not os.path.isdir(FIGURE_PATH): os.makedirs(FIGURE_PATH)
 

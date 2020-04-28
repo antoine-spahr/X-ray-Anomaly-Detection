@@ -107,7 +107,9 @@ def plot_loss(results_list, dict_pass_to_loss, cmap_name, ax=None, lw=1, color_r
                            losses.mean(axis=1) - 1.96*losses.std(axis=1),
                            color='gray', alpha=0.3)
 
-def metric_barplot(metrics_scores, serie_names, group_names, colors=None, w=None, ax=None, fontsize=12, jitter=False, jitter_color=None, gap=None):
+def metric_barplot(metrics_scores, serie_names, group_names, colors=None, w=None,
+                   ax=None, fontsize=12, jitter=False, jitter_color=None, gap=None,
+                   legend_kwargs=None):
     """
     Plot a grouped barplot from the passed array, for various metrics.
     ----------
@@ -158,8 +160,12 @@ def metric_barplot(metrics_scores, serie_names, group_names, colors=None, w=None
         handles += [matplotlib.lines.Line2D((0,0),(0,0), lw=0, marker='o',
                     markerfacecolor=jitter_color, markeredgecolor=jitter_color, markersize=7)]
         labels += ['Measures']
-    ax.legend(handles, labels, loc='upper left', ncol=1, frameon=False, framealpha=0.0,\
-              fontsize=fontsize, bbox_to_anchor=(1.05, 1), bbox_transform=ax.transAxes)
+
+    if legend_kwargs is None:
+        ax.legend(handles, labels, loc='upper left', ncol=1, frameon=False, framealpha=0.0,
+                  fontsize=fontsize, bbox_to_anchor=(1.05, 1), bbox_transform=ax.transAxes)
+    elif isinstance(legend_kwargs, dict):
+        ax.legend(handles, labels, **legend_kwargs)
 
     ax.set_xticks(ind)
     ax.set_xticklabels(group_names)

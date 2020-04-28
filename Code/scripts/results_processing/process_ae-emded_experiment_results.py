@@ -22,7 +22,7 @@ from src.utils.results_processing import metric_barplot, plot_scores_dist1D, plo
 # Path to the experiments folder (outputs of train scripts)
 EXPERIMENT_PATH = r'../../../Outputs/'
 # names of the experiment(s) to process
-exp_folders = ['JointDMSAD_2020_04_25_09h35']
+exp_folders = ['JointDMSAD_2020_04_27_08h40']
 exp_names = ['DMSAD']
 em_col = ['index', 'label', 'scores', 'Nsphere']
 SAVE_PATHES = [EXPERIMENT_PATH + folder + '/analysis/' for folder in exp_folders]
