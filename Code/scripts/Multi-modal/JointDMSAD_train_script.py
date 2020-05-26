@@ -44,16 +44,20 @@ img_size = 512
 
 # Training
 lr = 1e-4
-lr_milestone = [60,90]
+lr_milestone = [60,90]#[75,95]
 n_epoch = 100
-n_epoch_pretrain = 5
+n_epoch_pretrain = 30
 n_sphere_init = 100
 weight_decay = 1e-6
-criterion_weight = (0.5, 0.5)
+criterion_weight = (0.6, 0.4)
+reset_scaling_epoch = 3 # when to reset the scalling
 model_path_to_load = None
 
+eta = 1.0 # importance of known samples in the MSAD loss function.
+#alpha = 0.05 # threshold use for hypersphere erasing : erase if the number of sample in the sphere below the fraction alpha of sample in the largest sphere.
+gamma = 0.05 # fraction of acceptable outlier in radii computation
+
 # Network
-eta = 1.0 # fraction of acceptable outlier
 ae_pretrain = False
 ae_out_size = (1, img_size, img_size)
 
@@ -65,6 +69,10 @@ def main(seed_i):
     """
     Extension of the deep multi-sphere SVDD to semi-supervised settings inpired
     from the DSAD of Ruff et al. (2020).
+
+    MSAD loss changed to use the sqrt(dist) for normal samples and 1/(dist^2)
+    for abnormal samples. The network is pretrained for longer (30 epochs) to get
+    a better KMeans initialization. Anomaly score is dist - R
     """
     # initialize logger
     logging.basicConfig(level=logging.INFO)
@@ -146,11 +154,10 @@ def main(seed_i):
     # add info to logger
     logger.info(f'Network : {net.__class__.__name__}')
     logger.info(f'Autoencoder pretrained on ImageNet : {ae_pretrain}')
-    logger.info(f'{Experiment_Name} eta : {eta}')
     logger.info('Network architecture: \n' + summary_string(net, (1, img_size, img_size), device=str(device), batch_size=batch_size) + '\n')
 
     # initialization of the Model
-    jointDMSAD = joint_DMSAD(net, eta)
+    jointDMSAD = joint_DMSAD(net, eta=eta, gamma=gamma)
 
     if model_path_to_load:
         jointDMSAD.load_model(model_path_to_load, map_location=device)
@@ -158,6 +165,8 @@ def main(seed_i):
 
     ################################ Training ##################################
     # add parameter info
+    logger.info(f'{Experiment_Name} eta : {eta}')
+    logger.info(f'{Experiment_Name} gamma : {gamma}')
     logger.info(f'{Experiment_Name} number of epoch : {n_epoch}')
     logger.info(f'{Experiment_Name} number of pretraining epoch: {n_epoch_pretrain}')
     logger.info(f'{Experiment_Name} number of initial hypersphere: {n_sphere_init}')
@@ -168,21 +177,22 @@ def main(seed_i):
     logger.info(f'{Experiment_Name} batch_size {batch_size}')
     logger.info(f'{Experiment_Name} number of dataloader worker : {n_jobs_dataloader}')
     logger.info(f'{Experiment_Name} criterion weighting : {criterion_weight[0]} Reconstruction loss + {criterion_weight[1]} MSAD embdedding loss')
+    logger.info(f'{Experiment_Name} reset scaling epoch : {reset_scaling_epoch}')
 
-    # train DMSVDD
+    # train DMSAD
     jointDMSAD.train(train_dataset, valid_dataset=valid_dataset, n_sphere_init=n_sphere_init,
                      n_epoch=n_epoch, n_epoch_pretrain=n_epoch_pretrain, lr=lr,
                      weight_decay=weight_decay, lr_milestone=lr_milestone,
-                     criterion_weight=criterion_weight, batch_size=batch_size,
-                     n_jobs_dataloader=n_jobs_dataloader, device=device,
-                     print_batch_progress=print_batch_progress)
+                     criterion_weight=criterion_weight, reset_scaling_epoch=reset_scaling_epoch,
+                     batch_size=batch_size, n_jobs_dataloader=n_jobs_dataloader,
+                     device=device, print_batch_progress=print_batch_progress)
 
-    # validate DMSVDD
+    # validate DMSAD
     jointDMSAD.validate(valid_dataset, batch_size=batch_size, n_jobs_dataloader=n_jobs_dataloader,
                         criterion_weight=criterion_weight, device=device,
                         print_batch_progress=print_batch_progress)
 
-    # test DMSVDD
+    # test DMSAD
     jointDMSAD.test(test_dataset, batch_size=batch_size, n_jobs_dataloader=n_jobs_dataloader,
                     criterion_weight=criterion_weight, device=device,
                     print_batch_progress=print_batch_progress)
