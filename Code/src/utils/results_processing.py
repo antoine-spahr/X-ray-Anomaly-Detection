@@ -162,8 +162,8 @@ def metric_barplot(metrics_scores, serie_names, group_names, colors=None, w=None
         labels += ['Measures']
 
     if legend_kwargs is None:
-        ax.legend(handles, labels, loc='upper left', ncol=1, frameon=False, framealpha=0.0,
-                  fontsize=fontsize, bbox_to_anchor=(1.05, 1), bbox_transform=ax.transAxes)
+        ax.legend(handles, labels, loc='upper right', ncol=1, frameon=False, framealpha=0.0,
+                  fontsize=fontsize, bbox_to_anchor=(1, 1.1), bbox_transform=ax.transAxes)
     elif isinstance(legend_kwargs, dict):
         ax.legend(handles, labels, **legend_kwargs)
 

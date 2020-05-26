@@ -15,8 +15,9 @@ class DMSAD_Joint_trainer:
     Define a trainer for the Deep multisphere SAD model which enables to train,
     validate and test the network.
     """
-    def __init__(self, c, eta, n_sphere_init=100, n_epoch=150, n_epoch_pretrain=10,
-                 lr=1e-4, weight_decay=1e-6, lr_milestone=(), criterion_weight=(0.5, 0.5),
+    def __init__(self, c, R, eta=1.0, gamma=0.05, n_sphere_init=100,
+                 n_epoch=150, n_epoch_pretrain=10, lr=1e-4, weight_decay=1e-6,
+                 lr_milestone=(), criterion_weight=(0.5, 0.5), reset_scaling_epoch=3,
                  batch_size=64, n_jobs_dataloader=0, device='cuda',
                  print_batch_progress=False):
         """
@@ -25,7 +26,10 @@ class DMSAD_Joint_trainer:
         INPUT
             |---- c (array like N_sphere x Embed dim) the centers of the hyperspheres.
             |           If None, the centers are initialized using Kmeans.
+            |---- R (1D array) the radii associated with the centers.
             |---- eta (float) the weight of semi-supervised labels in the loss.
+            |---- gamma (float) the fraction of allowed outlier when setting the
+            |           radius of each sphere in the end.
             |---- n_sphere_init (int) the number of initial hypersphere.
             |---- n_epoch (int) the number of epoch.
             |---- n_epoch_pretrain (int) the number of epoch to perform with only
@@ -37,6 +41,9 @@ class DMSAD_Joint_trainer:
             |           the weighting of the two losses (masked MSE loss of the
             |           AutoEncoder and the hypersphere center distance for the
             |           MSAD).
+            |---- reset_scaling_epoch (int) the epoch at which the scling factor
+            |           should be recomputed. To avoid get a more meaningful
+            |           scalling after few spheres were removed.
             |---- batch_size (int) the batch_size to use.
             |---- n_jobs_dataloader (int) number of workers for the dataloader.
             |---- device (str) the device to work on ('cpu' or 'cuda').
@@ -45,10 +52,11 @@ class DMSAD_Joint_trainer:
             |---- None
         """
         # DMSAD parameters
-        self.c = torch.tensor(c, device=device) if c else None
+        self.c = torch.tensor(c, device=device) if not c is None else None
+        self.R = torch.tensor(R, device=device) if not R is None else None
         self.eta = eta
         self.n_sphere_init = n_sphere_init
-        self.alpha = 0.025 # minimum fraction of data per sphere
+        self.gamma = gamma # fraction of allowed outlier on radius computation
 
         # Learning parameters
         self.n_epoch = n_epoch
@@ -57,6 +65,7 @@ class DMSAD_Joint_trainer:
         self.weight_decay = weight_decay
         self.lr_milestone = lr_milestone
         self.criterion_weight = criterion_weight
+        self.reset_scaling_epoch = reset_scaling_epoch
         self.scale_rec = 1.0
         self.scale_ad = 1.0
         self.batch_size = batch_size
@@ -265,8 +274,8 @@ class DMSAD_Joint_trainer:
                 if self.print_batch_progress:
                     print_progessbar(b, n_batch, Name='\t\tTrain Batch', Size=40, erase=True)
 
-            # remove centers with less than alpha fraction of points <<<< TO CHECK or frac of max(n_k) ??
-            self.c = self.c[n_k >= self.alpha * dataset.__len__()]
+            # remove centers with less than gamma fraction of largest hypersphere number of sample
+            self.c = self.c[n_k >= self.gamma * torch.max(n_k)]
 
             # intermediate validation of the model if required
             valid_auc = ''
@@ -287,14 +296,19 @@ class DMSAD_Joint_trainer:
             if epoch + 1 in self.lr_milestone:
                 logger.info(f'---- LR Scheduler : new learning rate {scheduler.get_lr()[0]:g}')
 
-            # re-initialized loss scale factors after 3 epochs when the centers are more or less defined
-            if epoch + 1 == 3:
+            # re-initialized loss scale factors after few epochs when the centers are more or less defined
+            if epoch + 1 == self.reset_scaling_epoch:
                 with torch.no_grad():
                     # Compute the scaling factors for the reconstruction and DMSAD losses
                     logger.info('---- Reinitializing the loss scale factors.')
                     self.initialize_loss_scale_weight(train_loader, net, loss_fn_rec, loss_fn_ad)
                     logger.info(f'---- reconstruction loss scale factor reinitialized to {self.scale_rec:.6f}')
                     logger.info(f'---- MSAD embdeding loss scale factor reinitialized to {self.scale_ad:.6f}')
+
+        # Set the radius of each sphere as 1-gamma quantile of normal samples distances
+        logger.info(f'---- Setting the hyperspheres radii as the {1-self.gamma:.1%} quantiles of normal sample distances.')
+        self.set_radius(train_loader, net)
+        logger.info(f'---- {self.R.shape[0]} radii successufully defined.')
 
         # End Training
         self.train_loss = epoch_loss_list
@@ -394,18 +408,47 @@ class DMSAD_Joint_trainer:
             self.scale_rec = 1 / (sumloss_rec / n_batch)
             self.scale_ad = 1 / (sumloss_ad / n_batch)
 
-    def initialize_raidus(self, ):
+    def set_radius(self, loader, net):
         """
         compute radius as 1-gamma quatile of normal sample distance to center.
-
-        for sample
-            dist[sphere_idx] <- min(distances)
-
-        r[sphere_idx] <- quantile(1-gamma, dist[sphere_idx])
-
-        then score is ||net(x) - c_j||^2 - R_j^2 <--- negative if in, positive if out.
+        Then anomaly score is ||net(x) - c_j||^2 - R_j^2 <--- negative if in, positive if out.
+        ----------
+        INPUT
+            |---- loader (torch.utils.data.Dataloader) the loader of the data.
+            |---- net (nn.Module) the DMSAD network. The output must be a vector
+            |           embedding of the input. The network should be an
+            |           autoencoder for which the forward pass returns both the
+            |           reconstruction and the embedding of the input.
+        OUTPUT
+            |---- None
         """
+        dist_list = [[] for _ in range(self.c.shape[0])] # initialize N_sphere lists
+        net.eval()
+        with torch.no_grad():
+            for b, data in enumerate(loader):
+                # get data
+                input, _, mask, semi_label, _ = data
+                input = input.to(self.device).float()
+                mask = mask.to(self.device)
+                semi_label = semi_label.to(self.device)
+                # mask input and keep only normal samples
+                input = (input * mask)[semi_label != -1]
+                # get embdeding of batch
+                _, embed = net(input)
 
+                # get the closest sphere and count the number of normal samples per sphere
+                dist, idx = torch.min(torch.norm(self.c.unsqueeze(0) - embed.unsqueeze(1), p=2, dim=2), dim=1)
+                for i, d in zip(idx, dist):
+                    dist_list[i].append(d)
+
+                if self.print_batch_progress:
+                    print_progessbar(b, len(loader), Name='\t\tBatch', Size=40, erase=True)
+
+            # compute the radius as 1-gamma quantile of the normal distances of each spheres
+            self.R = torch.zeros(self.c.shape[0], device=self.device)
+            for i, dist in enumerate(dist_list):
+                dist = torch.stack(dist, dim=0)
+                self.R[i] = torch.kthvalue(dist, k=int((1 - self.gamma) * dist.shape[0]))[0]
 
     def evaluate(self, net, dataset, mode='test', final=False):
         """
@@ -474,8 +517,16 @@ class DMSAD_Joint_trainer:
                 loss_ad = loss_fn_ad(embed, self.c, semi_label)
                 # get reconstruction anomaly scores : mean loss by sample
                 rec_score = torch.mean(loss_rec, dim=tuple(range(1, rec.dim())))
-                # get MSAD anomaly scores as the distance to closest center. c -> (N_sphere, Embed_dim) embed -> (Batch, Embed)
-                ad_score, sphere_idx = torch.min(torch.sum((self.c.unsqueeze(0) - embed.unsqueeze(1))**2, dim=2), dim=1)
+
+                # find closest sphere
+                dist, sphere_idx = torch.min(torch.norm(self.c.unsqueeze(0) - embed.unsqueeze(1), p=2, dim=2), dim=1)
+
+                if not self.R is None:
+                    # anomaly scores positive if dist > R and negative if dist < R
+                    ad_score = dist - torch.stack([self.R[j] for j in sphere_idx], dim=0)
+                else:
+                    # else scores is just the minimal distance to a center
+                    ad_score = dist
 
                 # append scores to the placeholer lists
                 idx_label_score_rec += list(zip(idx.cpu().data.numpy().tolist(),
@@ -484,7 +535,8 @@ class DMSAD_Joint_trainer:
                 idx_label_score_ad += list(zip(idx.cpu().data.numpy().tolist(),
                                             label.cpu().data.numpy().tolist(),
                                             ad_score.cpu().data.numpy().tolist(),
-                                            sphere_idx.cpu().data.numpy().tolist()))
+                                            sphere_idx.cpu().data.numpy().tolist(),
+                                            embed.cpu().data.numpy().tolist()))
 
                 # compute the overall loss
                 loss = self.scale_rec * self.criterion_weight[0] * (torch.sum(loss_rec) / torch.sum(mask))
@@ -499,7 +551,7 @@ class DMSAD_Joint_trainer:
         label, rec_score = np.array(label), np.array(rec_score)
         auc_rec = roc_auc_score(label, rec_score)
 
-        _, label, ad_score, _ = zip(*idx_label_score_ad)
+        _, label, ad_score, _, _ = zip(*idx_label_score_ad)
         label, ad_score = np.array(label), np.array(ad_score)
         auc_ad = roc_auc_score(label, ad_score)
 

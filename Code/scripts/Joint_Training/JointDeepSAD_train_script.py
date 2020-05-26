@@ -30,7 +30,7 @@ if not os.path.isdir(OUTPUT_PATH+'logs/'): os.makedirs(OUTPUT_PATH+'logs/')
 # General
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 n_thread = 0
-n_seeds = 4
+n_seeds = 1
 seeds = [int(''.join(['1']*(i+1))) for i in range(n_seeds)]
 print_batch_progress = True
 
@@ -44,11 +44,11 @@ img_size = 512
 
 # Training
 lr = 1e-4
-lr_milestone = [40,80]
-n_epoch = 100
+lr_milestone = [70,110]
+n_epoch = 120
 n_epoch_pretrain = 5
 weight_decay = 1e-6
-criterion_weight = (0.6, 0.4)
+criterion_weight = (0.3, 0.7)
 model_path_to_load = None
 
 # Network
@@ -121,11 +121,14 @@ def main(seed_i):
     test_df = spliter.get_subset('test')
     # make datasets
     train_dataset = MURA_Dataset(train_df, data_path=DATA_PATH, load_mask=True,
-                                 load_semilabels=True, output_size=img_size)
+                                 load_semilabels=True, output_size=img_size,
+                                 data_augmentation=True)
     valid_dataset = MURA_Dataset(valid_df, data_path=DATA_PATH, load_mask=True,
-                                 load_semilabels=True, output_size=img_size)
+                                 load_semilabels=True, output_size=img_size,
+                                 data_augmentation=False)
     test_dataset = MURA_Dataset(test_df, data_path=DATA_PATH, load_mask=True,
-                                 load_semilabels=True, output_size=img_size)
+                                 load_semilabels=True, output_size=img_size,
+                                 data_augmentation=False)
     # print info to logger
     logger.info(f'Train fraction : {train_frac:.0%}')
     logger.info(f'Fraction knonw normal : {ratio_known_normal:.0%}')

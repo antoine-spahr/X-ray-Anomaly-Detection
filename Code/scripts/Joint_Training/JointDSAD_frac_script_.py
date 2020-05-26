@@ -36,7 +36,7 @@ print_batch_progress = True
 # Datasets
 train_frac = 0.5
 ratio_known_normal = 0.05
-ratio_known_abnormal = [0.000, 0.0025, 0.005, 0.010, 0.050, 0.100]
+ratio_known_abnormal = [0.010, 0.050, 0.100]
 n_jobs_dataloader = 8
 batch_size = 16
 img_size = 512
