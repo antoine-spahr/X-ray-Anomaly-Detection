@@ -136,9 +136,11 @@ Code/playground.py
 
 # ignore large .pt files
 Outputs/**/*.pt
+Outputs/*/results/*.json
 # ignore debugging outputs (test ones)
 Outputs/tests/*
 Outputs/others/*
+Outputs/untracked/*
 Outputs/Single_bodypart/*
 # ignore old bad-formated outputs of DeepSAD
 Outputs/DeepSAD_2020_02_25_11h12/results/raw/AE_*.json
