@@ -1,0 +1,418 @@
+2020-05-04 14:30:59,455 | INFO | Brief summary of experiment : 
+
+    Extension of the deep multi-sphere SVDD to semi-supervised settings inpired
+    from the DSAD of Ruff et al. (2020).
+    
+2020-05-04 14:30:59,455 | INFO | Log file : ../../../Outputs/JointDMSAD_2020_05_04_14h30/logs/log_1.txt
+2020-05-04 14:30:59,455 | INFO | Data path : ../../../data/PROCESSED/
+2020-05-04 14:30:59,455 | INFO | Outputs path : ../../../Outputs/JointDMSAD_2020_05_04_14h30/
+
+2020-05-04 14:31:03,390 | INFO | Train fraction : 50%
+2020-05-04 14:31:03,390 | INFO | Fraction knonw normal : 5%
+2020-05-04 14:31:03,390 | INFO | Fraction known abnormal : 5%
+2020-05-04 14:31:03,421 | INFO | Split Summary 
++-------+----------------+------------+--------------+
+| Set   | Name           | Number [-] | Fraction [%] |
++-------+----------------+------------+--------------+
+| train | Normal         | 18033      | 94.73%       |
+| train | Abnormal       | 1004       | 5.27%        |
+| train | Normal known   | 961        | 5.05%        |
+| train | Abnormal known | 1004       | 5.27%        |
+| train | Unknown        | 17072      | 89.68%       |
+| ----  | ----           | ----       | ----         |
+| valid | Normal         | 2772       | 26.66%       |
+| valid | Abnormal       | 7627       | 73.34%       |
+| valid | Normal known   | 489        | 4.70%        |
+| valid | Abnormal known | 506        | 4.87%        |
+| valid | Unknown        | 9404       | 90.43%       |
+| ----  | ----           | ----       | ----         |
+| test  | Normal         | 2763       | 26.29%       |
+| test  | Abnormal       | 7748       | 73.71%       |
+| test  | Normal known   | 506        | 4.81%        |
+| test  | Abnormal known | 498        | 4.74%        |
+| test  | Unknown        | 9507       | 90.45%       |
++-------+----------------+------------+--------------+
+2020-05-04 14:31:03,421 | INFO | Online preprocessing pipeline : 
+             Grayscale()              
+                  |                   
+                  V                   
+        AutoContrast(cutoff=1)        
+                  |                   
+                  V                   
+     RandomHorizontalFlip(p=0.5)      
+                  |                   
+                  V                   
+      RandomVerticalFlip(p=0.5)       
+                  |                   
+                  V                   
+RandomBrightness(lower=0.8, upper=1.2)
+                  |                   
+                  V                   
+RandomScaling(scale_range=(0.8, 1.2)) 
+                  |                   
+                  V                   
+RandomRotation(degree_range=(-20, 20))
+                  |                   
+                  V                   
+        ResizeMax(max_len=512)        
+                  |                   
+                  V                   
+            PadToSquare()             
+                  |                   
+                  V                   
+ MinMaxNormalization(vmin=0, vmax=1)  
+                  |                   
+                  V                   
+           ToTorchTensor()            
+
+2020-05-04 14:31:03,421 | INFO | Set seed 01/01 to 1
+2020-05-04 14:31:03,422 | INFO | Device : cuda
+2020-05-04 14:31:03,422 | INFO | Number of thread : 0
+2020-05-04 14:31:03,422 | INFO | Number of dataloader worker for JointDMSAD : 8
+
+2020-05-04 14:31:05,845 | INFO | Network : AE_SVDD_Hybrid
+2020-05-04 14:31:05,845 | INFO | Autoencoder pretrained on ImageNet : False
+2020-05-04 14:31:06,124 | INFO | Network architecture: 
+----------------------------------------------------------------
+        Layer (type)               Output Shape         Param #
+================================================================
+            Conv2d-1         [16, 64, 256, 256]           9,408
+       BatchNorm2d-2         [16, 64, 256, 256]               0
+              ReLU-3         [16, 64, 256, 256]               0
+         MaxPool2d-4         [16, 64, 128, 128]               0
+            Conv2d-5         [16, 64, 128, 128]          36,864
+       BatchNorm2d-6         [16, 64, 128, 128]               0
+              ReLU-7         [16, 64, 128, 128]               0
+            Conv2d-8         [16, 64, 128, 128]          36,864
+       BatchNorm2d-9         [16, 64, 128, 128]               0
+             ReLU-10         [16, 64, 128, 128]               0
+     DownResBlock-11         [16, 64, 128, 128]               0
+           Conv2d-12         [16, 64, 128, 128]          36,864
+      BatchNorm2d-13         [16, 64, 128, 128]               0
+             ReLU-14         [16, 64, 128, 128]               0
+           Conv2d-15         [16, 64, 128, 128]          36,864
+      BatchNorm2d-16         [16, 64, 128, 128]               0
+             ReLU-17         [16, 64, 128, 128]               0
+     DownResBlock-18         [16, 64, 128, 128]               0
+           Conv2d-19          [16, 128, 64, 64]           8,192
+      BatchNorm2d-20          [16, 128, 64, 64]               0
+           Conv2d-21          [16, 128, 64, 64]          73,728
+      BatchNorm2d-22          [16, 128, 64, 64]               0
+             ReLU-23          [16, 128, 64, 64]               0
+           Conv2d-24          [16, 128, 64, 64]         147,456
+      BatchNorm2d-25          [16, 128, 64, 64]               0
+             ReLU-26          [16, 128, 64, 64]               0
+     DownResBlock-27          [16, 128, 64, 64]               0
+           Conv2d-28          [16, 128, 64, 64]         147,456
+      BatchNorm2d-29          [16, 128, 64, 64]               0
+             ReLU-30          [16, 128, 64, 64]               0
+           Conv2d-31          [16, 128, 64, 64]         147,456
+      BatchNorm2d-32          [16, 128, 64, 64]               0
+             ReLU-33          [16, 128, 64, 64]               0
+     DownResBlock-34          [16, 128, 64, 64]               0
+           Conv2d-35          [16, 256, 32, 32]          32,768
+      BatchNorm2d-36          [16, 256, 32, 32]               0
+           Conv2d-37          [16, 256, 32, 32]         294,912
+      BatchNorm2d-38          [16, 256, 32, 32]               0
+             ReLU-39          [16, 256, 32, 32]               0
+           Conv2d-40          [16, 256, 32, 32]         589,824
+      BatchNorm2d-41          [16, 256, 32, 32]               0
+             ReLU-42          [16, 256, 32, 32]               0
+     DownResBlock-43          [16, 256, 32, 32]               0
+           Conv2d-44          [16, 256, 32, 32]         589,824
+      BatchNorm2d-45          [16, 256, 32, 32]               0
+             ReLU-46          [16, 256, 32, 32]               0
+           Conv2d-47          [16, 256, 32, 32]         589,824
+      BatchNorm2d-48          [16, 256, 32, 32]               0
+             ReLU-49          [16, 256, 32, 32]               0
+     DownResBlock-50          [16, 256, 32, 32]               0
+           Conv2d-51          [16, 512, 16, 16]         131,072
+      BatchNorm2d-52          [16, 512, 16, 16]               0
+           Conv2d-53          [16, 512, 16, 16]       1,179,648
+      BatchNorm2d-54          [16, 512, 16, 16]               0
+             ReLU-55          [16, 512, 16, 16]               0
+           Conv2d-56          [16, 512, 16, 16]       2,359,296
+      BatchNorm2d-57          [16, 512, 16, 16]               0
+             ReLU-58          [16, 512, 16, 16]               0
+     DownResBlock-59          [16, 512, 16, 16]               0
+           Conv2d-60          [16, 512, 16, 16]       2,359,296
+      BatchNorm2d-61          [16, 512, 16, 16]               0
+             ReLU-62          [16, 512, 16, 16]               0
+           Conv2d-63          [16, 512, 16, 16]       2,359,296
+      BatchNorm2d-64          [16, 512, 16, 16]               0
+             ReLU-65          [16, 512, 16, 16]               0
+     DownResBlock-66          [16, 512, 16, 16]               0
+ ResNet18_Encoder-67          [16, 512, 16, 16]               0
+           Conv2d-68          [16, 512, 16, 16]       2,359,296
+      BatchNorm2d-69          [16, 512, 16, 16]               0
+             ReLU-70          [16, 512, 16, 16]               0
+           Conv2d-71          [16, 512, 16, 16]       2,359,296
+      BatchNorm2d-72          [16, 512, 16, 16]               0
+             ReLU-73          [16, 512, 16, 16]               0
+       UpResBlock-74          [16, 512, 16, 16]               0
+           Conv2d-75          [16, 512, 16, 16]       2,359,296
+      BatchNorm2d-76          [16, 512, 16, 16]               0
+             ReLU-77          [16, 512, 16, 16]               0
+         Upsample-78          [16, 512, 32, 32]               0
+           Conv2d-79          [16, 256, 32, 32]         131,072
+      BatchNorm2d-80          [16, 256, 32, 32]               0
+         Upsample-81          [16, 512, 32, 32]               0
+           Conv2d-82          [16, 256, 32, 32]         131,072
+      BatchNorm2d-83          [16, 256, 32, 32]               0
+             ReLU-84          [16, 256, 32, 32]               0
+       UpResBlock-85          [16, 256, 32, 32]               0
+           Conv2d-86          [16, 256, 32, 32]         589,824
+      BatchNorm2d-87          [16, 256, 32, 32]               0
+             ReLU-88          [16, 256, 32, 32]               0
+           Conv2d-89          [16, 256, 32, 32]         589,824
+      BatchNorm2d-90          [16, 256, 32, 32]               0
+             ReLU-91          [16, 256, 32, 32]               0
+       UpResBlock-92          [16, 256, 32, 32]               0
+           Conv2d-93          [16, 256, 32, 32]         589,824
+      BatchNorm2d-94          [16, 256, 32, 32]               0
+             ReLU-95          [16, 256, 32, 32]               0
+         Upsample-96          [16, 256, 64, 64]               0
+           Conv2d-97          [16, 128, 64, 64]          32,768
+      BatchNorm2d-98          [16, 128, 64, 64]               0
+         Upsample-99          [16, 256, 64, 64]               0
+          Conv2d-100          [16, 128, 64, 64]          32,768
+     BatchNorm2d-101          [16, 128, 64, 64]               0
+            ReLU-102          [16, 128, 64, 64]               0
+      UpResBlock-103          [16, 128, 64, 64]               0
+          Conv2d-104          [16, 128, 64, 64]         147,456
+     BatchNorm2d-105          [16, 128, 64, 64]               0
+            ReLU-106          [16, 128, 64, 64]               0
+          Conv2d-107          [16, 128, 64, 64]         147,456
+     BatchNorm2d-108          [16, 128, 64, 64]               0
+            ReLU-109          [16, 128, 64, 64]               0
+      UpResBlock-110          [16, 128, 64, 64]               0
+          Conv2d-111          [16, 128, 64, 64]         147,456
+     BatchNorm2d-112          [16, 128, 64, 64]               0
+            ReLU-113          [16, 128, 64, 64]               0
+        Upsample-114        [16, 128, 128, 128]               0
+          Conv2d-115         [16, 64, 128, 128]           8,192
+     BatchNorm2d-116         [16, 64, 128, 128]               0
+        Upsample-117        [16, 128, 128, 128]               0
+          Conv2d-118         [16, 64, 128, 128]           8,192
+     BatchNorm2d-119         [16, 64, 128, 128]               0
+            ReLU-120         [16, 64, 128, 128]               0
+      UpResBlock-121         [16, 64, 128, 128]               0
+          Conv2d-122         [16, 64, 128, 128]          36,864
+     BatchNorm2d-123         [16, 64, 128, 128]               0
+            ReLU-124         [16, 64, 128, 128]               0
+          Conv2d-125         [16, 64, 128, 128]          36,864
+     BatchNorm2d-126         [16, 64, 128, 128]               0
+            ReLU-127         [16, 64, 128, 128]               0
+      UpResBlock-128         [16, 64, 128, 128]               0
+          Conv2d-129         [16, 64, 128, 128]          36,864
+     BatchNorm2d-130         [16, 64, 128, 128]               0
+            ReLU-131         [16, 64, 128, 128]               0
+        Upsample-132         [16, 64, 256, 256]               0
+          Conv2d-133         [16, 64, 256, 256]           4,096
+     BatchNorm2d-134         [16, 64, 256, 256]               0
+        Upsample-135         [16, 64, 256, 256]               0
+          Conv2d-136         [16, 64, 256, 256]           4,096
+     BatchNorm2d-137         [16, 64, 256, 256]               0
+            ReLU-138         [16, 64, 256, 256]               0
+      UpResBlock-139         [16, 64, 256, 256]               0
+        Upsample-140         [16, 64, 512, 512]               0
+          Conv2d-141          [16, 1, 512, 512]              64
+            Tanh-142          [16, 1, 512, 512]               0
+ResNet18_Decoder-143          [16, 1, 512, 512]               0
+       AvgPool2d-144            [16, 512, 7, 7]               0
+          Conv2d-145            [16, 256, 5, 5]       1,179,648
+     BatchNorm2d-146            [16, 256, 5, 5]               0
+            ReLU-147            [16, 256, 5, 5]               0
+       MaxPool2d-148            [16, 256, 2, 2]               0
+          Conv2d-149            [16, 128, 2, 2]          32,768
+     BatchNorm2d-150            [16, 128, 2, 2]               0
+================================================================
+Total params: 22,131,968
+Trainable params: 22,131,968
+Non-trainable params: 0
+----------------------------------------------------------------
+Input size (MB): 16.00
+Forward/backward pass size (MB): 16149.66
+Params size (MB): 84.43
+Estimated Total Size (MB): 16250.08
+----------------------------------------------------------------
+
+
+2020-05-04 14:31:06,124 | INFO | JointDMSAD eta : 1.0
+2020-05-04 14:31:06,124 | INFO | JointDMSAD alpha : 0.05
+2020-05-04 14:31:06,124 | INFO | JointDMSAD gamma : 0.05
+2020-05-04 14:31:06,124 | INFO | JointDMSAD number of epoch : 100
+2020-05-04 14:31:06,124 | INFO | JointDMSAD number of pretraining epoch: 25
+2020-05-04 14:31:06,125 | INFO | JointDMSAD number of initial hypersphere: 100
+2020-05-04 14:31:06,125 | INFO | JointDMSAD learning rate : 0.0001
+2020-05-04 14:31:06,125 | INFO | JointDMSAD learning rate milestones : [60, 90]
+2020-05-04 14:31:06,125 | INFO | JointDMSAD weight_decay : 1e-06
+2020-05-04 14:31:06,125 | INFO | JointDMSAD optimizer : Adam
+2020-05-04 14:31:06,125 | INFO | JointDMSAD batch_size 16
+2020-05-04 14:31:06,125 | INFO | JointDMSAD number of dataloader worker : 8
+2020-05-04 14:31:06,125 | INFO | JointDMSAD criterion weighting : 0.6 Reconstruction loss + 0.4 MSAD embdedding loss
+2020-05-04 14:31:06,125 | INFO | JointDMSAD reset scaling epoch : 3
+2020-05-04 14:31:06,128 | INFO |  Start Pretraining the Autoencoder.
+2020-05-04 14:37:42,051 | INFO | ----| Epoch 001/025 | Pretrain Time 395.922 [s] | Pretrain Loss 0.009488 |
+2020-05-04 14:44:20,095 | INFO | ----| Epoch 002/025 | Pretrain Time 398.042 [s] | Pretrain Loss 0.004881 |
+2020-05-04 14:50:59,068 | INFO | ----| Epoch 003/025 | Pretrain Time 398.971 [s] | Pretrain Loss 0.004030 |
+2020-05-04 14:57:37,824 | INFO | ----| Epoch 004/025 | Pretrain Time 398.755 [s] | Pretrain Loss 0.003389 |
+2020-05-04 15:04:17,708 | INFO | ----| Epoch 005/025 | Pretrain Time 399.883 [s] | Pretrain Loss 0.003037 |
+2020-05-04 15:10:57,833 | INFO | ----| Epoch 006/025 | Pretrain Time 400.123 [s] | Pretrain Loss 0.002672 |
+2020-05-04 15:17:37,513 | INFO | ----| Epoch 007/025 | Pretrain Time 399.678 [s] | Pretrain Loss 0.002399 |
+2020-05-04 15:24:17,315 | INFO | ----| Epoch 008/025 | Pretrain Time 399.800 [s] | Pretrain Loss 0.002193 |
+2020-05-04 15:30:57,664 | INFO | ----| Epoch 009/025 | Pretrain Time 400.348 [s] | Pretrain Loss 0.002044 |
+2020-05-04 15:37:38,027 | INFO | ----| Epoch 010/025 | Pretrain Time 400.362 [s] | Pretrain Loss 0.001954 |
+2020-05-04 15:44:18,602 | INFO | ----| Epoch 011/025 | Pretrain Time 400.574 [s] | Pretrain Loss 0.001727 |
+2020-05-04 15:50:59,478 | INFO | ----| Epoch 012/025 | Pretrain Time 400.874 [s] | Pretrain Loss 0.001686 |
+2020-05-04 15:57:40,121 | INFO | ----| Epoch 013/025 | Pretrain Time 400.641 [s] | Pretrain Loss 0.001581 |
+2020-05-04 16:04:20,399 | INFO | ----| Epoch 014/025 | Pretrain Time 400.278 [s] | Pretrain Loss 0.001528 |
+2020-05-04 16:11:01,040 | INFO | ----| Epoch 015/025 | Pretrain Time 400.639 [s] | Pretrain Loss 0.001391 |
+2020-05-04 16:17:41,792 | INFO | ----| Epoch 016/025 | Pretrain Time 400.751 [s] | Pretrain Loss 0.001333 |
+2020-05-04 16:24:22,172 | INFO | ----| Epoch 017/025 | Pretrain Time 400.377 [s] | Pretrain Loss 0.001276 |
+2020-05-04 16:31:03,115 | INFO | ----| Epoch 018/025 | Pretrain Time 400.942 [s] | Pretrain Loss 0.001251 |
+2020-05-04 16:37:44,566 | INFO | ----| Epoch 019/025 | Pretrain Time 401.450 [s] | Pretrain Loss 0.001218 |
+2020-05-04 16:44:25,919 | INFO | ----| Epoch 020/025 | Pretrain Time 401.351 [s] | Pretrain Loss 0.001131 |
+2020-05-04 16:51:06,991 | INFO | ----| Epoch 021/025 | Pretrain Time 401.070 [s] | Pretrain Loss 0.001130 |
+2020-05-04 16:57:48,189 | INFO | ----| Epoch 022/025 | Pretrain Time 401.195 [s] | Pretrain Loss 0.001094 |
+2020-05-04 17:04:29,305 | INFO | ----| Epoch 023/025 | Pretrain Time 401.115 [s] | Pretrain Loss 0.001061 |
+2020-05-04 17:11:10,704 | INFO | ----| Epoch 024/025 | Pretrain Time 401.397 [s] | Pretrain Loss 0.001051 |
+2020-05-04 17:17:52,239 | INFO | ----| Epoch 025/025 | Pretrain Time 401.533 [s] | Pretrain Loss 0.000975 |
+2020-05-04 17:17:52,240 | INFO | ---- Finished Pretraining the AutoEncoder in 10006.112 [s].
+2020-05-04 17:17:52,246 | INFO |  Initializing the hypersheres centers.
+2020-05-04 17:21:24,028 | INFO |  100 centers successfully initialized.
+2020-05-04 17:21:24,029 | INFO |  Initializing the loss scale factors.
+2020-05-04 17:23:33,050 | INFO |  reconstruction loss scale factor initialized to 1206.583110
+2020-05-04 17:23:33,050 | INFO |  MSAD embdeding loss scale factor initialized to 0.356854
+2020-05-04 17:23:33,052 | INFO |  Start Training Jointly the DMSAD and the Autoencoder.
+2020-05-04 17:31:37,081 | INFO | ----| Epoch 001/100 | Train Time 484.028 [s] | Train Loss 54.496216 | N sphere 003 | Rec AUC 52.609% | MSAD AUC 54.408% |
+2020-05-04 17:39:43,289 | INFO | ----| Epoch 002/100 | Train Time 486.207 [s] | Train Loss 53.830837 | N sphere 003 | Rec AUC 52.416% | MSAD AUC 51.831% |
+2020-05-04 17:47:49,993 | INFO | ----| Epoch 003/100 | Train Time 486.703 [s] | Train Loss 53.642144 | N sphere 003 | Rec AUC 52.143% | MSAD AUC 54.428% |
+2020-05-04 17:47:49,993 | INFO | ---- Reinitializing the loss scale factors.
+2020-05-04 17:50:01,548 | INFO | ---- reconstruction loss scale factor reinitialized to 773.017260
+2020-05-04 17:50:01,548 | INFO | ---- MSAD embdeding loss scale factor reinitialized to 0.002509
+2020-05-04 17:58:08,642 | INFO | ----| Epoch 004/100 | Train Time 487.093 [s] | Train Loss 0.781957 | N sphere 003 | Rec AUC 52.958% | MSAD AUC 55.996% |
+2020-05-04 18:06:15,650 | INFO | ----| Epoch 005/100 | Train Time 487.007 [s] | Train Loss 0.751879 | N sphere 003 | Rec AUC 52.707% | MSAD AUC 58.611% |
+2020-05-04 18:14:22,740 | INFO | ----| Epoch 006/100 | Train Time 487.089 [s] | Train Loss 0.739525 | N sphere 003 | Rec AUC 52.719% | MSAD AUC 60.147% |
+2020-05-04 18:22:29,443 | INFO | ----| Epoch 007/100 | Train Time 486.701 [s] | Train Loss 0.742738 | N sphere 003 | Rec AUC 52.710% | MSAD AUC 59.571% |
+2020-05-04 18:30:36,642 | INFO | ----| Epoch 008/100 | Train Time 487.198 [s] | Train Loss 0.730991 | N sphere 003 | Rec AUC 52.966% | MSAD AUC 61.674% |
+2020-05-04 18:38:44,082 | INFO | ----| Epoch 009/100 | Train Time 487.440 [s] | Train Loss 0.715992 | N sphere 003 | Rec AUC 52.614% | MSAD AUC 64.607% |
+2020-05-04 18:46:51,026 | INFO | ----| Epoch 010/100 | Train Time 486.942 [s] | Train Loss 0.706208 | N sphere 003 | Rec AUC 52.853% | MSAD AUC 60.636% |
+2020-05-04 18:54:57,915 | INFO | ----| Epoch 011/100 | Train Time 486.888 [s] | Train Loss 0.689652 | N sphere 003 | Rec AUC 52.858% | MSAD AUC 63.537% |
+2020-05-04 19:03:05,108 | INFO | ----| Epoch 012/100 | Train Time 487.191 [s] | Train Loss 0.701999 | N sphere 003 | Rec AUC 53.737% | MSAD AUC 64.316% |
+2020-05-04 19:11:12,331 | INFO | ----| Epoch 013/100 | Train Time 487.223 [s] | Train Loss 0.683043 | N sphere 003 | Rec AUC 53.125% | MSAD AUC 66.401% |
+2020-05-04 19:19:19,643 | INFO | ----| Epoch 014/100 | Train Time 487.311 [s] | Train Loss 0.670003 | N sphere 003 | Rec AUC 52.943% | MSAD AUC 65.079% |
+2020-05-04 19:27:27,070 | INFO | ----| Epoch 015/100 | Train Time 487.426 [s] | Train Loss 0.664730 | N sphere 003 | Rec AUC 53.254% | MSAD AUC 66.333% |
+2020-05-04 19:35:34,538 | INFO | ----| Epoch 016/100 | Train Time 487.466 [s] | Train Loss 0.657160 | N sphere 003 | Rec AUC 52.891% | MSAD AUC 62.212% |
+2020-05-04 19:43:41,749 | INFO | ----| Epoch 017/100 | Train Time 487.210 [s] | Train Loss 0.657465 | N sphere 003 | Rec AUC 54.332% | MSAD AUC 67.827% |
+2020-05-04 19:51:49,317 | INFO | ----| Epoch 018/100 | Train Time 487.567 [s] | Train Loss 0.644529 | N sphere 003 | Rec AUC 52.802% | MSAD AUC 67.019% |
+2020-05-04 19:59:56,208 | INFO | ----| Epoch 019/100 | Train Time 486.890 [s] | Train Loss 0.699428 | N sphere 003 | Rec AUC 53.479% | MSAD AUC 65.730% |
+2020-05-04 20:08:03,279 | INFO | ----| Epoch 020/100 | Train Time 487.070 [s] | Train Loss 0.640027 | N sphere 003 | Rec AUC 52.769% | MSAD AUC 66.268% |
+2020-05-04 20:16:10,575 | INFO | ----| Epoch 021/100 | Train Time 487.295 [s] | Train Loss 0.631974 | N sphere 003 | Rec AUC 53.355% | MSAD AUC 68.287% |
+2020-05-04 20:24:18,266 | INFO | ----| Epoch 022/100 | Train Time 487.690 [s] | Train Loss 0.621735 | N sphere 003 | Rec AUC 53.379% | MSAD AUC 68.377% |
+2020-05-04 20:32:26,478 | INFO | ----| Epoch 023/100 | Train Time 488.210 [s] | Train Loss 0.622114 | N sphere 003 | Rec AUC 52.888% | MSAD AUC 65.869% |
+2020-05-04 20:40:34,637 | INFO | ----| Epoch 024/100 | Train Time 488.158 [s] | Train Loss 0.615842 | N sphere 003 | Rec AUC 52.877% | MSAD AUC 68.421% |
+2020-05-04 20:48:42,904 | INFO | ----| Epoch 025/100 | Train Time 488.265 [s] | Train Loss 0.613111 | N sphere 003 | Rec AUC 53.993% | MSAD AUC 68.423% |
+2020-05-04 20:56:51,046 | INFO | ----| Epoch 026/100 | Train Time 488.141 [s] | Train Loss 0.612536 | N sphere 003 | Rec AUC 53.253% | MSAD AUC 68.278% |
+2020-05-04 21:04:59,469 | INFO | ----| Epoch 027/100 | Train Time 488.422 [s] | Train Loss 0.605405 | N sphere 003 | Rec AUC 53.633% | MSAD AUC 69.606% |
+2020-05-04 21:13:07,821 | INFO | ----| Epoch 028/100 | Train Time 488.350 [s] | Train Loss 0.603806 | N sphere 003 | Rec AUC 53.589% | MSAD AUC 69.012% |
+2020-05-04 21:21:16,018 | INFO | ----| Epoch 029/100 | Train Time 488.196 [s] | Train Loss 0.596652 | N sphere 003 | Rec AUC 53.215% | MSAD AUC 68.702% |
+2020-05-04 21:29:24,293 | INFO | ----| Epoch 030/100 | Train Time 488.273 [s] | Train Loss 0.587145 | N sphere 003 | Rec AUC 53.015% | MSAD AUC 68.010% |
+2020-05-04 21:37:32,632 | INFO | ----| Epoch 031/100 | Train Time 488.338 [s] | Train Loss 0.593577 | N sphere 003 | Rec AUC 53.358% | MSAD AUC 68.697% |
+2020-05-04 21:45:41,320 | INFO | ----| Epoch 032/100 | Train Time 488.686 [s] | Train Loss 0.593420 | N sphere 003 | Rec AUC 53.812% | MSAD AUC 69.545% |
+2020-05-04 21:53:49,910 | INFO | ----| Epoch 033/100 | Train Time 488.589 [s] | Train Loss 0.584081 | N sphere 003 | Rec AUC 52.923% | MSAD AUC 68.879% |
+2020-05-04 22:01:58,690 | INFO | ----| Epoch 034/100 | Train Time 488.779 [s] | Train Loss 0.582249 | N sphere 003 | Rec AUC 52.596% | MSAD AUC 68.820% |
+2020-05-04 22:10:07,618 | INFO | ----| Epoch 035/100 | Train Time 488.926 [s] | Train Loss 0.581655 | N sphere 003 | Rec AUC 53.904% | MSAD AUC 69.539% |
+2020-05-04 22:18:16,572 | INFO | ----| Epoch 036/100 | Train Time 488.953 [s] | Train Loss 0.577615 | N sphere 003 | Rec AUC 53.345% | MSAD AUC 67.404% |
+2020-05-04 22:26:25,499 | INFO | ----| Epoch 037/100 | Train Time 488.926 [s] | Train Loss 0.579559 | N sphere 003 | Rec AUC 53.599% | MSAD AUC 63.589% |
+2020-05-04 22:34:34,543 | INFO | ----| Epoch 038/100 | Train Time 489.043 [s] | Train Loss 0.571338 | N sphere 003 | Rec AUC 53.585% | MSAD AUC 69.125% |
+2020-05-04 22:42:43,715 | INFO | ----| Epoch 039/100 | Train Time 489.170 [s] | Train Loss 0.568923 | N sphere 003 | Rec AUC 53.076% | MSAD AUC 69.502% |
+2020-05-04 22:50:52,818 | INFO | ----| Epoch 040/100 | Train Time 489.102 [s] | Train Loss 0.564603 | N sphere 003 | Rec AUC 53.914% | MSAD AUC 70.265% |
+2020-05-04 22:59:01,394 | INFO | ----| Epoch 041/100 | Train Time 488.575 [s] | Train Loss 0.568133 | N sphere 003 | Rec AUC 53.828% | MSAD AUC 69.659% |
+2020-05-04 23:07:10,174 | INFO | ----| Epoch 042/100 | Train Time 488.779 [s] | Train Loss 0.566527 | N sphere 003 | Rec AUC 54.181% | MSAD AUC 69.313% |
+2020-05-04 23:15:19,111 | INFO | ----| Epoch 043/100 | Train Time 488.936 [s] | Train Loss 0.562254 | N sphere 003 | Rec AUC 53.855% | MSAD AUC 69.790% |
+2020-05-04 23:23:28,149 | INFO | ----| Epoch 044/100 | Train Time 489.037 [s] | Train Loss 0.552544 | N sphere 003 | Rec AUC 53.009% | MSAD AUC 69.122% |
+2020-05-04 23:31:36,878 | INFO | ----| Epoch 045/100 | Train Time 488.727 [s] | Train Loss 0.562677 | N sphere 003 | Rec AUC 53.226% | MSAD AUC 69.510% |
+2020-05-04 23:39:45,964 | INFO | ----| Epoch 046/100 | Train Time 489.085 [s] | Train Loss 0.548362 | N sphere 003 | Rec AUC 53.544% | MSAD AUC 70.312% |
+2020-05-04 23:47:55,062 | INFO | ----| Epoch 047/100 | Train Time 489.096 [s] | Train Loss 0.549694 | N sphere 003 | Rec AUC 53.494% | MSAD AUC 71.299% |
+2020-05-04 23:56:03,763 | INFO | ----| Epoch 048/100 | Train Time 488.699 [s] | Train Loss 0.546360 | N sphere 003 | Rec AUC 52.750% | MSAD AUC 69.401% |
+2020-05-05 00:04:13,009 | INFO | ----| Epoch 049/100 | Train Time 489.245 [s] | Train Loss 0.547100 | N sphere 003 | Rec AUC 53.472% | MSAD AUC 69.783% |
+2020-05-05 00:12:21,975 | INFO | ----| Epoch 050/100 | Train Time 488.965 [s] | Train Loss 0.546270 | N sphere 003 | Rec AUC 53.305% | MSAD AUC 70.645% |
+2020-05-05 00:20:31,108 | INFO | ----| Epoch 051/100 | Train Time 489.131 [s] | Train Loss 0.539626 | N sphere 003 | Rec AUC 54.155% | MSAD AUC 71.005% |
+2020-05-05 00:28:40,483 | INFO | ----| Epoch 052/100 | Train Time 489.374 [s] | Train Loss 0.542211 | N sphere 003 | Rec AUC 53.296% | MSAD AUC 71.178% |
+2020-05-05 00:36:49,432 | INFO | ----| Epoch 053/100 | Train Time 488.948 [s] | Train Loss 0.541811 | N sphere 003 | Rec AUC 53.362% | MSAD AUC 68.760% |
+2020-05-05 00:44:58,584 | INFO | ----| Epoch 054/100 | Train Time 489.150 [s] | Train Loss 0.538001 | N sphere 003 | Rec AUC 53.430% | MSAD AUC 67.978% |
+2020-05-05 00:53:08,048 | INFO | ----| Epoch 055/100 | Train Time 489.462 [s] | Train Loss 0.536064 | N sphere 003 | Rec AUC 53.536% | MSAD AUC 71.802% |
+2020-05-05 01:01:17,445 | INFO | ----| Epoch 056/100 | Train Time 489.396 [s] | Train Loss 0.540238 | N sphere 003 | Rec AUC 53.493% | MSAD AUC 71.920% |
+2020-05-05 01:09:26,637 | INFO | ----| Epoch 057/100 | Train Time 489.191 [s] | Train Loss 0.530148 | N sphere 003 | Rec AUC 53.464% | MSAD AUC 70.730% |
+2020-05-05 01:17:35,842 | INFO | ----| Epoch 058/100 | Train Time 489.203 [s] | Train Loss 0.541199 | N sphere 003 | Rec AUC 52.658% | MSAD AUC 71.156% |
+2020-05-05 01:25:44,964 | INFO | ----| Epoch 059/100 | Train Time 489.120 [s] | Train Loss 0.528391 | N sphere 003 | Rec AUC 52.834% | MSAD AUC 70.044% |
+2020-05-05 01:33:54,016 | INFO | ----| Epoch 060/100 | Train Time 489.051 [s] | Train Loss 0.526412 | N sphere 003 | Rec AUC 53.520% | MSAD AUC 69.782% |
+2020-05-05 01:33:54,016 | INFO | ---- LR Scheduler : new learning rate 1e-06
+2020-05-05 01:42:03,608 | INFO | ----| Epoch 061/100 | Train Time 489.591 [s] | Train Loss 0.490048 | N sphere 003 | Rec AUC 53.804% | MSAD AUC 71.112% |
+2020-05-05 01:50:12,896 | INFO | ----| Epoch 062/100 | Train Time 489.286 [s] | Train Loss 0.482512 | N sphere 003 | Rec AUC 53.161% | MSAD AUC 72.530% |
+2020-05-05 01:58:22,604 | INFO | ----| Epoch 063/100 | Train Time 489.707 [s] | Train Loss 0.483892 | N sphere 003 | Rec AUC 53.133% | MSAD AUC 73.017% |
+2020-05-05 02:06:32,368 | INFO | ----| Epoch 064/100 | Train Time 489.762 [s] | Train Loss 0.484192 | N sphere 003 | Rec AUC 53.199% | MSAD AUC 72.799% |
+2020-05-05 02:14:42,474 | INFO | ----| Epoch 065/100 | Train Time 490.105 [s] | Train Loss 0.481138 | N sphere 003 | Rec AUC 53.128% | MSAD AUC 72.531% |
+2020-05-05 02:22:52,376 | INFO | ----| Epoch 066/100 | Train Time 489.901 [s] | Train Loss 0.479065 | N sphere 003 | Rec AUC 53.672% | MSAD AUC 71.806% |
+2020-05-05 02:31:02,121 | INFO | ----| Epoch 067/100 | Train Time 489.744 [s] | Train Loss 0.474820 | N sphere 003 | Rec AUC 53.511% | MSAD AUC 71.934% |
+2020-05-05 02:39:12,644 | INFO | ----| Epoch 068/100 | Train Time 490.522 [s] | Train Loss 0.475413 | N sphere 003 | Rec AUC 52.956% | MSAD AUC 73.128% |
+2020-05-05 02:47:22,737 | INFO | ----| Epoch 069/100 | Train Time 490.092 [s] | Train Loss 0.481081 | N sphere 003 | Rec AUC 53.206% | MSAD AUC 70.789% |
+2020-05-05 02:55:32,973 | INFO | ----| Epoch 070/100 | Train Time 490.234 [s] | Train Loss 0.479340 | N sphere 003 | Rec AUC 53.083% | MSAD AUC 71.723% |
+2020-05-05 03:03:43,518 | INFO | ----| Epoch 071/100 | Train Time 490.544 [s] | Train Loss 0.472037 | N sphere 003 | Rec AUC 53.123% | MSAD AUC 71.292% |
+2020-05-05 03:11:53,840 | INFO | ----| Epoch 072/100 | Train Time 490.320 [s] | Train Loss 0.475370 | N sphere 003 | Rec AUC 53.452% | MSAD AUC 73.031% |
+2020-05-05 03:20:04,136 | INFO | ----| Epoch 073/100 | Train Time 490.295 [s] | Train Loss 0.477229 | N sphere 003 | Rec AUC 53.506% | MSAD AUC 71.570% |
+2020-05-05 03:28:14,733 | INFO | ----| Epoch 074/100 | Train Time 490.596 [s] | Train Loss 0.475563 | N sphere 003 | Rec AUC 53.632% | MSAD AUC 72.047% |
+2020-05-05 03:36:24,950 | INFO | ----| Epoch 075/100 | Train Time 490.215 [s] | Train Loss 0.474836 | N sphere 003 | Rec AUC 52.894% | MSAD AUC 72.480% |
+2020-05-05 03:44:35,252 | INFO | ----| Epoch 076/100 | Train Time 490.301 [s] | Train Loss 0.472061 | N sphere 003 | Rec AUC 52.973% | MSAD AUC 72.755% |
+2020-05-05 03:52:45,481 | INFO | ----| Epoch 077/100 | Train Time 490.228 [s] | Train Loss 0.467968 | N sphere 003 | Rec AUC 53.061% | MSAD AUC 72.995% |
+2020-05-05 04:00:55,774 | INFO | ----| Epoch 078/100 | Train Time 490.291 [s] | Train Loss 0.468366 | N sphere 003 | Rec AUC 52.908% | MSAD AUC 71.780% |
+2020-05-05 04:09:06,118 | INFO | ----| Epoch 079/100 | Train Time 490.343 [s] | Train Loss 0.471922 | N sphere 003 | Rec AUC 53.478% | MSAD AUC 72.565% |
+2020-05-05 04:17:16,556 | INFO | ----| Epoch 080/100 | Train Time 490.437 [s] | Train Loss 0.469721 | N sphere 003 | Rec AUC 52.611% | MSAD AUC 73.783% |
+2020-05-05 04:25:27,070 | INFO | ----| Epoch 081/100 | Train Time 490.513 [s] | Train Loss 0.472799 | N sphere 003 | Rec AUC 53.528% | MSAD AUC 74.353% |
+2020-05-05 04:33:37,618 | INFO | ----| Epoch 082/100 | Train Time 490.546 [s] | Train Loss 0.468316 | N sphere 003 | Rec AUC 53.326% | MSAD AUC 72.663% |
+2020-05-05 04:41:48,386 | INFO | ----| Epoch 083/100 | Train Time 490.767 [s] | Train Loss 0.467894 | N sphere 003 | Rec AUC 53.668% | MSAD AUC 72.501% |
+2020-05-05 04:49:58,708 | INFO | ----| Epoch 084/100 | Train Time 490.321 [s] | Train Loss 0.471001 | N sphere 003 | Rec AUC 53.353% | MSAD AUC 71.846% |
+2020-05-05 04:58:09,127 | INFO | ----| Epoch 085/100 | Train Time 490.418 [s] | Train Loss 0.470233 | N sphere 003 | Rec AUC 53.428% | MSAD AUC 72.803% |
+2020-05-05 05:06:19,112 | INFO | ----| Epoch 086/100 | Train Time 489.983 [s] | Train Loss 0.470145 | N sphere 003 | Rec AUC 53.608% | MSAD AUC 72.581% |
+2020-05-05 05:14:29,376 | INFO | ----| Epoch 087/100 | Train Time 490.263 [s] | Train Loss 0.465121 | N sphere 003 | Rec AUC 53.307% | MSAD AUC 73.398% |
+2020-05-05 05:22:39,410 | INFO | ----| Epoch 088/100 | Train Time 490.033 [s] | Train Loss 0.466748 | N sphere 003 | Rec AUC 53.427% | MSAD AUC 71.445% |
+2020-05-05 05:30:49,561 | INFO | ----| Epoch 089/100 | Train Time 490.149 [s] | Train Loss 0.469155 | N sphere 003 | Rec AUC 53.312% | MSAD AUC 71.822% |
+2020-05-05 05:38:59,648 | INFO | ----| Epoch 090/100 | Train Time 490.086 [s] | Train Loss 0.465334 | N sphere 003 | Rec AUC 53.182% | MSAD AUC 72.341% |
+2020-05-05 05:38:59,648 | INFO | ---- LR Scheduler : new learning rate 1e-07
+2020-05-05 05:47:10,247 | INFO | ----| Epoch 091/100 | Train Time 490.597 [s] | Train Loss 0.464872 | N sphere 003 | Rec AUC 53.564% | MSAD AUC 73.505% |
+2020-05-05 05:55:20,795 | INFO | ----| Epoch 092/100 | Train Time 490.547 [s] | Train Loss 0.463169 | N sphere 003 | Rec AUC 53.099% | MSAD AUC 72.234% |
+2020-05-05 06:03:31,246 | INFO | ----| Epoch 093/100 | Train Time 490.450 [s] | Train Loss 0.460854 | N sphere 003 | Rec AUC 53.260% | MSAD AUC 72.121% |
+2020-05-05 06:11:42,046 | INFO | ----| Epoch 094/100 | Train Time 490.799 [s] | Train Loss 0.459816 | N sphere 003 | Rec AUC 53.292% | MSAD AUC 72.604% |
+2020-05-05 06:19:52,625 | INFO | ----| Epoch 095/100 | Train Time 490.577 [s] | Train Loss 0.460518 | N sphere 003 | Rec AUC 53.071% | MSAD AUC 72.635% |
+2020-05-05 06:28:03,114 | INFO | ----| Epoch 096/100 | Train Time 490.488 [s] | Train Loss 0.458165 | N sphere 003 | Rec AUC 53.100% | MSAD AUC 73.019% |
+2020-05-05 06:36:13,719 | INFO | ----| Epoch 097/100 | Train Time 490.604 [s] | Train Loss 0.462683 | N sphere 003 | Rec AUC 53.136% | MSAD AUC 73.625% |
+2020-05-05 06:44:24,198 | INFO | ----| Epoch 098/100 | Train Time 490.477 [s] | Train Loss 0.463048 | N sphere 003 | Rec AUC 53.380% | MSAD AUC 71.879% |
+2020-05-05 06:52:34,763 | INFO | ----| Epoch 099/100 | Train Time 490.565 [s] | Train Loss 0.463471 | N sphere 003 | Rec AUC 53.204% | MSAD AUC 72.794% |
+2020-05-05 07:00:44,943 | INFO | ----| Epoch 100/100 | Train Time 490.179 [s] | Train Loss 0.462630 | N sphere 003 | Rec AUC 53.684% | MSAD AUC 72.655% |
+2020-05-05 07:00:44,943 | INFO | ---- Setting the hyperspheres radii as the 95.0% quantiles of normal sample distances.
+2020-05-05 07:02:52,837 | INFO | ---- 3 radii successufully defined.
+2020-05-05 07:02:52,837 | INFO | ---- Finished jointly training the DMSAD and the Autoencoder in 49159.785 [s].
+2020-05-05 07:02:52,845 | INFO |  Start Evaluating the jointly trained DMSAD and AutoEncoder in valid mode.
+2020-05-05 07:04:06,785 | INFO | ---- Validation Time: 73.577 [s]
+2020-05-05 07:04:06,786 | INFO | ---- Validation Loss: 13.572827
+2020-05-05 07:04:06,786 | INFO | ---- Validation reconstruction AUC: 53.018%
+2020-05-05 07:04:06,786 | INFO | ---- Best Threshold for the reconstruction score maximizing F1-score: 0.000
+2020-05-05 07:04:06,786 | INFO | ---- Best F1-score on reconstruction score: 84.588%
+2020-05-05 07:04:06,786 | INFO | ---- Validation MSAD AUC: 74.162%
+2020-05-05 07:04:06,786 | INFO | ---- Best Threshold for the MSAD score maximizing F1-score: -5.353
+2020-05-05 07:04:06,786 | INFO | ---- Best F1-score on MSAD score: 84.616%
+2020-05-05 07:04:06,786 | INFO | ---- Finished validating the Joint DMSAD and AutoEncoder.
+
+2020-05-05 07:04:06,793 | INFO |  Start Evaluating the jointly trained DMSAD and AutoEncoder in test mode.
+2020-05-05 07:05:21,385 | INFO | ---- Test Time: 74.591 [s]
+2020-05-05 07:05:21,385 | INFO | ---- Test Loss: 13.360435
+2020-05-05 07:05:21,385 | INFO | ---- Test reconstruction AUC: 54.326%
+2020-05-05 07:05:21,391 | INFO | ---- Best F1-score on reconstruction score: 84.843%
+2020-05-05 07:05:21,391 | INFO | ---- Test MSAD AUC: 73.277%
+2020-05-05 07:05:21,397 | INFO | ---- Best F1-score on MSAD score: 84.860%
+2020-05-05 07:05:21,397 | INFO | ---- Finished testing the Joint DMSAD and AutoEncoder.
+
+2020-05-05 07:05:43,043 | INFO | Test results saved at ../../../Outputs/JointDMSAD_2020_05_04_14h30/results/JointDMSAD_results_1.json
+
+2020-05-05 07:05:43,130 | INFO | Model saved at ../../../Outputs/JointDMSAD_2020_05_04_14h30/model/JointDMSAD_model_1.pt
