@@ -12,7 +12,7 @@ import src.preprocessing.cropping_rect as croprect
 DATA_PATH = r'../../data/'
 OUTPUT_PATH = r'../../Outputs/'
 FIGURE_PATH = r'../../Figures/'
-FIG_RES = 200 # dpi
+FIG_RES = 300 # dpi
 transparent = True
 save_fig = True
 
@@ -41,37 +41,38 @@ img_cropped_good = croprect.crop_squares(rects_good, img_good)
 rects_fail = croprect.find_squares(img_fail, min_area=40000)
 img_cropped_fail = croprect.crop_squares(rects_fail, img_fail)
 
-fig, axs = plt.subplots(1,4,figsize=(16,4), gridspec_kw={'wspace': 0.15})
-if transparent: fig.set_alpha(0)
+fig, axs = plt.subplots(1,4,figsize=(8,4), gridspec_kw={'wspace': 0.25, 'width_ratios': [0.25,0.2, 0.4, 0.12]})
+#fig, axs = plt.subplots(1,2,figsize=(3.5,3.5), gridspec_kw={'wspace': 0.65, 'width_ratios': [0.56,0.44]})
+#if transparent: fig.set_alpha(0)
 
 for i, rects, img, img_cropped in zip([0, 2], [rects_good, rects_fail], [img_good, img_fail], [img_cropped_good, img_cropped_fail]):
-
+#for i, rects, img, img_cropped in zip([0, 2], [rects_good], [img_good], [img_cropped_good]):
     axs[i].imshow(img, cmap='Greys_r')
     for r in rects[1:]:
-        axs[i].add_patch(matplotlib.patches.Polygon(r, lw=1, ec='red', fc=(0,0,0,0)))
+        axs[i].add_patch(matplotlib.patches.Polygon(r, lw=2, ec='red', fc=(0,0,0,0)))
 
     axs[i].add_patch(matplotlib.patches.Polygon(rects[0], lw=2, ec='dodgerblue', fc=(0,0,0,0)))
-    axs[i].set_title('Original image \nwith detected rectangles', fontsize=12, fontweight='bold')
+    axs[i].set_title('Original', fontsize=12, fontweight='bold')
     axs[i].set_axis_off()
 
     axs[i+1].imshow(img_cropped, cmap='Greys_r')
-    axs[i+1].set_title('Extracted images', fontsize=12, fontweight='bold')
+    axs[i+1].set_title('Extracted', fontsize=12, fontweight='bold')
     axs[i+1].set_axis_off()
 
     arrow = matplotlib.patches.ConnectionPatch(xyA=(1, 0.5), xyB=(0, 0.5),
                          coordsA='axes fraction', coordsB='axes fraction',
                          axesA=axs[i], axesB=axs[i+1],
-                         arrowstyle='simple, head_length=1.5, head_width=2, tail_width=0.9', connectionstyle="arc3")
+                         arrowstyle='simple, head_length=1.0, head_width=1.5, tail_width=0.7', connectionstyle="arc3")
     arrow.set_facecolor('k')
     axs[i].add_artist(arrow)
 
-handles = [matplotlib.patches.Patch(lw=1, ec='red', fc=(0,0,0,0)),
+handles = [matplotlib.patches.Patch(lw=2, ec='red', fc=(0,0,0,0)),
            matplotlib.patches.Patch(lw=2, ec='dodgerblue', fc=(0,0,0,0))]
 labels = ['Detected rectangles', 'Selected rectangle']
 lgd = fig.legend(handles, labels, loc='lower center', ncol=2, fontsize=12,
-                    frameon=False, bbox_to_anchor=(0.5, 0), bbox_transform=fig.transFigure)
+                    frameon=False, bbox_to_anchor=(0.5, 0.15), bbox_transform=fig.transFigure)
 
 #fig.tight_layout()
 
-if save_fig: fig.savefig(FIGURE_PATH+'rect_cropping_sample.pdf', dpi=FIG_RES, bbox_inches='tight', bbox_extra_artist=(lgd,))
+if save_fig: fig.savefig(FIGURE_PATH+'rect_cropping_sample_ieee.pdf', dpi=FIG_RES, bbox_inches='tight', bbox_extra_artist=(lgd,))
 plt.show()

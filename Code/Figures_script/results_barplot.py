@@ -16,15 +16,15 @@ transparent = True
 save_fig = True
 
 # {experiment name : [experiment folder , score name]}
-expe_semisupervised = {'DeepSAD': ['DeepSAD_2020_02_25_11h12', 'embedding'],
-                       'Joint\nDeepSAD': ['JointDeepSAD_2020_03_20_19h20_milestone4080', 'embedding'],
-                       'Joint\nDeepSAD\nSubspace': ['Joint_DeepSAD_Subspace_2020_03_26_11h44', 'embedding'],
+expe_semisupervised = {'DSAD': ['DeepSAD_2020_02_25_11h12', 'embedding'],
+                       'Joint\nDSAD': ['JointDeepSAD_2020_03_20_19h20_milestone4080', 'embedding'],
+                       'Joint\nDSAD\nSubspace': ['Joint_DeepSAD_Subspace_2020_03_26_11h44', 'embedding'],
                        'DROCC-LF': ['DROCC-LF_2020_04_04_08h49', 'DROCC-LF anomaly score']}
 
-expe_unsupervised = {'DeepSVDD': ['DeepSVDD_2020_03_02_16h35', 'embedding'],
-                     'Joint\nDeepSVDD' : ['JointDeepSVDD_2020_03_23_09h14_milestone4080', 'embedding'],
+expe_unsupervised = {'DSVDD': ['DeepSVDD_2020_03_02_16h35', 'embedding'],
+                     'Joint\nDSVDD' : ['JointDeepSVDD_2020_03_23_09h14_milestone4080', 'embedding'],
                      'Autoencoder \n(JointDSVDD)': ['JointDeepSVDD_2020_03_23_09h14_milestone4080', 'reconstruction'],
-                     'Joint\nDeepSVDD\nSubspace': ['Joint_DeepSVDD_Subspace_2020_03_28_12h40', 'embedding'],
+                     'Joint\nDSVDD\nSubspace': ['Joint_DeepSVDD_Subspace_2020_03_28_12h40', 'embedding'],
                      'DROCC': ['DROCC_2020_04_02_11h56', 'DROCC anomaly score'],
                      'ARAE': ['ARAE_2020_04_09_20h13', 'ARAE anomaly score']}
 
@@ -57,20 +57,23 @@ data_auprc = pd.concat(data_auprc, axis=1).values
 #                                   Figures                                    #
 ################################################################################
 
-fig, ax = plt.subplots(1, 1, figsize=(16,7))
+fig, ax = plt.subplots(1, 1, figsize=(16,8))
 if transparent: fig.set_alpha(0)
 
-metric_barplot([data_auc, data_auprc], ['AUC', 'AUPRC'], names, colors=['salmon', 'skyblue'], w=0.45, ax=ax, gap=len(expe_semisupervised))
+metric_barplot([data_auc, data_auprc], ['AUC', 'AUPRC'], names, fontsize=14,
+               colors=['salmon', 'skyblue'], w=0.45, ax=ax, gap=len(expe_semisupervised),
+               legend_kwargs=dict(loc='upper center', ncol=2, frameon=True, framealpha=1.0,
+               fontsize=13, bbox_to_anchor=(0.5, -0.15), bbox_transform=ax.transAxes))
 #ax.set_xticklabels(ax.get_xticklabels(), rotation=30, ha='right')
 ax.set_ylabel('AUC [-] , AUPRC [-]')
 
-ax.annotate('Semi-Supervised', xy=(0.22, 1.02), xytext=(0.22, 1.1), xycoords='axes fraction',
-            fontsize=12, ha='center', va='center', rotation=0, bbox=dict(boxstyle='square', fc='white', lw=0),
-            arrowprops=dict(arrowstyle='-[, widthB=14, lengthB=0.5', lw=1))
+ax.annotate('Semi-Supervised', xy=(0.215, 1.02), xytext=(0.215, 1.1), xycoords='axes fraction',
+            fontsize=13, ha='center', va='center', rotation=0, bbox=dict(boxstyle='square', fc='white', lw=0),
+            arrowprops=dict(arrowstyle='-[, widthB=15, lengthB=0.5', lw=1))
 
-ax.annotate('Unsupervised', xy=(0.70, 1.02), xytext=(0.70, 1.1), xycoords='axes fraction',
-            fontsize=12, ha='center', va='center', rotation=0, bbox=dict(boxstyle='square', fc='white', lw=0),
-            arrowprops=dict(arrowstyle='-[, widthB=21, lengthB=0.5', lw=1))
+ax.annotate('Unsupervised', xy=(0.69, 1.02), xytext=(0.69, 1.1), xycoords='axes fraction',
+            fontsize=13, ha='center', va='center', rotation=0, bbox=dict(boxstyle='square', fc='white', lw=0),
+            arrowprops=dict(arrowstyle='-[, widthB=22, lengthB=0.5', lw=1))
 
 fig.tight_layout()
 if save_fig: fig.savefig(FIGURE_PATH+'results_barplot.pdf', dpi=FIG_RES, bbox_inches='tight')

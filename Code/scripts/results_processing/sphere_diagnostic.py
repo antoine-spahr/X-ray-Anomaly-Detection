@@ -16,7 +16,7 @@ from src.utils.results_processing import metric_barplot
 
 DATA_PATH = r'../../../data/PROCESSED/'
 DATA_INFO_PATH = r'../../../data/data_info.csv'
-OUTPUT_PATH = r'../../../Outputs/JointDMSAD_2020_04_25_09h35_150ep/'
+OUTPUT_PATH = r'../../../Outputs/JointDMSAD_2020_05_09_08h55_sigmoid/'
 FIGURE_PATH = OUTPUT_PATH + 'analysis/diagnostic/'
 if not os.path.isdir(FIGURE_PATH): os.makedirs(FIGURE_PATH)
 
@@ -68,7 +68,6 @@ df_normal = df[df.abnormal_XR == 0]
 ################################################################################
 i = 1
 sphere_list = np.sort(df.Nsphere.unique())
-sphere_list
 
 fig, axs = plt.subplots(1, len(sphere_list), figsize=(len(sphere_list)*3, 3), sharex=False, sharey=True)
 if transparent: fig.set_alpha(0)
@@ -87,9 +86,36 @@ for ax, sphere_i in zip(axs.reshape(-1), sphere_list):
             color='limegreen', alpha=0.4)
     ax.set_title(f'Sphere n°{sphere_i+1}', fontsize=12)
     ax.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
+    ax.set_xlabel('anomaly score')
+axs[0].set_ylabel('log(count) [-]')
 
 fig.savefig(FIGURE_PATH + 'score_distribution_by_sphere.pdf', dpi=dpi, bbox_inches='tight')
 plt.show()
+
+#%%
+# i = 1
+# sphere_list = np.sort(df.Nsphere.unique())
+#
+# fig, ax = plt.subplots(1, 1, figsize=(5, 5), sharex=False, sharey=True)
+# if transparent: fig.set_alpha(0)
+#
+# sphere_i = sphere_list[0]
+# # plot abnormal distribution
+# ax.hist(df[(df.Nsphere == sphere_i) & (df.abnormal_XR == 1)].loc[:,f'AD_scores_{i}'],
+#         bins=40, density=False, log=True,
+#         range=(df[df.Nsphere == sphere_i].loc[:,f'AD_scores_{i}'].min(), df[df.Nsphere == sphere_i].loc[:,f'AD_scores_{i}'].max()),#range=(df[f'AD_scores_{i}'].min(), df[f'AD_scores_{i}'].max()),
+#         color='coral', alpha=0.4)
+#
+# # plot normal distribution
+# ax.hist(df[(df.Nsphere == sphere_i) & (df.abnormal_XR == 0)].loc[:,f'AD_scores_{i}'],
+#         bins=40, density=False, log=True,
+#         range=(df[df.Nsphere == sphere_i].loc[:,f'AD_scores_{i}'].min(), df[df.Nsphere == sphere_i].loc[:,f'AD_scores_{i}'].max()),#range=(df[f'AD_scores_{i}'].min(), df[f'AD_scores_{i}'].max()),
+#         color='limegreen', alpha=0.4)
+# ax.set_title(f'Sphere n°{sphere_i+1}', fontsize=12)
+# ax.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
+#
+# fig.savefig(FIGURE_PATH + 'score_distribution_by_sphere.pdf', dpi=dpi, bbox_inches='tight')
+# plt.show()
 
 #%%#############################################################################
 #                               Body part by Sphere                            #
@@ -153,6 +179,29 @@ ax.legend(handles, labels, ncol=7, loc='lower center', bbox_to_anchor=(0.5, -0.2
 ax.set_xlabel('Counts [-]', fontsize=12)
 ax.set_title('Valid and Test Normal Body part counts by hypersphere', fontsize=12, fontweight='bold')
 #fig.savefig(FIGURE_PATH + 'bodypart_by_sphere.pdf', dpi=dpi, bbox_inches='tight')
+plt.show()
+
+#%%#############################################################################
+#                                  AUC by Sphere                               #
+################################################################################
+sphere_list = np.sort(df.Nsphere.unique())
+
+fig, ax = plt.subplots(1, 1, figsize=(4,7))
+if transparent: fig.set_alpha(0)
+
+auc = [roc_auc_score(df[df.Nsphere == i].abnormal_XR, df[df.Nsphere == i].AD_scores_1) for i in sphere_list]
+auc.append(roc_auc_score(df.abnormal_XR, df.AD_scores_1))
+
+ax.bar(np.arange(len(sphere_list)+1), auc, color='darkgray')
+for x, h in zip(np.arange(len(sphere_list)+1), auc):
+    ax.text(x, h+0.02, f'{h:.2%}', va='bottom', ha='center', fontsize=13)
+ax.set_xticks(np.arange(4))
+ax.set_xticklabels([f'Sphere {i+1}' for i in sphere_list] + ['All'])
+ax.set_ylabel('AUC [-]')
+ax.set_ylim([0,1])
+ax.spines['top'].set_visible(False)
+ax.spines['right'].set_visible(False)
+fig.savefig(FIGURE_PATH + 'auc_by_sphere.pdf', dpi=dpi, bbox_inches='tight')
 plt.show()
 
 #%%#############################################################################

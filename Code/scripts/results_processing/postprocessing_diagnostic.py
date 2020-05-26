@@ -16,7 +16,7 @@ from src.utils.results_processing import metric_barplot
 
 DATA_PATH = r'../../../data/PROCESSED/'
 DATA_INFO_PATH = r'../../../data/data_info.csv'
-OUTPUT_PATH = r'../../../Outputs/JointDMSAD_2020_04_27_08h40/'
+OUTPUT_PATH = r'../../../Outputs/JointDMSAD_2020_05_09_08h55_sigmoid/'
 FIGURE_PATH = OUTPUT_PATH + 'analysis/diagnostic/'
 if not os.path.isdir(FIGURE_PATH): os.makedirs(FIGURE_PATH)
 
@@ -63,16 +63,16 @@ df.head()
 i = 1
 BodyPart_list = df.body_part.unique()
 
-fig, axs = plt.subplots(1, 7, figsize=(24,3), sharex=True, sharey=True)
+fig, axs = plt.subplots(1, 7, figsize=(24,3), sharex=False, sharey=True)
 if transparent: fig.set_alpha(0)
 for ax, part in zip(axs.reshape(-1), BodyPart_list):
     # plot abnormal distribution
     ax.hist(df[(df.body_part == part) & (df.abnormal_XR == 1)].loc[:,f'AD_scores_{i}'],
-            bins=40, density=True, log=True, range=(df[f'AD_scores_{i}'].min(), df[f'AD_scores_{i}'].max()),
+            bins=40, density=False, log=True, range=(df[f'AD_scores_{i}'].min(), df[f'AD_scores_{i}'].max()),
             color='coral', alpha=0.4)
     # plot normal distribution
     ax.hist(df[(df.body_part == part) & (df.abnormal_XR == 0)].loc[:,f'AD_scores_{i}'],
-            bins=55, density=True, log=True, range=(df[f'AD_scores_{i}'].min(), df[f'AD_scores_{i}'].max()),
+            bins=55, density=False, log=True, range=(df[f'AD_scores_{i}'].min(), df[f'AD_scores_{i}'].max()),
             color='limegreen', alpha=0.4)
     ax.set_title(part.title(), fontsize=12)
     ax.ticklabel_format(style='sci', axis='x', scilimits=(0,0))

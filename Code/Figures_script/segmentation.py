@@ -18,7 +18,7 @@ save_fig = True
 ################################################################################
 df = pd.read_csv(DATA_PATH+'data_info.csv')
 df = df.drop(df.columns[0], axis=1)
-df2 = df.sample(n=24, random_state=1234) # 3 ; 5 ; 111 ; 1111 ; 2222 ; 4242 ; 33 ; 3333 ; 1234
+df2 = df.sample(n=24, random_state=2222) # 3 ; 5 ; 111 ; 1111 ; 2222 ; 4242 ; 33 ; 3333 ; 1234
 fn = list(df2.filename)
 fn_mask = list(df2.mask_filename)
 bodypart = list(df2.body_part)
@@ -26,8 +26,8 @@ bodypart = list(df2.body_part)
 ################################################################################
 m_color, m_alpha = 'limegreen', 0.5
 
-fig, axs = plt.subplots(4, 6, figsize=(18,12), gridspec_kw={'hspace':0.15, 'wspace':0.0})
-if transparent: fig.set_alpha(0)
+fig, axs = plt.subplots(4, 4, figsize=(8,8), gridspec_kw={'hspace':0.18, 'wspace':0.0})
+#if transparent: fig.set_alpha(0)
 for f, fm, bp, ax in zip(fn, fn_mask, bodypart, axs.reshape(-1)):
     ax.set_axis_off()
     ax.set_title(bp.title(), fontsize=12)
