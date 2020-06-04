@@ -137,6 +137,7 @@ Code/playground.py
 # ignore large .pt files
 Outputs/**/*.pt
 Outputs/*/results/*.json
+Outputs/*/results/**/*.json
 # ignore debugging outputs (test ones)
 Outputs/tests/*
 Outputs/others/*

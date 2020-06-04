@@ -130,7 +130,7 @@ test_counts = get_patient_bodypart_counts(test_df, False)
 # %%
 ################################################################################
 width = 0.5
-colors1 = ['paleturquoise', 'gold', 'lightsalmon']
+colors1 = ['xkcd:light sage', 'xkcd:sunflower yellow', 'xkcd:peachy pink']#['lightskyblue', 'yellow', 'salmon']#['paleturquoise', 'gold', 'lightsalmon']
 offset = 0
 offset_set = 5000
 pos1 = 0.35
@@ -205,7 +205,7 @@ draw_cruved_rect(x1, x2, ha3, ha3, hnall + hmall + ha1 + ha2, offset_te + hn3 + 
 
 # Labels of sets
 txt_offset = 400
-ax.text(pos1, offset + sum(all_counts.values())[0]+txt_offset, 'All\npatients', fontsize=12, ha='center')
+ax.text(pos1, offset + sum(all_counts.values())[0]+txt_offset, 'All\nStudies', fontsize=12, ha='center')
 ax.text(pos2, offset_tr + sum(train_counts.values())[0]+txt_offset, 'Train Set', fontsize=12, ha='center')
 ax.text(pos2, offset_v + sum(valid_counts.values())[0]+txt_offset, 'Valid Set', fontsize=12, ha='center')
 ax.text(pos2, offset_te + sum(test_counts.values())[0]+txt_offset, 'Test Set', fontsize=12, ha='center')
@@ -259,7 +259,7 @@ ax_bis.set_ylim([0,15000])
 ax_bis.xaxis.set_major_locator(plt.NullLocator())
 ax_bis.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(human_format))
 ax_bis.tick_params(axis='both', labelsize=10)
-ax_bis.set_ylabel('Number of patients [-]', fontsize=12)
+ax_bis.set_ylabel('Number of studies [-]', fontsize=12)
 ax.set_xlim([0,pos3 + set_len_x])
 
 # legend
