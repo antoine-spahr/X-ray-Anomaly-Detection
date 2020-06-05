@@ -1,7 +1,7 @@
 # Xray-Anomaly-Detection
 ---
 ## Goal & Motivations
-Anomaly detection is by definition _Detecting everything that is not normal_. Therefore supervised approaches are not suited and unsupervised or semi-supervised method are preferred. Moreover, there are often not enough labeled samples for a proper supervised training. The general approach is to learn the distribution of normal samples and detect element out of the distribution. It this assume that all/most of the available data comes from the normal distribution. 
+Anomaly detection is by definition _Detecting everything that is not normal_. Therefore supervised approaches are not suited and unsupervised or semi-supervised method are preferred. Moreover, there are often not enough labeled samples for a proper supervised training. The general approach is to learn the distribution of normal samples and detect element out of the distribution. It this assume that all/most of the available data comes from the normal distribution.
 
 The goal of this project is to detect anomalies in musculoskeletal radiograph of upper limb using unsupervised and semi-supervised methods.
 
@@ -9,7 +9,6 @@ The goal of this project is to detect anomalies in musculoskeletal radiograph of
 The exploration of unsupervised and semi-supervised settings are made on the MURA dataset. A dataset of around 40'000 upper limb x-rays labeled for anomaly detection. The dataset labels are not so imbalance but we will simulate an imbalance for our research purposes.
 
 ## Git Structure
-
 
 ```
 .

@@ -1,7 +1,10 @@
 import numpy as np
+import random
+import math
 import PIL.ImageOps
 import PIL.ImageEnhance
 import PIL.Image
+import skimage.filters
 import torch
 import torchvision.transforms as TF
 
@@ -224,9 +227,9 @@ class MinMaxNormalization:
             |---- mask (np.array) the passed mask.
         """
         arr = np.array(image).astype('float')
-        arr = (arr - arr.min()) / (arr.max() - arr.min())
+        arr = (arr - arr.min()) / (arr.max() - arr.min() + 1e-6)
         arr = (self.vmax - self.vmin) * arr + self.vmin
-        if mask:
+        if not mask is None:
             mask = np.array(mask)
         return arr, mask
 
@@ -418,7 +421,7 @@ class RandomBrightness:
 
     def __call__(self, image, mask=None):
         """
-        Randmly rotate the image (and mask in the same fashion).
+        Randmly adust the image nrightness (and mask is only passed).
         ----------
         INPUT
             |---- image (PIL.Image) the image to adjust.
@@ -438,6 +441,222 @@ class RandomBrightness:
         """
         return f"RandomBrightness(lower={self.lower}, upper={self.upper})"
 
+class RandomCropResize:
+    """
+    Randomly crop a part of the image and the mask and resize it.
+    """
+    def __init__(self, size, scale=(0.08, 1.0), ratio=(3./4., 4./3.), resample=PIL.Image.BILINEAR):
+        """
+        Constructor of the random crop resize transform.
+        ----------
+        INPUT
+            |----
+        OUTPUT
+            |---- None
+        """
+        self.size = size
+        self.scale = scale
+        self.ratio = ratio
+        self.resample = resample
+
+    def get_params(self, img, scale, ratio):
+        """
+        Compute position and size of crop. (method from torchvision).
+        ----------
+        INPUT
+            |---- img (PIL Image): Image to be cropped.
+            |---- scale (tuple): range of size of the origin size cropped
+            |---- ratio (tuple): range of aspect ratio of the origin aspect ratio cropped
+        OUTPUT
+            |---- params (tuple :(i, j, h, w)) crop position and size.
+        """
+        width, height = img.size
+        area = height * width
+
+        for _ in range(10):
+            target_area = random.uniform(*scale) * area
+            log_ratio = (math.log(ratio[0]), math.log(ratio[1]))
+            aspect_ratio = math.exp(random.uniform(*log_ratio))
+
+            w = int(round(math.sqrt(target_area * aspect_ratio)))
+            h = int(round(math.sqrt(target_area / aspect_ratio)))
+
+            if 0 < w <= width and 0 < h <= height:
+                i = random.randint(0, height - h)
+                j = random.randint(0, width - w)
+                return i, j, h, w
+
+        # Fallback to central crop
+        in_ratio = float(width) / float(height)
+        if (in_ratio < min(ratio)):
+            w = width
+            h = int(round(w / min(ratio)))
+        elif (in_ratio > max(ratio)):
+            h = height
+            w = int(round(h * max(ratio)))
+        else:  # whole image
+            w = width
+            h = height
+        i = (height - h) // 2
+        j = (width - w) // 2
+        return i, j, h, w
+
+    def __call__(self, image, mask=None):
+        """
+        Randomly crop and resize the image and mask.
+        ----------
+        INPUT
+            |---- image (PIL.Image) the image to adjust.
+            |---- mask (PIL.Image) the mask to pass.
+        OUTPUT
+            |---- image (PIL.Image) the adjusted image.
+            |---- mask (PIL.Image) the passed mask.
+        """
+        # get crop parameters
+        i, j, h, w = self.get_params(image, self.scale, self.ratio)
+        # crop and resize img and mask
+        image = image.crop((i, j, h, w)).resize(self.size, resample=self.resample)
+        if mask:
+            mask= mask.crop((i, j, h, w)).resize(self.size, resample=self.resample)
+
+        return image, mask
+
+    def __str__(self):
+        """
+        Transform printing format
+        """
+        return f"RandomCropResize(size={self.size}, ratio={self.ratio}, scale={self.scale})"
+
+class ColorDistorsion:
+    """
+    Apply a color distorsion to the image and pass the mask. Change brightness and contrast.
+    """
+    def __init__(self, s=1.0, p=0.8):
+        """
+
+        ----------
+        INPUT
+            |----
+        OUTPUT
+            |---- None
+        """
+        self.s = s
+        self.p = p
+        self.upper = 1.0 + 0.8*s
+        self.lower = 1.0 - 0.8*s
+
+    def __call__(self, image, mask=None):
+        """
+
+        ----------
+        INPUT
+            |---- image (PIL.Image) the image to adjust.
+            |---- mask (PIL.Image) the mask to pass.
+        OUTPUT
+            |---- image (PIL.Image) the adjusted image.
+            |---- mask (PIL.Image) the passed mask.
+        """
+        # apply transform only with probability p
+        if np.random.random() < self.p:
+            # Brightness adjustment
+            factor_brightness = self.lower + np.random.random() * (self.upper - self.lower)
+            enhancer = PIL.ImageEnhance.Brightness(image)
+            image = enhancer.enhance(factor_brightness)
+            # Contrast adjustment
+            factor_contrast = self.lower + np.random.random() * (self.upper - self.lower)
+            enhancer = PIL.ImageEnhance.Contrast(image)
+            image = enhancer.enhance(factor_contrast)
+
+        return image, mask
+
+    def __str__(self):
+        """
+        Transform printing format
+        """
+        return f"ColorDistorsion(s={self.s})"
+
+class GaussianBlur:
+    """
+
+    """
+    def __init__(self, p=0.5, sigma=(0.1, 2.0)):
+        """
+
+        ----------
+        INPUT
+            |----
+        OUTPUT
+            |---- None
+        """
+        self.p = p
+        self.sigma = sigma
+
+    def __call__(self, image, mask=None):
+        """
+
+        ----------
+        INPUT
+            |---- image (PIL.Image) the image to adjust.
+            |---- mask (PIL.Image) the mask to pass.
+        OUTPUT
+            |---- image (np.array) the adjusted image.
+            |---- mask (np.array) the passed mask.
+        """
+        arr = np.array(image).astype('float')
+
+        if np.random.random() < self.p:
+            s = np.random.uniform(low=self.sigma[0], high=self.sigma[1])
+            arr = skimage.filters.gaussian(arr, sigma=s)
+
+        if mask:
+            mask = np.array(mask)
+        return arr, np.array(mask)
+
+    def __str__(self):
+        """
+        Transform printing format
+        """
+        return f"GaussianBlur(sigma={self.sigma}, p={self.p})"
+
+class MaskImage:
+    """
+
+    """
+    def __init__(self, to_mask=True):
+        """
+
+        ----------
+        INPUT
+            |---- to_mask (bool) whether to perform the masking or not.
+        OUTPUT
+            |---- None
+        """
+        self.to_mask = to_mask
+
+    def __call__(self, image, mask):
+        """
+
+        ----------
+        INPUT
+            |---- image (PIL.Image) the image to adjust.
+            |---- mask (PIL.Image) the mask to pass.
+        OUTPUT
+            |---- image (np.array) the adjusted image.
+            |---- mask (np.array) the passed mask.
+        """
+        arr = np.array(image).astype('float')
+        mask = np.array(mask)
+
+        if self.to_mask:
+            arr = arr * mask
+
+        return arr, mask
+
+    def __str__(self):
+        """
+        Transform printing format
+        """
+        return f"MaskImage()"
 
 class ToTorchTensor:
     """

@@ -8,7 +8,6 @@ from sklearn.model_selection import train_test_split
 from prettytable import PrettyTable
 
 import src.datasets.transforms as tf
-#from . import transforms as tf
 
 class MURA_Dataset(data.Dataset):
     """
@@ -79,27 +78,6 @@ class MURA_Dataset(data.Dataset):
             |---- (semi_label) (torch.Tensor) the semi-supervised labels (normal-known,
             |           abnormal-known or unknown)
         """
-        # item = None
-        # im = Image.open(self.data_path + df.loc[idx,'filename'])
-        # # load label
-        # label = torch.tensor(self.sample_df.loc[idx,'abnormal_XR'])
-        # # load mask
-        # if self.load_mask:
-        #     mask = Image.open(self.data_path + df.loc[idx,'mask_filename'])
-        #     # apply given transform
-        #     im, mask = self.transform(im, mask)
-        #     item = [im, label, mask]
-        # else:
-        #     # apply given transform
-        #     im, _ = self.transform(im)
-        #     item = [im, label]
-        # # load semi-label
-        # if self.load_semilabels:
-        #     semi_label = torch.tensor(self.sample_df.loc[idx, 'semi_label'])
-        #     item.append(semi_label)
-        #
-        # return item + [idx]
-
         im = Image.open(self.data_path + self.sample_df.loc[idx,'filename'])
         # load label
         label = torch.tensor(self.sample_df.loc[idx,'abnormal_XR'])
@@ -118,6 +96,74 @@ class MURA_Dataset(data.Dataset):
         im, mask = self.transform(im, mask)
 
         return im, label, mask, semi_label, torch.tensor(idx)
+
+class MURADataset_SimCLR(data.Dataset):
+    """
+    MURA dataset for the SimCLR model which return two replicate of the image
+    with heavy data augmentation.
+    """
+    def __init__(self, sample_df, data_path, output_size=512, mask_img=True):
+        """
+        Constructor of the dataset.
+        ----------
+        INPUT
+            |---- sample_df (pandas.DataFrame) the dataframe containing the
+            |           samples' filenames, labels, (semi-labels and mask-filename).
+            |---- data_path (str) the path to the data filenames specified in the sample_df
+            |---- output_size (int) the size of the output squared image.
+            |---- mask_img (bool) whether to mask image.
+        """
+        data.Dataset.__init__(self)
+        self.sample_df = sample_df
+        self.data_path = data_path
+
+        self.transform = tf.Compose(tf.Grayscale(),
+                                    tf.AutoContrast(cutoff=1),
+                                    tf.RandomHorizontalFlip(p=0.5),
+                                    tf.RandomScaling(scale_range=(0.8,1.2)),
+                                    tf.RandomRotation(degree_range=(-45,45)),
+                                    tf.ResizeMax(max_len=output_size),
+                                    tf.PadToSquare(),
+                                    tf.RandomCropResize((output_size, output_size), scale=(0.4, 1.0), ratio=(4./5., 5./4.)),
+                                    tf.ColorDistorsion(s=0.5),
+                                    tf.GaussianBlur(p=0.5, sigma=(0.1, 2.0)),
+                                    tf.MinMaxNormalization(),
+                                    tf.MaskImage(mask_img),
+                                    tf.ToTorchTensor())
+
+    def __len__(self):
+        """
+        Get the number of samples in the dataset.
+        ----------
+        INPUT
+            |---- None
+        OUTPUT
+            |---- len (int) the number of samples.
+        """
+        return self.sample_df.shape[0]
+
+    def __getitem__(self, idx):
+        """
+        Get an item from the dataset.
+        ----------
+        INPUT
+            |---- idx (int) the index of the sample to get (i.e. row of the
+            |           self.sample_df get).
+        OUTPUT
+            |---- image_1 (torch.Tensor) the image transformed once.
+            |---- image_2 (torch.Tensor) the same image transfromed differently.
+            |---- semi_label (torch.Tensor) the semi-supervised label. 0 if unknown,
+            |           1 if known normal and -1 if known abnormal.
+        """
+        im = Image.open(self.data_path + self.sample_df.loc[idx,'filename'])
+        mask = Image.open(self.data_path + self.sample_df.loc[idx,'mask_filename'])
+        semi_label = torch.tensor(self.sample_df.loc[idx,'semi_label'])
+
+        im1, _ = self.transform(im, mask)
+        im2, _ = self.transform(im, mask)
+
+        return im1, im2, semi_label, idx
+
 
 class MURA_TrainValidTestSplitter:
     """
