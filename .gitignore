@@ -133,8 +133,10 @@ dmypy.json
 data/*
 !data/*data_info.csv
 Code/playground.py
+Code/src/utils/kmeans_batch.py
+Code/src/models/optim/SimCLR_classifier_trainer.py
 
-# ignore large .pt files
+# ignore large .pt files and results
 Outputs/**/*.pt
 Outputs/*/results/*.json
 Outputs/*/results/**/*.json
