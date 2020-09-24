@@ -8,7 +8,7 @@ import logging
 
 from sklearn.manifold import TSNE
 
-from src.models.optim.CustomLosses import NT_Xent_loss
+from src.models.optim.CustomLosses import NT_Xent_loss, SupervisedContrastiveLoss
 from src.utils.utils import print_progessbar
 
 class SimCLR_trainer:
@@ -16,8 +16,8 @@ class SimCLR_trainer:
 
     """
     def __init__(self, tau, n_epoch=100, batch_size=32,lr=1e-3, weight_decay=1e-6,
-                 lr_milestones=(), n_job_dataloader=0, device='cuda',
-                 print_batch_progress=False):
+                 lr_milestones=(), n_job_dataloader=0, supervised_loss=False,
+                 device='cuda', print_batch_progress=False):
         """
 
         """
@@ -28,6 +28,7 @@ class SimCLR_trainer:
         self.weight_decay = weight_decay
         self.lr_milestones = lr_milestones
         self.n_job_dataloader = n_job_dataloader
+        self.supervised_loss = supervised_loss
         self.device = device
         self.print_batch_progress = print_batch_progress
 
@@ -50,8 +51,11 @@ class SimCLR_trainer:
         # put net on device
         net = net.to(self.device)
 
-        # define loss function
-        loss_fn = NT_Xent_loss(self.tau, self.batch_size, device=self.device)
+        # define loss function, supervised or self-supervised
+        if self.supervised_loss:
+            loss_fn = SupervisedContrastiveLoss(self.tau, self.batch_size, y_list=[1], device=self.device)
+        else:
+            loss_fn = NT_Xent_loss(self.tau, self.batch_size, device=self.device)
 
         # define the optimizer
         optimizer = optim.Adam(net.parameters(), lr=self.lr, weight_decay=self.weight_decay)
@@ -72,10 +76,10 @@ class SimCLR_trainer:
 
             for b, data in enumerate(train_loader):
                 # get data on device
-                input_1, input_2, _, _ = data
+                input_1, input_2, semi_label, _ = data
                 input_1 = input_1.to(self.device).float().requires_grad_(True)
                 input_2 = input_2.to(self.device).float().requires_grad_(True)
-                #semi_label = semi_label.to(self.device)
+                semi_label = semi_label.to(self.device)
 
                 # Update by Backpropagation : Fowrad + Backward + step
                 optimizer.zero_grad()
@@ -86,7 +90,13 @@ class SimCLR_trainer:
                 z_1 = F.normalize(z_1, dim=1)
                 z_2 = F.normalize(z_2, dim=1)
 
-                loss = loss_fn(z_1, z_2)
+                # compute the loss
+                if self.supervised_loss:
+                    y = torch.where(semi_label == -1, torch.ones_like(semi_label), torch.zeros_like(semi_label)) # generate labels (1 if known abnormal, else it's considered normal)
+                    loss = loss_fn(z_1, z_2, y)
+                else:
+                    loss = loss_fn(z_1, z_2)
+
                 loss.backward()
                 optimizer.step()
 
@@ -135,8 +145,11 @@ class SimCLR_trainer:
         # put net on device
         net = net.to(self.device)
 
-        # define loss function
-        loss_fn = NT_Xent_loss(self.tau, self.batch_size, device=self.device)
+        # define loss function, supervised or self-supervised
+        if self.supervised_loss:
+            loss_fn = SupervisedContrastiveLoss(self.tau, self.batch_size, y_list=[1], device=self.device)
+        else:
+            loss_fn = NT_Xent_loss(self.tau, self.batch_size, device=self.device)
 
         if print_to_logger:
             logger.info("Start Evaluating SimCLR.")
@@ -149,9 +162,10 @@ class SimCLR_trainer:
 
             for b, data in enumerate(loader):
                 # get input
-                input_1, input_2, _, idx = data
+                input_1, input_2, semi_label, idx = data
                 input_1 = input_1.to(self.device).float()
                 input_2 = input_2.to(self.device).float()
+                semi_label = semi_label.to(self.device)
                 idx = idx.to(self.device)
                 # forward
                 h_1, z_1 = net(input_1)
@@ -160,7 +174,12 @@ class SimCLR_trainer:
                 z_1 = F.normalize(z_1, dim=1)
                 z_2 = F.normalize(z_2, dim=1)
                 # compute loss
-                loss = loss_fn(z_1, z_2)
+                if self.supervised_loss:
+                    y = torch.where(semi_label == -1, torch.ones_like(semi_label), torch.zeros_like(semi_label)) # generate labels (1 if known abnormal, else it's considered normal)
+                    loss = loss_fn(z_1, z_2, y)
+                else:
+                    loss = loss_fn(z_1, z_2)
+
                 sum_loss += loss.item()
                 # save embeddings
                 if save_tSNE:

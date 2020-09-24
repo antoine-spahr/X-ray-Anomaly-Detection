@@ -69,7 +69,7 @@ class DMSAD_trainer:
         self.eval_time = None
         self.eval_scores = None
 
-    def train(self, dataset, net, valid_dataset=None):
+    def train(self, dataset, net, valid_dataset=None, checkpoint_path=None):
         """
         Train the DMSAD network on the provided dataset.
         ----------
@@ -77,12 +77,12 @@ class DMSAD_trainer:
             |---- dataset (torch.utils.data.Dataset) the dataset on which the
             |           network is trained. It must return an image, label, mask
             |           semi-supervized labels and the index.
-            |---- net (nn.Module) The DeepSAD to train.
+            |---- net (nn.Module) The DMSAD to train.
             |---- valid_dataset (torch.utils.data.Dataset) the dataset on which
             |           to validate the network at each epoch. Not validated if
             |           not provided.
         OUTPUT
-            |---- net (nn.Module) The trained DeepSAD.
+            |---- net (nn.Module) The trained DMSAD.
         """
         logger = logging.getLogger()
 
@@ -95,15 +95,27 @@ class DMSAD_trainer:
 
         # initialize hypersphere center
         if self.c is None:
-            logger.info(' Initializing the hypersphere centers.')
+            logger.info('Initializing the hypersphere centers.')
             self.initialize_centers(train_loader, net)
-            logger.info(f' {self.c.shape[0]} centers successfully initialized.')
+            logger.info(f'{self.c.shape[0]} centers successfully initialized.')
 
         # define loss criterion
         loss_fn = DMSADLoss(self.eta, eps=self.eps)
 
         # define optimizer
         optimizer = optim.Adam(net.parameters(), lr=self.lr, weight_decay=self.weight_decay)
+
+        # Load checkpoint if any
+        try:
+             checkpoint = torch.load(checkpoint_path, map_location=self.device)
+             n_epoch_finished = checkpoint['n_epoch_finished']
+             net.load_state_dict(checkpoint['net_state'])
+             optimizer.load_state_dict(checkpoint['optimizer_state'])
+             self.c = checkpoint['centers']
+             logger.info(f'Checkpoint loaded with {n_epoch_finished} epochs finished.')
+        except FileNotFoundError:
+            logger.info('Training from scratch.')
+            n_epoch_finished = 0
 
         # define scheduler
         scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=self.lr_milestone, gamma=0.1)
@@ -114,7 +126,7 @@ class DMSAD_trainer:
         epoch_loss_list = []
         n_batch = len(train_loader)
 
-        for epoch in range(self.n_epoch):
+        for epoch in range(n_epoch_finished, self.n_epoch):
             net.train()
             epoch_loss = 0.0
             epoch_start_time = time.time()
@@ -170,6 +182,15 @@ class DMSAD_trainer:
             scheduler.step()
             if epoch + 1 in self.lr_milestone:
                 logger.info(f'---- LR Scheduler : new learning rate {scheduler.get_lr()[0]:g}')
+
+            # Save checkpoint every 10 epochs
+            if (epoch+1) % 10 == 0:
+                checkpoint = {'n_epoch_finished': epoch+1,
+                              'net_state': net.state_dict(),
+                              'optimizer_state': optimizer.state_dict(),
+                              'centers': self.c}
+                torch.save(checkpoint, checkpoint_path)
+                logger.info('---- Checkpoint Saved.')
 
         # Set the radius of each sphere as 1-gamma quantile of normal samples distances
         logger.info(f'---- Setting the hyperspheres radii as the {1-self.gamma:.1%} quantiles of normal sample distances.')

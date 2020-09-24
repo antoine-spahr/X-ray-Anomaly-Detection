@@ -27,7 +27,7 @@ def main(config_path):
     cfg.load_config(config_path)
 
     # Get path to output
-    OUTPUT_PATH = cfg.settings['PATH']['OUTPUT'] + cfg.settings['Experiment_Name'] + datetime.today().strftime('%Y_%m_%d_%Hh%M')+'/'
+    OUTPUT_PATH = cfg.settings['PATH']['OUTPUT'] + cfg.settings['Experiment_Name'] + '/'# + datetime.today().strftime('%Y_%m_%d_%Hh%M')+'/'
     # make output dir
     if not os.path.isdir(OUTPUT_PATH+'models/'): os.makedirs(OUTPUT_PATH+'model/', exist_ok=True)
     if not os.path.isdir(OUTPUT_PATH+'results/'): os.makedirs(OUTPUT_PATH+'results/', exist_ok=True)
@@ -129,8 +129,8 @@ def main(config_path):
 
         # Load model if required
         if cfg.settings['SimCLR']['model_path_to_load']:
-            clr_DMSAD.load_repr_net(cfg.settings['SimCLR']['model_path_to_load'], map_location=cfg.settings['device'])
-            logger.info(f"SimCLR Model Loaded from {cfg.settings['SimCLR']['model_path_to_load']}" + "\n")
+            clr_DMSAD.load_repr_net(cfg.settings['SimCLR']['model_path_to_load'][seed_i], map_location=cfg.settings['device'])
+            logger.info(f"SimCLR Model Loaded from {cfg.settings['SimCLR']['model_path_to_load'][seed_i]}" + "\n")
 
         # print Train parameters
         for key, value in cfg.settings['SimCLR'].items():
@@ -144,18 +144,21 @@ def main(config_path):
                               weight_decay=cfg.settings['SimCLR']['weight_decay'],
                               lr_milestones=cfg.settings['SimCLR']['lr_milestone'],
                               n_job_dataloader=cfg.settings['SimCLR']['num_worker'],
+                              supervised_loss=cfg.settings['SimCLR']['supervised_loss'],
                               device=cfg.settings['device'],
                               print_batch_progress=cfg.settings['print_batch_progress'])
 
         # Evaluate SimCLR to get embeddings
         clr_DMSAD.evaluate_SimCLR(valid_dataset_CLR, batch_size=cfg.settings['SimCLR']['batch_size'],
                                  n_job_dataloader=cfg.settings['SimCLR']['num_worker'],
+                                 supervised_loss=cfg.settings['SimCLR']['supervised_loss'],
                                  device=cfg.settings['device'],
                                  print_batch_progress=cfg.settings['print_batch_progress'],
                                  set='valid')
 
         clr_DMSAD.evaluate_SimCLR(test_dataset_CLR, batch_size=cfg.settings['SimCLR']['batch_size'],
                                  n_job_dataloader=cfg.settings['SimCLR']['num_worker'],
+                                 supervised_loss=cfg.settings['SimCLR']['supervised_loss'],
                                  device=cfg.settings['device'],
                                  print_batch_progress=cfg.settings['print_batch_progress'],
                                  set='test')
@@ -202,7 +205,8 @@ def main(config_path):
                           lr_milestone=cfg.settings['DMSAD']['lr_milestone'],
                           n_job_dataloader=cfg.settings['DMSAD']['num_worker'],
                           device=cfg.settings['device'],
-                          print_batch_progress=cfg.settings['print_batch_progress'])
+                          print_batch_progress=cfg.settings['print_batch_progress'],
+                          checkpoint_path=OUTPUT_PATH + f'DMSAD_checkpoint_{seed_i+1}.pt')
         logger.info('--- Validation')
         clr_DMSAD.evaluate_AD(valid_dataset_AD, batch_size=cfg.settings['DMSAD']['batch_size'],
                           n_job_dataloader=cfg.settings['DMSAD']['num_worker'],

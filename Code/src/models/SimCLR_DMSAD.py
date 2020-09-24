@@ -67,7 +67,7 @@ class SimCLR_DMSAD:
 
     def train_SimCLR(self, dataset, valid_dataset=None, n_epoch=100, batch_size=32,
                      lr=1e-3, weight_decay=1e-6, lr_milestones=(), n_job_dataloader=0,
-                     device='cuda', print_batch_progress=False):
+                     supervised_loss=False, device='cuda', print_batch_progress=False):
         """
         Pretrain the encoder with contrastive learning.
         ----------
@@ -89,15 +89,15 @@ class SimCLR_DMSAD:
         """
         self.repr_trainer = SimCLR_trainer(self.tau, n_epoch=n_epoch, batch_size=batch_size,
                          lr=lr, weight_decay=weight_decay, lr_milestones=lr_milestones,
-                         n_job_dataloader=n_job_dataloader, device=device,
-                         print_batch_progress=print_batch_progress)
+                         n_job_dataloader=n_job_dataloader, supervised_loss=supervised_loss,
+                         device=device, print_batch_progress=print_batch_progress)
         # train SimCLR
         self.repr_net = self.repr_trainer.train(dataset, self.repr_net, valid_dataset=valid_dataset)
         # get results
         self.results['SimCLR']['train']['time'] = self.repr_trainer.train_time
         self.results['SimCLR']['train']['loss'] = self.repr_trainer.train_loss
 
-    def evaluate_SimCLR(self, dataset, batch_size=32, n_job_dataloader=0,
+    def evaluate_SimCLR(self, dataset, batch_size=32, n_job_dataloader=0, supervised_loss=False,
                     device='cuda', print_batch_progress=False, set='test'):
         """
         Evaluate the SimCLR to get the embedding.
@@ -119,8 +119,8 @@ class SimCLR_DMSAD:
 
         if self.repr_trainer is None:
             self.repr_trainer = SimCLR_trainer(self.tau, eta, batch_size=batch_size,
-                        n_job_dataloader=n_job_dataloader, device=device,
-                        print_batch_progress=print_batch_progress)
+                        n_job_dataloader=n_job_dataloader, supervised_loss=supervised_loss, 
+                        device=device, print_batch_progress=print_batch_progress)
 
         # Evaluate model
         self.repr_trainer.evaluate(dataset, self.repr_net, save_tSNE=True,
@@ -173,7 +173,8 @@ class SimCLR_DMSAD:
 
     def train_AD(self, dataset, valid_dataset=None, n_sphere_init=100, n_epoch=100,
                  batch_size=32, lr=1e-3, weight_decay=1e-6, lr_milestone=(),
-                 n_job_dataloader=0, device='cuda', print_batch_progress=False):
+                 n_job_dataloader=0, device='cuda', print_batch_progress=False,
+                 checkpoint_path=None):
         """
         Train the encoder on the DMSAD objective.
         ----------
@@ -203,7 +204,7 @@ class SimCLR_DMSAD:
                             lr_milestone=lr_milestone, n_job_dataloader=n_job_dataloader,
                             device=device, print_batch_progress=print_batch_progress)
         # Train classifer
-        self.AD_net = self.AD_trainer.train(dataset, self.AD_net, valid_dataset=valid_dataset)
+        self.AD_net = self.AD_trainer.train(dataset, self.AD_net, valid_dataset=valid_dataset, checkpoint_path=checkpoint_path)
         # get results
         self.results['AD']['train']['time'] = self.AD_trainer.train_time
         self.results['AD']['train']['loss'] = self.AD_trainer.train_loss

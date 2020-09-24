@@ -1,5 +1,5 @@
 {
-  "Experiment_Name": "SimCLR_DMSAD_",
+  "Experiment_Name": "SimCLR_DMSAD_19_06",
   "PATH": {
     "DATA": "../../../data/PROCESSED/",
     "DATA_INFO": "../../../data/data_info.csv",
@@ -8,9 +8,6 @@
   "device": "cuda",
   "n_thread": 0,
   "seeds": [
-    1,
-    11,
-    111,
     1111
   ],
   "print_batch_progress": true,
@@ -21,8 +18,9 @@
     "img_size": 512
   },
   "SimCLR": {
+    "supervised_loss": false,
     "tau": 0.5,
-    "n_epoch": 100,
+    "n_epoch": 0,
     "batch_size": 24,
     "lr": 0.001,
     "lr_milestone": [
@@ -31,7 +29,9 @@
     ],
     "weight_decay": 0.000001,
     "num_worker": 8,
-    "model_path_to_load": null,
+    "model_path_to_load": [
+      "../../../Outputs/SimCLR_DSAD_2020_06_01_10h52/model/SimCLR_net_4.pt"
+    ],
     "MLP_head": [
       512,
       256,

@@ -170,7 +170,8 @@ class AE_DMSAD:
 
     def train_AD(self, dataset, valid_dataset=None, n_sphere_init=100, n_epoch=100,
                  batch_size=32, lr=1e-3, weight_decay=1e-6, lr_milestone=(),
-                 n_job_dataloader=0, device='cuda', print_batch_progress=False):
+                 n_job_dataloader=0, device='cuda', print_batch_progress=False,
+                 checkpoint_path=None):
         """
         Train the encoder on the DMSAD objective.
         ----------
@@ -200,7 +201,7 @@ class AE_DMSAD:
                             lr_milestone=lr_milestone, n_job_dataloader=n_job_dataloader,
                             device=device, print_batch_progress=print_batch_progress)
         # Train classifer
-        self.AD_net = self.AD_trainer.train(dataset, self.AD_net, valid_dataset=valid_dataset)
+        self.AD_net = self.AD_trainer.train(dataset, self.AD_net, valid_dataset=valid_dataset, checkpoint_path=checkpoint_path)
         # get results
         self.results['AD']['train']['time'] = self.AD_trainer.train_time
         self.results['AD']['train']['loss'] = self.AD_trainer.train_loss

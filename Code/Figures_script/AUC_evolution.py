@@ -8,9 +8,9 @@ import matplotlib.pyplot as plt
 FIGURE_PATH = '../../Figures/'
 OUTPUT_PATH = '../../Outputs/'
 expe_folders = ['AE_DSAD_2020_06_05_01h15',
-                'AE_DMSAD_2020_05_25_08h33',
+                'AE_DMSAD_19_06',
                 'SimCLR_DSAD_2020_06_01_10h52',
-                'SimCLR_DMSAD_2020_05_19_09h11']
+                'SimCLR_DMSAD_2020_06_16_17h06']
 
 def extract_valid_auc(path_to_logs):
     """
@@ -43,8 +43,8 @@ def get_valid_auc_df(all_auc):
 df_CDSAD = get_valid_auc_df(extract_valid_auc(OUTPUT_PATH + 'SimCLR_DSAD_2020_06_01_10h52' + '/logs'))
 df_DSAD = get_valid_auc_df(extract_valid_auc(OUTPUT_PATH + 'AE_DSAD_2020_06_05_01h15' + '/logs'))
 
-df_CDMSAD = get_valid_auc_df(extract_valid_auc(OUTPUT_PATH + 'SimCLR_DMSAD_2020_05_19_09h11' + '/logs'))
-df_DMSAD = get_valid_auc_df(extract_valid_auc(OUTPUT_PATH + 'AE_DMSAD_2020_05_25_08h33' + '/logs'))
+df_CDMSAD = get_valid_auc_df(extract_valid_auc(OUTPUT_PATH + 'SimCLR_DMSAD_2020_06_16_17h06' + '/logs'))
+df_DMSAD = get_valid_auc_df(extract_valid_auc(OUTPUT_PATH + 'AE_DMSAD_19_06' + '/logs'))
 
 # %% PLOT
 fontsize=12
@@ -54,7 +54,7 @@ fig, ax = plt.subplots(1, 1, figsize=(8, 5))
 ax.set_xticks(np.arange(0,160,10))
 ax.set_yticks(np.arange(0,100,5))
 ax.grid(True, axis='y')
-for color, df, name in zip(colors, [df_CDSAD, df_DSAD], ['CDSAD', 'DSAD']):
+for color, df, name in zip(colors, [df_CDMSAD, df_DSAD], ['CDMSAD (Ours)', 'Ruff et al.']):
     epochs = np.arange(1,len(df.m)+1,1)
     ax.plot(epochs, df.m, color=color, lw=2, label=name)
     ax.fill_between(epochs, df.CI_sup, df.CI_inf, fc=color, alpha=0.4, ec=None)

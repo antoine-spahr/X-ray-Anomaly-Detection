@@ -364,3 +364,78 @@ class NT_Xent_loss(nn.Module):
         loss = self.criterion(logits, labels)
         loss = loss / (2 * self.batch_size)
         return loss
+
+class SupervisedContrastiveLoss(nn.Module):
+    """
+    Define the Supervised Contrastive Loss as a Pytorch Module.
+    """
+    def __init__(self, tau, batch_size, y_list='all', device='cuda'):
+        """
+        Initialize a Supervised Contrastive Loss Module.
+        ----------
+        INPUT
+            |---- tau (float) the temperature hyperparameter.
+            |---- y_list (list of int) the list of class to conisder for positive.
+            |           Default is using all classes.
+            |---- batch_size (int) the batch_size used.
+            |---- device (str) the device to use.
+        OUTPUT
+            |---- None
+        """
+        nn.Module.__init__(self)
+        self.tau = tau
+        self.y_list = y_list
+        self.batch_size = batch_size
+        self.device=device
+
+    def forward(self, z_i, z_j, y):
+        """
+        Forward pass of the Supervised Contrastive Loss.
+        ----------
+        INPUT
+            |---- z_i (torch.Tensor) the representation of the 1st batch of augmented
+            |           input with dimension (Batch x Embed).
+            |---- z_j (torch.Tensor) the representation of the 2st batch of augmented
+            |           input with dimension (Batch x Embed).
+            |---- y (torch.Tensor) the label associated to each image (Batch)
+        OUTPUT
+            |---- loss (torch.Tensor) the supervised contrastive loss for the batch.
+        """
+        # concat both represenation to get a (2*Batch x Embed)
+        p = torch.cat((z_i, z_j), dim=0)
+
+        # Compute the similarity matrix between elements --> (2Batch x 2Batch)
+        sim = nn.CosineSimilarity(dim=2)(p.unsqueeze(1), p.unsqueeze(0)) / self.tau
+
+        # generate mask of positive positions on the similarity matrix
+        # duplicate the label tensor (size = 2N)
+        y2 = torch.cat([y,y], dim=0).view(-1,1)
+
+        if self.y_list == 'all':
+            # mark as positive, position that shares the same label (1 = positive)
+            mask = torch.eq(y2, y2.T).float()
+        else:
+            # keep only class sepcified in y_list as positive
+            mask = torch.zeros((2*self.batch_size, 2*self.batch_size)).bool().to(self.device)
+            for y_i in self.y_list:
+                mask = mask | torch.mul((y2 == y_i), (y2 == y_i).T)
+
+            # define representations of same image as positive
+            mask = mask | torch.diag(torch.ones(self.batch_size).to(self.device), diagonal=self.batch_size).bool()
+            mask = mask | torch.diag(torch.ones(self.batch_size).to(self.device), diagonal=-self.batch_size).bool()
+
+        # remove the diagonal (self posiitve)
+        mask = mask.fill_diagonal_(0).float()
+        # define logit_mask : all except diagonal of similarity matrix to ignore self comparison in CE
+        logit_mask = torch.ones(mask.shape).fill_diagonal_(0).to(self.device)
+
+        # compute log_prob (i.e Cross Entropy)
+        exp_logits = torch.exp(sim) * logit_mask
+        log_prob = sim - torch.log(exp_logits.sum(dim=1, keepdim=True)) # log(exp(x)/sum(exp(x_i))) = x - log(sum(exp(x_i)))
+        # compute mean of log-likelihood over positive
+        mean_log_prob_pos = (mask * log_prob).sum(dim=1) / mask.sum(dim=1)
+
+        # compute loss : sum over batch
+        loss = - mean_log_prob_pos.mean()
+
+        return loss

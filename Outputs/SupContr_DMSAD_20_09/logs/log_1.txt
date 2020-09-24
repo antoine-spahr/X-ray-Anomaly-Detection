@@ -1,0 +1,600 @@
+2020-09-20 17:01:10,183 | INFO | Log file : ../../../Outputs/SupContr_DMSAD_20_09/logs/log_1.txt
+2020-09-20 17:01:10,183 | INFO | Data path : ../../../data/PROCESSED/
+2020-09-20 17:01:10,184 | INFO | Outputs path : ../../../Outputs/SupContr_DMSAD_20_09/
+
+2020-09-20 17:01:10,184 | INFO | Set seed 01/04 to 1
+2020-09-20 17:01:10,781 | INFO | Device : cuda
+2020-09-20 17:01:10,781 | INFO | Number of thread : 0
+2020-09-20 17:01:14,559 | INFO | Split param train_frac : 0.5
+2020-09-20 17:01:14,559 | INFO | Split param known_normal : 0.05
+2020-09-20 17:01:14,559 | INFO | Split param known_abnormal : 0.05
+2020-09-20 17:01:14,559 | INFO | Split param img_size : 512
+2020-09-20 17:01:14,589 | INFO | Split Summary 
++-------+----------------+------------+--------------+
+| Set   | Name           | Number [-] | Fraction [%] |
++-------+----------------+------------+--------------+
+| train | Normal         | 18033      | 94.73%       |
+| train | Abnormal       | 1004       | 5.27%        |
+| train | Normal known   | 961        | 5.05%        |
+| train | Abnormal known | 1004       | 5.27%        |
+| train | Unknown        | 17072      | 89.68%       |
+| ----  | ----           | ----       | ----         |
+| valid | Normal         | 2772       | 26.66%       |
+| valid | Abnormal       | 7627       | 73.34%       |
+| valid | Normal known   | 489        | 4.70%        |
+| valid | Abnormal known | 506        | 4.87%        |
+| valid | Unknown        | 9404       | 90.43%       |
+| ----  | ----           | ----       | ----         |
+| test  | Normal         | 2763       | 26.29%       |
+| test  | Abnormal       | 7748       | 73.71%       |
+| test  | Normal known   | 506        | 4.81%        |
+| test  | Abnormal known | 498        | 4.74%        |
+| test  | Unknown        | 9507       | 90.45%       |
++-------+----------------+------------+--------------+
+2020-09-20 17:01:17,284 | INFO | SimCLR net architecture: 
+----------------------------------------------------------------
+        Layer (type)               Output Shape         Param #
+================================================================
+            Conv2d-1         [24, 64, 256, 256]           9,408
+       BatchNorm2d-2         [24, 64, 256, 256]               0
+              ReLU-3         [24, 64, 256, 256]               0
+         MaxPool2d-4         [24, 64, 128, 128]               0
+            Conv2d-5         [24, 64, 128, 128]          36,864
+       BatchNorm2d-6         [24, 64, 128, 128]               0
+              ReLU-7         [24, 64, 128, 128]               0
+            Conv2d-8         [24, 64, 128, 128]          36,864
+       BatchNorm2d-9         [24, 64, 128, 128]               0
+             ReLU-10         [24, 64, 128, 128]               0
+     DownResBlock-11         [24, 64, 128, 128]               0
+           Conv2d-12         [24, 64, 128, 128]          36,864
+      BatchNorm2d-13         [24, 64, 128, 128]               0
+             ReLU-14         [24, 64, 128, 128]               0
+           Conv2d-15         [24, 64, 128, 128]          36,864
+      BatchNorm2d-16         [24, 64, 128, 128]               0
+             ReLU-17         [24, 64, 128, 128]               0
+     DownResBlock-18         [24, 64, 128, 128]               0
+           Conv2d-19          [24, 128, 64, 64]           8,192
+      BatchNorm2d-20          [24, 128, 64, 64]               0
+           Conv2d-21          [24, 128, 64, 64]          73,728
+      BatchNorm2d-22          [24, 128, 64, 64]               0
+             ReLU-23          [24, 128, 64, 64]               0
+           Conv2d-24          [24, 128, 64, 64]         147,456
+      BatchNorm2d-25          [24, 128, 64, 64]               0
+             ReLU-26          [24, 128, 64, 64]               0
+     DownResBlock-27          [24, 128, 64, 64]               0
+           Conv2d-28          [24, 128, 64, 64]         147,456
+      BatchNorm2d-29          [24, 128, 64, 64]               0
+             ReLU-30          [24, 128, 64, 64]               0
+           Conv2d-31          [24, 128, 64, 64]         147,456
+      BatchNorm2d-32          [24, 128, 64, 64]               0
+             ReLU-33          [24, 128, 64, 64]               0
+     DownResBlock-34          [24, 128, 64, 64]               0
+           Conv2d-35          [24, 256, 32, 32]          32,768
+      BatchNorm2d-36          [24, 256, 32, 32]               0
+           Conv2d-37          [24, 256, 32, 32]         294,912
+      BatchNorm2d-38          [24, 256, 32, 32]               0
+             ReLU-39          [24, 256, 32, 32]               0
+           Conv2d-40          [24, 256, 32, 32]         589,824
+      BatchNorm2d-41          [24, 256, 32, 32]               0
+             ReLU-42          [24, 256, 32, 32]               0
+     DownResBlock-43          [24, 256, 32, 32]               0
+           Conv2d-44          [24, 256, 32, 32]         589,824
+      BatchNorm2d-45          [24, 256, 32, 32]               0
+             ReLU-46          [24, 256, 32, 32]               0
+           Conv2d-47          [24, 256, 32, 32]         589,824
+      BatchNorm2d-48          [24, 256, 32, 32]               0
+             ReLU-49          [24, 256, 32, 32]               0
+     DownResBlock-50          [24, 256, 32, 32]               0
+           Conv2d-51          [24, 512, 16, 16]         131,072
+      BatchNorm2d-52          [24, 512, 16, 16]               0
+           Conv2d-53          [24, 512, 16, 16]       1,179,648
+      BatchNorm2d-54          [24, 512, 16, 16]               0
+             ReLU-55          [24, 512, 16, 16]               0
+           Conv2d-56          [24, 512, 16, 16]       2,359,296
+      BatchNorm2d-57          [24, 512, 16, 16]               0
+             ReLU-58          [24, 512, 16, 16]               0
+     DownResBlock-59          [24, 512, 16, 16]               0
+           Conv2d-60          [24, 512, 16, 16]       2,359,296
+      BatchNorm2d-61          [24, 512, 16, 16]               0
+             ReLU-62          [24, 512, 16, 16]               0
+           Conv2d-63          [24, 512, 16, 16]       2,359,296
+      BatchNorm2d-64          [24, 512, 16, 16]               0
+             ReLU-65          [24, 512, 16, 16]               0
+     DownResBlock-66          [24, 512, 16, 16]               0
+AdaptiveAvgPool2d-67            [24, 512, 1, 1]               0
+ ResNet18_Encoder-68                  [24, 512]               0
+           Linear-69                  [24, 256]         131,328
+             ReLU-70                  [24, 256]               0
+           Linear-71                  [24, 128]          32,896
+          MLPHead-72                  [24, 128]               0
+================================================================
+Total params: 11,331,136
+Trainable params: 11,331,136
+Non-trainable params: 0
+----------------------------------------------------------------
+Input size (MB): 24.00
+Forward/backward pass size (MB): 7872.33
+Params size (MB): 43.22
+Estimated Total Size (MB): 7939.55
+----------------------------------------------------------------
+
+
+2020-09-20 17:01:17,299 | INFO | DMSAD net architecture: 
+----------------------------------------------------------------
+        Layer (type)               Output Shape         Param #
+================================================================
+            Conv2d-1         [16, 64, 256, 256]           9,408
+       BatchNorm2d-2         [16, 64, 256, 256]               0
+              ReLU-3         [16, 64, 256, 256]               0
+         MaxPool2d-4         [16, 64, 128, 128]               0
+            Conv2d-5         [16, 64, 128, 128]          36,864
+       BatchNorm2d-6         [16, 64, 128, 128]               0
+              ReLU-7         [16, 64, 128, 128]               0
+            Conv2d-8         [16, 64, 128, 128]          36,864
+       BatchNorm2d-9         [16, 64, 128, 128]               0
+             ReLU-10         [16, 64, 128, 128]               0
+     DownResBlock-11         [16, 64, 128, 128]               0
+           Conv2d-12         [16, 64, 128, 128]          36,864
+      BatchNorm2d-13         [16, 64, 128, 128]               0
+             ReLU-14         [16, 64, 128, 128]               0
+           Conv2d-15         [16, 64, 128, 128]          36,864
+      BatchNorm2d-16         [16, 64, 128, 128]               0
+             ReLU-17         [16, 64, 128, 128]               0
+     DownResBlock-18         [16, 64, 128, 128]               0
+           Conv2d-19          [16, 128, 64, 64]           8,192
+      BatchNorm2d-20          [16, 128, 64, 64]               0
+           Conv2d-21          [16, 128, 64, 64]          73,728
+      BatchNorm2d-22          [16, 128, 64, 64]               0
+             ReLU-23          [16, 128, 64, 64]               0
+           Conv2d-24          [16, 128, 64, 64]         147,456
+      BatchNorm2d-25          [16, 128, 64, 64]               0
+             ReLU-26          [16, 128, 64, 64]               0
+     DownResBlock-27          [16, 128, 64, 64]               0
+           Conv2d-28          [16, 128, 64, 64]         147,456
+      BatchNorm2d-29          [16, 128, 64, 64]               0
+             ReLU-30          [16, 128, 64, 64]               0
+           Conv2d-31          [16, 128, 64, 64]         147,456
+      BatchNorm2d-32          [16, 128, 64, 64]               0
+             ReLU-33          [16, 128, 64, 64]               0
+     DownResBlock-34          [16, 128, 64, 64]               0
+           Conv2d-35          [16, 256, 32, 32]          32,768
+      BatchNorm2d-36          [16, 256, 32, 32]               0
+           Conv2d-37          [16, 256, 32, 32]         294,912
+      BatchNorm2d-38          [16, 256, 32, 32]               0
+             ReLU-39          [16, 256, 32, 32]               0
+           Conv2d-40          [16, 256, 32, 32]         589,824
+      BatchNorm2d-41          [16, 256, 32, 32]               0
+             ReLU-42          [16, 256, 32, 32]               0
+     DownResBlock-43          [16, 256, 32, 32]               0
+           Conv2d-44          [16, 256, 32, 32]         589,824
+      BatchNorm2d-45          [16, 256, 32, 32]               0
+             ReLU-46          [16, 256, 32, 32]               0
+           Conv2d-47          [16, 256, 32, 32]         589,824
+      BatchNorm2d-48          [16, 256, 32, 32]               0
+             ReLU-49          [16, 256, 32, 32]               0
+     DownResBlock-50          [16, 256, 32, 32]               0
+           Conv2d-51          [16, 512, 16, 16]         131,072
+      BatchNorm2d-52          [16, 512, 16, 16]               0
+           Conv2d-53          [16, 512, 16, 16]       1,179,648
+      BatchNorm2d-54          [16, 512, 16, 16]               0
+             ReLU-55          [16, 512, 16, 16]               0
+           Conv2d-56          [16, 512, 16, 16]       2,359,296
+      BatchNorm2d-57          [16, 512, 16, 16]               0
+             ReLU-58          [16, 512, 16, 16]               0
+     DownResBlock-59          [16, 512, 16, 16]               0
+           Conv2d-60          [16, 512, 16, 16]       2,359,296
+      BatchNorm2d-61          [16, 512, 16, 16]               0
+             ReLU-62          [16, 512, 16, 16]               0
+           Conv2d-63          [16, 512, 16, 16]       2,359,296
+      BatchNorm2d-64          [16, 512, 16, 16]               0
+             ReLU-65          [16, 512, 16, 16]               0
+     DownResBlock-66          [16, 512, 16, 16]               0
+AdaptiveAvgPool2d-67            [16, 512, 1, 1]               0
+ ResNet18_Encoder-68                  [16, 512]               0
+           Linear-69                  [16, 256]         131,328
+             ReLU-70                  [16, 256]               0
+           Linear-71                  [16, 128]          32,896
+          MLPHead-72                  [16, 128]               0
+================================================================
+Total params: 11,331,136
+Trainable params: 11,331,136
+Non-trainable params: 0
+----------------------------------------------------------------
+Input size (MB): 16.00
+Forward/backward pass size (MB): 5248.22
+Params size (MB): 43.22
+Estimated Total Size (MB): 5307.44
+----------------------------------------------------------------
+
+
+2020-09-20 17:01:17,299 | INFO | SimCLR Online preprocessing pipeline : 
+                             Grayscale()                              
+                                  |                                   
+                                  V                                   
+                        AutoContrast(cutoff=1)                        
+                                  |                                   
+                                  V                                   
+                     RandomHorizontalFlip(p=0.5)                      
+                                  |                                   
+                                  V                                   
+                RandomScaling(scale_range=(0.8, 1.2))                 
+                                  |                                   
+                                  V                                   
+                RandomRotation(degree_range=(-45, 45))                
+                                  |                                   
+                                  V                                   
+                        ResizeMax(max_len=512)                        
+                                  |                                   
+                                  V                                   
+                            PadToSquare()                             
+                                  |                                   
+                                  V                                   
+RandomCropResize(size=(512, 512), ratio=(0.8, 1.25), scale=(0.4, 1.0))
+                                  |                                   
+                                  V                                   
+                        ColorDistorsion(s=0.5)                        
+                                  |                                   
+                                  V                                   
+                GaussianBlur(sigma=(0.1, 2.0), p=0.5)                 
+                                  |                                   
+                                  V                                   
+                 MinMaxNormalization(vmin=0, vmax=1)                  
+                                  |                                   
+                                  V                                   
+                             MaskImage()                              
+                                  |                                   
+                                  V                                   
+                           ToTorchTensor()                            
+
+2020-09-20 17:01:17,299 | INFO | SimCLR supervised_loss : True
+2020-09-20 17:01:17,299 | INFO | SimCLR tau : 0.5
+2020-09-20 17:01:17,299 | INFO | SimCLR n_epoch : 100
+2020-09-20 17:01:17,299 | INFO | SimCLR batch_size : 24
+2020-09-20 17:01:17,299 | INFO | SimCLR lr : 0.001
+2020-09-20 17:01:17,300 | INFO | SimCLR lr_milestone : [70, 90]
+2020-09-20 17:01:17,300 | INFO | SimCLR weight_decay : 1e-06
+2020-09-20 17:01:17,300 | INFO | SimCLR num_worker : 8
+2020-09-20 17:01:17,300 | INFO | SimCLR model_path_to_load : None
+2020-09-20 17:01:17,300 | INFO | SimCLR MLP_head : [512, 256, 128]
+2020-09-20 17:01:17,301 | INFO | Start Training SimCLR.
+2020-09-20 17:07:40,898 | INFO | ----| Epoch 001/100 | Time 383.596 [s]| Loss 2.888281 |
+2020-09-20 17:14:11,779 | INFO | ----| Epoch 002/100 | Time 390.880 [s]| Loss 2.668065 |
+2020-09-20 17:20:44,278 | INFO | ----| Epoch 003/100 | Time 392.499 [s]| Loss 2.598239 |
+2020-09-20 17:27:17,251 | INFO | ----| Epoch 004/100 | Time 392.972 [s]| Loss 2.551827 |
+2020-09-20 17:33:51,177 | INFO | ----| Epoch 005/100 | Time 393.925 [s]| Loss 2.509057 |
+2020-09-20 17:40:25,122 | INFO | ----| Epoch 006/100 | Time 393.945 [s]| Loss 2.485256 |
+2020-09-20 17:46:59,004 | INFO | ----| Epoch 007/100 | Time 393.880 [s]| Loss 2.459762 |
+2020-09-20 17:53:33,224 | INFO | ----| Epoch 008/100 | Time 394.219 [s]| Loss 2.437823 |
+2020-09-20 18:00:07,172 | INFO | ----| Epoch 009/100 | Time 393.946 [s]| Loss 2.419530 |
+2020-09-20 18:06:41,548 | INFO | ----| Epoch 010/100 | Time 394.376 [s]| Loss 2.411704 |
+2020-09-20 18:13:15,848 | INFO | ----| Epoch 011/100 | Time 394.299 [s]| Loss 2.391837 |
+2020-09-20 18:19:49,883 | INFO | ----| Epoch 012/100 | Time 394.034 [s]| Loss 2.383657 |
+2020-09-20 18:26:24,242 | INFO | ----| Epoch 013/100 | Time 394.358 [s]| Loss 2.373982 |
+2020-09-20 18:32:57,936 | INFO | ----| Epoch 014/100 | Time 393.694 [s]| Loss 2.364222 |
+2020-09-20 18:39:31,838 | INFO | ----| Epoch 015/100 | Time 393.900 [s]| Loss 2.358749 |
+2020-09-20 18:46:05,833 | INFO | ----| Epoch 016/100 | Time 393.994 [s]| Loss 2.349376 |
+2020-09-20 18:52:39,920 | INFO | ----| Epoch 017/100 | Time 394.086 [s]| Loss 2.342283 |
+2020-09-20 18:59:13,511 | INFO | ----| Epoch 018/100 | Time 393.590 [s]| Loss 2.339787 |
+2020-09-20 19:05:47,725 | INFO | ----| Epoch 019/100 | Time 394.213 [s]| Loss 2.335319 |
+2020-09-20 19:12:21,154 | INFO | ----| Epoch 020/100 | Time 393.428 [s]| Loss 2.328356 |
+2020-09-20 19:18:55,046 | INFO | ----| Epoch 021/100 | Time 393.890 [s]| Loss 2.324662 |
+2020-09-20 19:25:28,562 | INFO | ----| Epoch 022/100 | Time 393.515 [s]| Loss 2.316275 |
+2020-09-20 19:32:02,777 | INFO | ----| Epoch 023/100 | Time 394.215 [s]| Loss 2.315523 |
+2020-09-20 19:38:35,849 | INFO | ----| Epoch 024/100 | Time 393.071 [s]| Loss 2.309852 |
+2020-09-20 19:45:08,980 | INFO | ----| Epoch 025/100 | Time 393.129 [s]| Loss 2.307262 |
+2020-09-20 19:51:42,216 | INFO | ----| Epoch 026/100 | Time 393.235 [s]| Loss 2.300039 |
+2020-09-20 19:58:15,234 | INFO | ----| Epoch 027/100 | Time 393.017 [s]| Loss 2.295448 |
+2020-09-20 20:04:48,137 | INFO | ----| Epoch 028/100 | Time 392.903 [s]| Loss 2.291718 |
+2020-09-20 20:11:21,365 | INFO | ----| Epoch 029/100 | Time 393.227 [s]| Loss 2.289731 |
+2020-09-20 20:17:54,287 | INFO | ----| Epoch 030/100 | Time 392.921 [s]| Loss 2.287258 |
+2020-09-20 20:24:27,394 | INFO | ----| Epoch 031/100 | Time 393.107 [s]| Loss 2.282426 |
+2020-09-20 20:31:00,150 | INFO | ----| Epoch 032/100 | Time 392.755 [s]| Loss 2.279428 |
+2020-09-20 20:37:32,748 | INFO | ----| Epoch 033/100 | Time 392.597 [s]| Loss 2.273178 |
+2020-09-20 20:44:05,162 | INFO | ----| Epoch 034/100 | Time 392.413 [s]| Loss 2.271602 |
+2020-09-20 20:50:37,230 | INFO | ----| Epoch 035/100 | Time 392.067 [s]| Loss 2.271098 |
+2020-09-20 20:57:09,843 | INFO | ----| Epoch 036/100 | Time 392.613 [s]| Loss 2.260570 |
+2020-09-20 21:03:42,320 | INFO | ----| Epoch 037/100 | Time 392.475 [s]| Loss 2.260636 |
+2020-09-20 21:10:14,829 | INFO | ----| Epoch 038/100 | Time 392.508 [s]| Loss 2.257590 |
+2020-09-20 21:16:47,405 | INFO | ----| Epoch 039/100 | Time 392.576 [s]| Loss 2.252947 |
+2020-09-20 21:23:19,734 | INFO | ----| Epoch 040/100 | Time 392.327 [s]| Loss 2.253114 |
+2020-09-20 21:29:52,527 | INFO | ----| Epoch 041/100 | Time 392.793 [s]| Loss 2.249189 |
+2020-09-20 21:36:25,182 | INFO | ----| Epoch 042/100 | Time 392.654 [s]| Loss 2.249612 |
+2020-09-20 21:42:57,457 | INFO | ----| Epoch 043/100 | Time 392.274 [s]| Loss 2.243071 |
+2020-09-20 21:49:28,799 | INFO | ----| Epoch 044/100 | Time 391.341 [s]| Loss 2.242101 |
+2020-09-20 21:56:01,124 | INFO | ----| Epoch 045/100 | Time 392.324 [s]| Loss 2.239151 |
+2020-09-20 22:02:32,793 | INFO | ----| Epoch 046/100 | Time 391.668 [s]| Loss 2.242156 |
+2020-09-20 22:09:04,973 | INFO | ----| Epoch 047/100 | Time 392.178 [s]| Loss 2.235982 |
+2020-09-20 22:15:37,489 | INFO | ----| Epoch 048/100 | Time 392.515 [s]| Loss 2.235631 |
+2020-09-20 22:22:09,326 | INFO | ----| Epoch 049/100 | Time 391.835 [s]| Loss 2.230244 |
+2020-09-20 22:28:40,734 | INFO | ----| Epoch 050/100 | Time 391.407 [s]| Loss 2.232761 |
+2020-09-20 22:35:12,342 | INFO | ----| Epoch 051/100 | Time 391.607 [s]| Loss 2.225636 |
+2020-09-20 22:41:43,621 | INFO | ----| Epoch 052/100 | Time 391.277 [s]| Loss 2.226312 |
+2020-09-20 22:48:14,967 | INFO | ----| Epoch 053/100 | Time 391.345 [s]| Loss 2.225921 |
+2020-09-20 22:54:45,829 | INFO | ----| Epoch 054/100 | Time 390.861 [s]| Loss 2.223318 |
+2020-09-20 23:01:16,957 | INFO | ----| Epoch 055/100 | Time 391.127 [s]| Loss 2.218976 |
+2020-09-20 23:07:48,262 | INFO | ----| Epoch 056/100 | Time 391.303 [s]| Loss 2.218422 |
+2020-09-20 23:14:19,120 | INFO | ----| Epoch 057/100 | Time 390.856 [s]| Loss 2.214035 |
+2020-09-20 23:20:50,246 | INFO | ----| Epoch 058/100 | Time 391.126 [s]| Loss 2.221320 |
+2020-09-20 23:27:20,326 | INFO | ----| Epoch 059/100 | Time 390.078 [s]| Loss 2.211501 |
+2020-09-20 23:33:51,118 | INFO | ----| Epoch 060/100 | Time 390.791 [s]| Loss 2.214587 |
+2020-09-20 23:40:20,975 | INFO | ----| Epoch 061/100 | Time 389.856 [s]| Loss 2.214835 |
+2020-09-20 23:46:51,338 | INFO | ----| Epoch 062/100 | Time 390.362 [s]| Loss 2.210413 |
+2020-09-20 23:53:21,540 | INFO | ----| Epoch 063/100 | Time 390.200 [s]| Loss 2.211223 |
+2020-09-20 23:59:50,680 | INFO | ----| Epoch 064/100 | Time 389.139 [s]| Loss 2.204753 |
+2020-09-21 00:06:20,548 | INFO | ----| Epoch 065/100 | Time 389.867 [s]| Loss 2.203163 |
+2020-09-21 00:12:49,821 | INFO | ----| Epoch 066/100 | Time 389.272 [s]| Loss 2.202257 |
+2020-09-21 00:19:19,420 | INFO | ----| Epoch 067/100 | Time 389.599 [s]| Loss 2.201778 |
+2020-09-21 00:25:49,015 | INFO | ----| Epoch 068/100 | Time 389.594 [s]| Loss 2.204980 |
+2020-09-21 00:32:18,883 | INFO | ----| Epoch 069/100 | Time 389.867 [s]| Loss 2.201599 |
+2020-09-21 00:38:48,797 | INFO | ----| Epoch 070/100 | Time 389.913 [s]| Loss 2.199249 |
+2020-09-21 00:38:48,797 | INFO | ---- LR Scheduler : new learning rate 1e-05
+2020-09-21 00:45:18,899 | INFO | ----| Epoch 071/100 | Time 390.102 [s]| Loss 2.171399 |
+2020-09-21 00:51:48,779 | INFO | ----| Epoch 072/100 | Time 389.878 [s]| Loss 2.166053 |
+2020-09-21 00:58:18,943 | INFO | ----| Epoch 073/100 | Time 390.163 [s]| Loss 2.161417 |
+2020-09-21 01:04:48,487 | INFO | ----| Epoch 074/100 | Time 389.543 [s]| Loss 2.159044 |
+2020-09-21 01:11:18,174 | INFO | ----| Epoch 075/100 | Time 389.686 [s]| Loss 2.156656 |
+2020-09-21 01:17:47,861 | INFO | ----| Epoch 076/100 | Time 389.686 [s]| Loss 2.158290 |
+2020-09-21 01:24:17,076 | INFO | ----| Epoch 077/100 | Time 389.213 [s]| Loss 2.156726 |
+2020-09-21 01:30:46,217 | INFO | ----| Epoch 078/100 | Time 389.141 [s]| Loss 2.158100 |
+2020-09-21 01:37:15,179 | INFO | ----| Epoch 079/100 | Time 388.961 [s]| Loss 2.154742 |
+2020-09-21 01:43:43,865 | INFO | ----| Epoch 080/100 | Time 388.685 [s]| Loss 2.154171 |
+2020-09-21 01:50:12,942 | INFO | ----| Epoch 081/100 | Time 389.076 [s]| Loss 2.155542 |
+2020-09-21 01:56:41,706 | INFO | ----| Epoch 082/100 | Time 388.762 [s]| Loss 2.150771 |
+2020-09-21 02:03:10,264 | INFO | ----| Epoch 083/100 | Time 388.558 [s]| Loss 2.150974 |
+2020-09-21 02:09:39,043 | INFO | ----| Epoch 084/100 | Time 388.778 [s]| Loss 2.149574 |
+2020-09-21 02:16:07,924 | INFO | ----| Epoch 085/100 | Time 388.880 [s]| Loss 2.152370 |
+2020-09-21 02:22:35,909 | INFO | ----| Epoch 086/100 | Time 387.984 [s]| Loss 2.147169 |
+2020-09-21 02:29:03,986 | INFO | ----| Epoch 087/100 | Time 388.075 [s]| Loss 2.148013 |
+2020-09-21 02:35:32,484 | INFO | ----| Epoch 088/100 | Time 388.497 [s]| Loss 2.143202 |
+2020-09-21 02:42:00,463 | INFO | ----| Epoch 089/100 | Time 387.978 [s]| Loss 2.147391 |
+2020-09-21 02:48:28,496 | INFO | ----| Epoch 090/100 | Time 388.032 [s]| Loss 2.147733 |
+2020-09-21 02:48:28,497 | INFO | ---- LR Scheduler : new learning rate 1e-06
+2020-09-21 02:54:57,269 | INFO | ----| Epoch 091/100 | Time 388.772 [s]| Loss 2.142410 |
+2020-09-21 03:01:26,236 | INFO | ----| Epoch 092/100 | Time 388.966 [s]| Loss 2.142297 |
+2020-09-21 03:07:54,964 | INFO | ----| Epoch 093/100 | Time 388.726 [s]| Loss 2.140122 |
+2020-09-21 03:14:23,758 | INFO | ----| Epoch 094/100 | Time 388.793 [s]| Loss 2.143702 |
+2020-09-21 03:20:52,227 | INFO | ----| Epoch 095/100 | Time 388.467 [s]| Loss 2.142888 |
+2020-09-21 03:27:20,627 | INFO | ----| Epoch 096/100 | Time 388.398 [s]| Loss 2.140315 |
+2020-09-21 03:33:48,928 | INFO | ----| Epoch 097/100 | Time 388.299 [s]| Loss 2.143065 |
+2020-09-21 03:40:17,364 | INFO | ----| Epoch 098/100 | Time 388.434 [s]| Loss 2.140306 |
+2020-09-21 03:46:45,479 | INFO | ----| Epoch 099/100 | Time 388.113 [s]| Loss 2.141153 |
+2020-09-21 03:53:13,572 | INFO | ----| Epoch 100/100 | Time 388.091 [s]| Loss 2.139287 |
+2020-09-21 03:53:13,572 | INFO | ---- Finished Training SimCLR in 39116.271 [s].
+2020-09-21 03:53:13,594 | INFO | Start Evaluating SimCLR.
+2020-09-21 03:55:26,445 | INFO | Computing the t-SNE representation.
+2020-09-21 03:57:37,602 | INFO | Succesfully computed the t-SNE representation 
+2020-09-21 03:57:37,676 | INFO | Start Evaluating SimCLR.
+2020-09-21 03:59:39,037 | INFO | Computing the t-SNE representation.
+2020-09-21 04:01:49,068 | INFO | Succesfully computed the t-SNE representation 
+2020-09-21 04:01:49,184 | INFO | SimCLR model saved at ../../../Outputs/SupContr_DMSAD_20_09/model/SimCLR_net_1.pt
+2020-09-21 04:01:49,511 | INFO | Results saved at ../../../Outputs/SupContr_DMSAD_20_09/results/results_1.json
+2020-09-21 04:01:49,516 | INFO | DMSAD Online preprocessing pipeline : 
+             Grayscale()              
+                  |                   
+                  V                   
+        AutoContrast(cutoff=1)        
+                  |                   
+                  V                   
+     RandomHorizontalFlip(p=0.5)      
+                  |                   
+                  V                   
+      RandomVerticalFlip(p=0.5)       
+                  |                   
+                  V                   
+RandomBrightness(lower=0.8, upper=1.2)
+                  |                   
+                  V                   
+RandomScaling(scale_range=(0.8, 1.2)) 
+                  |                   
+                  V                   
+RandomRotation(degree_range=(-20, 20))
+                  |                   
+                  V                   
+        ResizeMax(max_len=512)        
+                  |                   
+                  V                   
+            PadToSquare()             
+                  |                   
+                  V                   
+ MinMaxNormalization(vmin=0, vmax=1)  
+                  |                   
+                  V                   
+           ToTorchTensor()            
+
+2020-09-21 04:01:49,516 | INFO | DMSAD eta : 1.0
+2020-09-21 04:01:49,516 | INFO | DMSAD gamma : 0.05
+2020-09-21 04:01:49,517 | INFO | DMSAD n_sphere_init : 100
+2020-09-21 04:01:49,517 | INFO | DMSAD n_epoch : 150
+2020-09-21 04:01:49,517 | INFO | DMSAD batch_size : 16
+2020-09-21 04:01:49,517 | INFO | DMSAD lr : 0.0001
+2020-09-21 04:01:49,517 | INFO | DMSAD lr_milestone : [90, 140]
+2020-09-21 04:01:49,517 | INFO | DMSAD weight_decay : 1e-06
+2020-09-21 04:01:49,517 | INFO | DMSAD num_worker : 8
+2020-09-21 04:01:49,517 | INFO | DMSAD model_path_to_load : None
+2020-09-21 04:01:49,517 | INFO | DMSAD MLP_head : [512, 256, 128]
+2020-09-21 04:01:49,518 | INFO | Initializing the hypersphere centers.
+2020-09-21 04:03:44,145 | INFO | 100 centers successfully initialized.
+2020-09-21 04:03:44,146 | INFO | Training from scratch.
+2020-09-21 04:03:44,146 | INFO | Start Training the DMSAD.
+2020-09-21 04:07:51,615 | INFO | ----| Epoch: 001/150 | Train Time: 247.468 [s] | Train Loss: 0.438412 | N sphere 002 | Valid AUC 68.531% |
+2020-09-21 04:12:03,015 | INFO | ----| Epoch: 002/150 | Train Time: 251.400 [s] | Train Loss: 0.411642 | N sphere 002 | Valid AUC 69.865% |
+2020-09-21 04:16:15,817 | INFO | ----| Epoch: 003/150 | Train Time: 252.801 [s] | Train Loss: 0.399048 | N sphere 002 | Valid AUC 71.858% |
+2020-09-21 04:20:28,992 | INFO | ----| Epoch: 004/150 | Train Time: 253.174 [s] | Train Loss: 0.391934 | N sphere 001 | Valid AUC 76.320% |
+2020-09-21 04:24:42,629 | INFO | ----| Epoch: 005/150 | Train Time: 253.637 [s] | Train Loss: 0.388443 | N sphere 001 | Valid AUC 75.595% |
+2020-09-21 04:28:56,187 | INFO | ----| Epoch: 006/150 | Train Time: 253.557 [s] | Train Loss: 0.381420 | N sphere 001 | Valid AUC 73.598% |
+2020-09-21 04:33:09,744 | INFO | ----| Epoch: 007/150 | Train Time: 253.556 [s] | Train Loss: 0.382666 | N sphere 001 | Valid AUC 74.840% |
+2020-09-21 04:37:23,040 | INFO | ----| Epoch: 008/150 | Train Time: 253.295 [s] | Train Loss: 0.374043 | N sphere 001 | Valid AUC 76.518% |
+2020-09-21 04:41:36,405 | INFO | ----| Epoch: 009/150 | Train Time: 253.364 [s] | Train Loss: 0.376538 | N sphere 001 | Valid AUC 75.393% |
+2020-09-21 04:45:49,863 | INFO | ----| Epoch: 010/150 | Train Time: 253.457 [s] | Train Loss: 0.372296 | N sphere 001 | Valid AUC 77.126% |
+2020-09-21 04:45:49,973 | INFO | ---- Checkpoint Saved.
+2020-09-21 04:50:03,153 | INFO | ----| Epoch: 011/150 | Train Time: 253.179 [s] | Train Loss: 0.366098 | N sphere 001 | Valid AUC 77.965% |
+2020-09-21 04:54:16,657 | INFO | ----| Epoch: 012/150 | Train Time: 253.504 [s] | Train Loss: 0.365181 | N sphere 001 | Valid AUC 69.824% |
+2020-09-21 04:58:30,624 | INFO | ----| Epoch: 013/150 | Train Time: 253.966 [s] | Train Loss: 0.362183 | N sphere 001 | Valid AUC 77.814% |
+2020-09-21 05:02:44,370 | INFO | ----| Epoch: 014/150 | Train Time: 253.745 [s] | Train Loss: 0.364354 | N sphere 001 | Valid AUC 77.631% |
+2020-09-21 05:06:57,661 | INFO | ----| Epoch: 015/150 | Train Time: 253.290 [s] | Train Loss: 0.355442 | N sphere 001 | Valid AUC 77.449% |
+2020-09-21 05:11:10,478 | INFO | ----| Epoch: 016/150 | Train Time: 252.816 [s] | Train Loss: 0.357018 | N sphere 001 | Valid AUC 77.524% |
+2020-09-21 05:15:23,966 | INFO | ----| Epoch: 017/150 | Train Time: 253.487 [s] | Train Loss: 0.351048 | N sphere 001 | Valid AUC 78.310% |
+2020-09-21 05:19:36,853 | INFO | ----| Epoch: 018/150 | Train Time: 252.886 [s] | Train Loss: 0.351569 | N sphere 001 | Valid AUC 78.133% |
+2020-09-21 05:23:49,405 | INFO | ----| Epoch: 019/150 | Train Time: 252.552 [s] | Train Loss: 0.349581 | N sphere 001 | Valid AUC 76.953% |
+2020-09-21 05:28:03,210 | INFO | ----| Epoch: 020/150 | Train Time: 253.804 [s] | Train Loss: 0.347796 | N sphere 001 | Valid AUC 77.948% |
+2020-09-21 05:28:03,715 | INFO | ---- Checkpoint Saved.
+2020-09-21 05:32:17,514 | INFO | ----| Epoch: 021/150 | Train Time: 253.797 [s] | Train Loss: 0.345740 | N sphere 001 | Valid AUC 77.932% |
+2020-09-21 05:36:31,021 | INFO | ----| Epoch: 022/150 | Train Time: 253.506 [s] | Train Loss: 0.344176 | N sphere 001 | Valid AUC 78.185% |
+2020-09-21 05:40:44,023 | INFO | ----| Epoch: 023/150 | Train Time: 253.002 [s] | Train Loss: 0.338197 | N sphere 001 | Valid AUC 78.331% |
+2020-09-21 05:44:57,233 | INFO | ----| Epoch: 024/150 | Train Time: 253.209 [s] | Train Loss: 0.333983 | N sphere 001 | Valid AUC 76.515% |
+2020-09-21 05:49:10,542 | INFO | ----| Epoch: 025/150 | Train Time: 253.308 [s] | Train Loss: 0.337387 | N sphere 001 | Valid AUC 77.243% |
+2020-09-21 05:53:23,876 | INFO | ----| Epoch: 026/150 | Train Time: 253.333 [s] | Train Loss: 0.333161 | N sphere 001 | Valid AUC 78.269% |
+2020-09-21 05:57:37,403 | INFO | ----| Epoch: 027/150 | Train Time: 253.526 [s] | Train Loss: 0.333726 | N sphere 001 | Valid AUC 79.156% |
+2020-09-21 06:01:50,303 | INFO | ----| Epoch: 028/150 | Train Time: 252.899 [s] | Train Loss: 0.334197 | N sphere 001 | Valid AUC 77.544% |
+2020-09-21 06:06:04,043 | INFO | ----| Epoch: 029/150 | Train Time: 253.739 [s] | Train Loss: 0.331254 | N sphere 001 | Valid AUC 78.060% |
+2020-09-21 06:10:17,305 | INFO | ----| Epoch: 030/150 | Train Time: 253.261 [s] | Train Loss: 0.332186 | N sphere 001 | Valid AUC 77.758% |
+2020-09-21 06:10:17,758 | INFO | ---- Checkpoint Saved.
+2020-09-21 06:14:30,570 | INFO | ----| Epoch: 031/150 | Train Time: 252.811 [s] | Train Loss: 0.326469 | N sphere 001 | Valid AUC 77.832% |
+2020-09-21 06:18:44,298 | INFO | ----| Epoch: 032/150 | Train Time: 253.727 [s] | Train Loss: 0.329142 | N sphere 001 | Valid AUC 78.757% |
+2020-09-21 06:22:58,161 | INFO | ----| Epoch: 033/150 | Train Time: 253.861 [s] | Train Loss: 0.323261 | N sphere 001 | Valid AUC 76.191% |
+2020-09-21 06:27:11,507 | INFO | ----| Epoch: 034/150 | Train Time: 253.346 [s] | Train Loss: 0.320091 | N sphere 001 | Valid AUC 77.394% |
+2020-09-21 06:31:24,452 | INFO | ----| Epoch: 035/150 | Train Time: 252.944 [s] | Train Loss: 0.325858 | N sphere 001 | Valid AUC 78.244% |
+2020-09-21 06:35:37,960 | INFO | ----| Epoch: 036/150 | Train Time: 253.508 [s] | Train Loss: 0.320139 | N sphere 001 | Valid AUC 76.768% |
+2020-09-21 06:39:51,423 | INFO | ----| Epoch: 037/150 | Train Time: 253.462 [s] | Train Loss: 0.320924 | N sphere 001 | Valid AUC 75.609% |
+2020-09-21 06:44:04,425 | INFO | ----| Epoch: 038/150 | Train Time: 253.001 [s] | Train Loss: 0.323216 | N sphere 001 | Valid AUC 77.546% |
+2020-09-21 06:48:17,681 | INFO | ----| Epoch: 039/150 | Train Time: 253.255 [s] | Train Loss: 0.317841 | N sphere 001 | Valid AUC 77.289% |
+2020-09-21 06:52:30,414 | INFO | ----| Epoch: 040/150 | Train Time: 252.733 [s] | Train Loss: 0.319306 | N sphere 001 | Valid AUC 78.426% |
+2020-09-21 06:52:30,841 | INFO | ---- Checkpoint Saved.
+2020-09-21 06:56:44,103 | INFO | ----| Epoch: 041/150 | Train Time: 253.260 [s] | Train Loss: 0.309688 | N sphere 001 | Valid AUC 77.782% |
+2020-09-21 07:00:56,739 | INFO | ----| Epoch: 042/150 | Train Time: 252.635 [s] | Train Loss: 0.315053 | N sphere 001 | Valid AUC 77.937% |
+2020-09-21 07:05:09,860 | INFO | ----| Epoch: 043/150 | Train Time: 253.120 [s] | Train Loss: 0.302825 | N sphere 001 | Valid AUC 76.846% |
+2020-09-21 07:09:22,972 | INFO | ----| Epoch: 044/150 | Train Time: 253.111 [s] | Train Loss: 0.314207 | N sphere 001 | Valid AUC 77.543% |
+2020-09-21 07:13:36,031 | INFO | ----| Epoch: 045/150 | Train Time: 253.058 [s] | Train Loss: 0.309967 | N sphere 001 | Valid AUC 77.983% |
+2020-09-21 07:17:49,583 | INFO | ----| Epoch: 046/150 | Train Time: 253.551 [s] | Train Loss: 0.306455 | N sphere 001 | Valid AUC 76.994% |
+2020-09-21 07:22:02,468 | INFO | ----| Epoch: 047/150 | Train Time: 252.884 [s] | Train Loss: 0.312267 | N sphere 001 | Valid AUC 76.265% |
+2020-09-21 07:26:15,617 | INFO | ----| Epoch: 048/150 | Train Time: 253.149 [s] | Train Loss: 0.312726 | N sphere 001 | Valid AUC 78.408% |
+2020-09-21 07:30:28,663 | INFO | ----| Epoch: 049/150 | Train Time: 253.044 [s] | Train Loss: 0.301457 | N sphere 001 | Valid AUC 74.766% |
+2020-09-21 07:34:42,143 | INFO | ----| Epoch: 050/150 | Train Time: 253.480 [s] | Train Loss: 0.297640 | N sphere 001 | Valid AUC 78.012% |
+2020-09-21 07:34:42,631 | INFO | ---- Checkpoint Saved.
+2020-09-21 07:38:55,784 | INFO | ----| Epoch: 051/150 | Train Time: 253.152 [s] | Train Loss: 0.300810 | N sphere 001 | Valid AUC 77.553% |
+2020-09-21 07:43:09,216 | INFO | ----| Epoch: 052/150 | Train Time: 253.432 [s] | Train Loss: 0.297969 | N sphere 001 | Valid AUC 78.248% |
+2020-09-21 07:47:22,283 | INFO | ----| Epoch: 053/150 | Train Time: 253.066 [s] | Train Loss: 0.296060 | N sphere 001 | Valid AUC 78.254% |
+2020-09-21 07:51:35,093 | INFO | ----| Epoch: 054/150 | Train Time: 252.809 [s] | Train Loss: 0.293820 | N sphere 001 | Valid AUC 78.414% |
+2020-09-21 07:55:48,514 | INFO | ----| Epoch: 055/150 | Train Time: 253.420 [s] | Train Loss: 0.299087 | N sphere 001 | Valid AUC 78.503% |
+2020-09-21 08:00:02,006 | INFO | ----| Epoch: 056/150 | Train Time: 253.492 [s] | Train Loss: 0.287750 | N sphere 001 | Valid AUC 77.031% |
+2020-09-21 08:04:15,085 | INFO | ----| Epoch: 057/150 | Train Time: 253.078 [s] | Train Loss: 0.290146 | N sphere 001 | Valid AUC 77.977% |
+2020-09-21 08:08:28,310 | INFO | ----| Epoch: 058/150 | Train Time: 253.224 [s] | Train Loss: 0.295079 | N sphere 001 | Valid AUC 75.372% |
+2020-09-21 08:12:41,272 | INFO | ----| Epoch: 059/150 | Train Time: 252.961 [s] | Train Loss: 0.297320 | N sphere 001 | Valid AUC 77.605% |
+2020-09-21 08:16:54,314 | INFO | ----| Epoch: 060/150 | Train Time: 253.041 [s] | Train Loss: 0.303132 | N sphere 001 | Valid AUC 79.034% |
+2020-09-21 08:16:54,767 | INFO | ---- Checkpoint Saved.
+2020-09-21 08:21:07,511 | INFO | ----| Epoch: 061/150 | Train Time: 252.742 [s] | Train Loss: 0.288077 | N sphere 001 | Valid AUC 78.757% |
+2020-09-21 08:25:19,435 | INFO | ----| Epoch: 062/150 | Train Time: 251.924 [s] | Train Loss: 0.283639 | N sphere 001 | Valid AUC 78.004% |
+2020-09-21 08:29:31,577 | INFO | ----| Epoch: 063/150 | Train Time: 252.141 [s] | Train Loss: 0.288438 | N sphere 001 | Valid AUC 79.399% |
+2020-09-21 08:33:44,255 | INFO | ----| Epoch: 064/150 | Train Time: 252.678 [s] | Train Loss: 0.291647 | N sphere 001 | Valid AUC 78.022% |
+2020-09-21 08:37:57,017 | INFO | ----| Epoch: 065/150 | Train Time: 252.761 [s] | Train Loss: 0.289451 | N sphere 001 | Valid AUC 77.599% |
+2020-09-21 08:42:09,336 | INFO | ----| Epoch: 066/150 | Train Time: 252.318 [s] | Train Loss: 0.272857 | N sphere 001 | Valid AUC 76.317% |
+2020-09-21 08:46:21,777 | INFO | ----| Epoch: 067/150 | Train Time: 252.440 [s] | Train Loss: 0.284083 | N sphere 001 | Valid AUC 77.628% |
+2020-09-21 08:50:33,702 | INFO | ----| Epoch: 068/150 | Train Time: 251.924 [s] | Train Loss: 0.276445 | N sphere 001 | Valid AUC 76.628% |
+2020-09-21 08:54:45,027 | INFO | ----| Epoch: 069/150 | Train Time: 251.324 [s] | Train Loss: 0.291480 | N sphere 001 | Valid AUC 76.839% |
+2020-09-21 08:58:57,039 | INFO | ----| Epoch: 070/150 | Train Time: 252.011 [s] | Train Loss: 0.289513 | N sphere 001 | Valid AUC 78.434% |
+2020-09-21 08:58:57,492 | INFO | ---- Checkpoint Saved.
+2020-09-21 09:03:09,393 | INFO | ----| Epoch: 071/150 | Train Time: 251.900 [s] | Train Loss: 0.281609 | N sphere 001 | Valid AUC 78.157% |
+2020-09-21 09:07:21,633 | INFO | ----| Epoch: 072/150 | Train Time: 252.239 [s] | Train Loss: 0.297152 | N sphere 001 | Valid AUC 77.590% |
+2020-09-21 09:11:33,079 | INFO | ----| Epoch: 073/150 | Train Time: 251.446 [s] | Train Loss: 0.265864 | N sphere 001 | Valid AUC 78.254% |
+2020-09-21 09:15:45,028 | INFO | ----| Epoch: 074/150 | Train Time: 251.948 [s] | Train Loss: 0.276861 | N sphere 001 | Valid AUC 78.403% |
+2020-09-21 09:19:56,914 | INFO | ----| Epoch: 075/150 | Train Time: 251.885 [s] | Train Loss: 0.286053 | N sphere 001 | Valid AUC 77.736% |
+2020-09-21 09:24:08,567 | INFO | ----| Epoch: 076/150 | Train Time: 251.652 [s] | Train Loss: 0.293697 | N sphere 001 | Valid AUC 78.596% |
+2020-09-21 09:28:20,262 | INFO | ----| Epoch: 077/150 | Train Time: 251.694 [s] | Train Loss: 0.277591 | N sphere 001 | Valid AUC 76.868% |
+2020-09-21 09:32:32,229 | INFO | ----| Epoch: 078/150 | Train Time: 251.966 [s] | Train Loss: 0.268722 | N sphere 001 | Valid AUC 77.861% |
+2020-09-21 09:36:43,826 | INFO | ----| Epoch: 079/150 | Train Time: 251.597 [s] | Train Loss: 0.274449 | N sphere 001 | Valid AUC 76.705% |
+2020-09-21 09:40:55,815 | INFO | ----| Epoch: 080/150 | Train Time: 251.988 [s] | Train Loss: 0.282790 | N sphere 001 | Valid AUC 78.207% |
+2020-09-21 09:40:56,336 | INFO | ---- Checkpoint Saved.
+2020-09-21 09:45:08,055 | INFO | ----| Epoch: 081/150 | Train Time: 251.717 [s] | Train Loss: 0.281510 | N sphere 001 | Valid AUC 78.997% |
+2020-09-21 09:49:19,671 | INFO | ----| Epoch: 082/150 | Train Time: 251.616 [s] | Train Loss: 0.302657 | N sphere 001 | Valid AUC 77.041% |
+2020-09-21 09:53:30,797 | INFO | ----| Epoch: 083/150 | Train Time: 251.125 [s] | Train Loss: 0.274071 | N sphere 001 | Valid AUC 76.988% |
+2020-09-21 09:57:42,644 | INFO | ----| Epoch: 084/150 | Train Time: 251.846 [s] | Train Loss: 0.263975 | N sphere 001 | Valid AUC 78.684% |
+2020-09-21 10:01:53,918 | INFO | ----| Epoch: 085/150 | Train Time: 251.272 [s] | Train Loss: 0.283156 | N sphere 001 | Valid AUC 78.111% |
+2020-09-21 10:06:05,405 | INFO | ----| Epoch: 086/150 | Train Time: 251.486 [s] | Train Loss: 0.262139 | N sphere 001 | Valid AUC 77.120% |
+2020-09-21 10:10:17,321 | INFO | ----| Epoch: 087/150 | Train Time: 251.915 [s] | Train Loss: 0.273586 | N sphere 001 | Valid AUC 78.186% |
+2020-09-21 10:14:28,866 | INFO | ----| Epoch: 088/150 | Train Time: 251.544 [s] | Train Loss: 0.268314 | N sphere 001 | Valid AUC 76.844% |
+2020-09-21 10:18:40,283 | INFO | ----| Epoch: 089/150 | Train Time: 251.417 [s] | Train Loss: 0.257649 | N sphere 001 | Valid AUC 77.198% |
+2020-09-21 10:22:52,214 | INFO | ----| Epoch: 090/150 | Train Time: 251.930 [s] | Train Loss: 0.268116 | N sphere 001 | Valid AUC 77.673% |
+2020-09-21 10:22:52,214 | INFO | ---- LR Scheduler : new learning rate 1e-06
+2020-09-21 10:22:52,674 | INFO | ---- Checkpoint Saved.
+2020-09-21 10:27:04,829 | INFO | ----| Epoch: 091/150 | Train Time: 252.153 [s] | Train Loss: 0.244345 | N sphere 001 | Valid AUC 78.756% |
+2020-09-21 10:31:16,771 | INFO | ----| Epoch: 092/150 | Train Time: 251.941 [s] | Train Loss: 0.229359 | N sphere 001 | Valid AUC 78.666% |
+2020-09-21 10:35:28,274 | INFO | ----| Epoch: 093/150 | Train Time: 251.503 [s] | Train Loss: 0.227778 | N sphere 001 | Valid AUC 78.599% |
+2020-09-21 10:39:40,621 | INFO | ----| Epoch: 094/150 | Train Time: 252.346 [s] | Train Loss: 0.211900 | N sphere 001 | Valid AUC 78.747% |
+2020-09-21 10:43:53,129 | INFO | ----| Epoch: 095/150 | Train Time: 252.507 [s] | Train Loss: 0.222954 | N sphere 001 | Valid AUC 78.735% |
+2020-09-21 10:48:05,260 | INFO | ----| Epoch: 096/150 | Train Time: 252.130 [s] | Train Loss: 0.220911 | N sphere 001 | Valid AUC 78.260% |
+2020-09-21 10:52:17,562 | INFO | ----| Epoch: 097/150 | Train Time: 252.301 [s] | Train Loss: 0.210825 | N sphere 001 | Valid AUC 78.316% |
+2020-09-21 10:56:29,792 | INFO | ----| Epoch: 098/150 | Train Time: 252.228 [s] | Train Loss: 0.206011 | N sphere 001 | Valid AUC 78.858% |
+2020-09-21 11:00:41,718 | INFO | ----| Epoch: 099/150 | Train Time: 251.925 [s] | Train Loss: 0.206579 | N sphere 001 | Valid AUC 77.893% |
+2020-09-21 11:04:53,582 | INFO | ----| Epoch: 100/150 | Train Time: 251.864 [s] | Train Loss: 0.214765 | N sphere 001 | Valid AUC 77.867% |
+2020-09-21 11:04:53,991 | INFO | ---- Checkpoint Saved.
+2020-09-21 11:09:06,089 | INFO | ----| Epoch: 101/150 | Train Time: 252.097 [s] | Train Loss: 0.208248 | N sphere 001 | Valid AUC 78.719% |
+2020-09-21 11:13:18,610 | INFO | ----| Epoch: 102/150 | Train Time: 252.520 [s] | Train Loss: 0.208525 | N sphere 001 | Valid AUC 78.439% |
+2020-09-21 11:17:30,866 | INFO | ----| Epoch: 103/150 | Train Time: 252.255 [s] | Train Loss: 0.200723 | N sphere 001 | Valid AUC 78.283% |
+2020-09-21 11:21:43,651 | INFO | ----| Epoch: 104/150 | Train Time: 252.785 [s] | Train Loss: 0.205655 | N sphere 001 | Valid AUC 78.242% |
+2020-09-21 11:25:55,886 | INFO | ----| Epoch: 105/150 | Train Time: 252.234 [s] | Train Loss: 0.213786 | N sphere 001 | Valid AUC 78.124% |
+2020-09-21 11:30:08,066 | INFO | ----| Epoch: 106/150 | Train Time: 252.179 [s] | Train Loss: 0.203126 | N sphere 001 | Valid AUC 78.029% |
+2020-09-21 11:34:20,187 | INFO | ----| Epoch: 107/150 | Train Time: 252.121 [s] | Train Loss: 0.195696 | N sphere 001 | Valid AUC 78.122% |
+2020-09-21 11:38:32,194 | INFO | ----| Epoch: 108/150 | Train Time: 252.006 [s] | Train Loss: 0.201431 | N sphere 001 | Valid AUC 78.466% |
+2020-09-21 11:42:44,236 | INFO | ----| Epoch: 109/150 | Train Time: 252.041 [s] | Train Loss: 0.197152 | N sphere 001 | Valid AUC 78.443% |
+2020-09-21 11:46:56,420 | INFO | ----| Epoch: 110/150 | Train Time: 252.184 [s] | Train Loss: 0.212394 | N sphere 001 | Valid AUC 77.599% |
+2020-09-21 11:46:56,858 | INFO | ---- Checkpoint Saved.
+2020-09-21 11:51:09,260 | INFO | ----| Epoch: 111/150 | Train Time: 252.400 [s] | Train Loss: 0.195693 | N sphere 001 | Valid AUC 77.591% |
+2020-09-21 11:55:21,818 | INFO | ----| Epoch: 112/150 | Train Time: 252.557 [s] | Train Loss: 0.198908 | N sphere 001 | Valid AUC 78.768% |
+2020-09-21 11:59:34,445 | INFO | ----| Epoch: 113/150 | Train Time: 252.626 [s] | Train Loss: 0.203330 | N sphere 001 | Valid AUC 78.344% |
+2020-09-21 12:03:47,296 | INFO | ----| Epoch: 114/150 | Train Time: 252.850 [s] | Train Loss: 0.189909 | N sphere 001 | Valid AUC 78.409% |
+2020-09-21 12:07:59,928 | INFO | ----| Epoch: 115/150 | Train Time: 252.631 [s] | Train Loss: 0.199672 | N sphere 001 | Valid AUC 78.446% |
+2020-09-21 12:12:12,593 | INFO | ----| Epoch: 116/150 | Train Time: 252.665 [s] | Train Loss: 0.190305 | N sphere 001 | Valid AUC 77.976% |
+2020-09-21 12:16:24,974 | INFO | ----| Epoch: 117/150 | Train Time: 252.380 [s] | Train Loss: 0.194887 | N sphere 001 | Valid AUC 78.458% |
+2020-09-21 12:20:37,739 | INFO | ----| Epoch: 118/150 | Train Time: 252.764 [s] | Train Loss: 0.203859 | N sphere 001 | Valid AUC 78.089% |
+2020-09-21 12:24:51,285 | INFO | ----| Epoch: 119/150 | Train Time: 253.545 [s] | Train Loss: 0.190240 | N sphere 001 | Valid AUC 78.506% |
+2020-09-21 12:29:04,240 | INFO | ----| Epoch: 120/150 | Train Time: 252.954 [s] | Train Loss: 0.195463 | N sphere 001 | Valid AUC 77.458% |
+2020-09-21 12:29:04,739 | INFO | ---- Checkpoint Saved.
+2020-09-21 12:33:17,362 | INFO | ----| Epoch: 121/150 | Train Time: 252.621 [s] | Train Loss: 0.191818 | N sphere 001 | Valid AUC 78.316% |
+2020-09-21 12:37:30,214 | INFO | ----| Epoch: 122/150 | Train Time: 252.852 [s] | Train Loss: 0.186517 | N sphere 001 | Valid AUC 77.985% |
+2020-09-21 12:41:43,236 | INFO | ----| Epoch: 123/150 | Train Time: 253.021 [s] | Train Loss: 0.189304 | N sphere 001 | Valid AUC 78.292% |
+2020-09-21 12:45:57,022 | INFO | ----| Epoch: 124/150 | Train Time: 253.785 [s] | Train Loss: 0.190037 | N sphere 001 | Valid AUC 78.553% |
+2020-09-21 12:50:10,438 | INFO | ----| Epoch: 125/150 | Train Time: 253.415 [s] | Train Loss: 0.187414 | N sphere 001 | Valid AUC 78.097% |
+2020-09-21 12:54:23,598 | INFO | ----| Epoch: 126/150 | Train Time: 253.159 [s] | Train Loss: 0.200896 | N sphere 001 | Valid AUC 78.320% |
+2020-09-21 12:58:36,488 | INFO | ----| Epoch: 127/150 | Train Time: 252.890 [s] | Train Loss: 0.202220 | N sphere 001 | Valid AUC 78.246% |
+2020-09-21 13:02:50,049 | INFO | ----| Epoch: 128/150 | Train Time: 253.560 [s] | Train Loss: 0.199701 | N sphere 001 | Valid AUC 78.460% |
+2020-09-21 13:07:03,734 | INFO | ----| Epoch: 129/150 | Train Time: 253.684 [s] | Train Loss: 0.189780 | N sphere 001 | Valid AUC 77.846% |
+2020-09-21 13:11:16,132 | INFO | ----| Epoch: 130/150 | Train Time: 252.398 [s] | Train Loss: 0.190320 | N sphere 001 | Valid AUC 78.207% |
+2020-09-21 13:11:16,635 | INFO | ---- Checkpoint Saved.
+2020-09-21 13:15:30,226 | INFO | ----| Epoch: 131/150 | Train Time: 253.589 [s] | Train Loss: 0.184908 | N sphere 001 | Valid AUC 78.282% |
+2020-09-21 13:19:43,447 | INFO | ----| Epoch: 132/150 | Train Time: 253.221 [s] | Train Loss: 0.207677 | N sphere 001 | Valid AUC 78.066% |
+2020-09-21 13:23:56,301 | INFO | ----| Epoch: 133/150 | Train Time: 252.853 [s] | Train Loss: 0.191587 | N sphere 001 | Valid AUC 78.439% |
+2020-09-21 13:28:09,024 | INFO | ----| Epoch: 134/150 | Train Time: 252.722 [s] | Train Loss: 0.184071 | N sphere 001 | Valid AUC 77.999% |
+2020-09-21 13:32:21,935 | INFO | ----| Epoch: 135/150 | Train Time: 252.910 [s] | Train Loss: 0.185938 | N sphere 001 | Valid AUC 77.353% |
+2020-09-21 13:36:35,144 | INFO | ----| Epoch: 136/150 | Train Time: 253.208 [s] | Train Loss: 0.189741 | N sphere 001 | Valid AUC 77.829% |
+2020-09-21 13:40:48,149 | INFO | ----| Epoch: 137/150 | Train Time: 253.005 [s] | Train Loss: 0.190022 | N sphere 001 | Valid AUC 77.579% |
+2020-09-21 13:45:01,021 | INFO | ----| Epoch: 138/150 | Train Time: 252.870 [s] | Train Loss: 0.185543 | N sphere 001 | Valid AUC 78.116% |
+2020-09-21 13:49:14,637 | INFO | ----| Epoch: 139/150 | Train Time: 253.616 [s] | Train Loss: 0.180078 | N sphere 001 | Valid AUC 77.869% |
+2020-09-21 13:53:28,189 | INFO | ----| Epoch: 140/150 | Train Time: 253.551 [s] | Train Loss: 0.190648 | N sphere 001 | Valid AUC 77.520% |
+2020-09-21 13:53:28,190 | INFO | ---- LR Scheduler : new learning rate 1e-07
+2020-09-21 13:53:28,659 | INFO | ---- Checkpoint Saved.
+2020-09-21 13:57:42,238 | INFO | ----| Epoch: 141/150 | Train Time: 253.578 [s] | Train Loss: 0.185190 | N sphere 001 | Valid AUC 77.984% |
+2020-09-21 14:01:55,796 | INFO | ----| Epoch: 142/150 | Train Time: 253.558 [s] | Train Loss: 0.178909 | N sphere 001 | Valid AUC 77.169% |
+2020-09-21 14:06:09,959 | INFO | ----| Epoch: 143/150 | Train Time: 254.162 [s] | Train Loss: 0.180786 | N sphere 001 | Valid AUC 78.042% |
+2020-09-21 14:10:23,549 | INFO | ----| Epoch: 144/150 | Train Time: 253.589 [s] | Train Loss: 0.179767 | N sphere 001 | Valid AUC 77.988% |
+2020-09-21 14:14:37,033 | INFO | ----| Epoch: 145/150 | Train Time: 253.483 [s] | Train Loss: 0.185761 | N sphere 001 | Valid AUC 77.696% |
+2020-09-21 14:18:50,945 | INFO | ----| Epoch: 146/150 | Train Time: 253.912 [s] | Train Loss: 0.193840 | N sphere 001 | Valid AUC 77.569% |
+2020-09-21 14:23:04,964 | INFO | ----| Epoch: 147/150 | Train Time: 254.018 [s] | Train Loss: 0.183409 | N sphere 001 | Valid AUC 78.194% |
+2020-09-21 14:27:18,592 | INFO | ----| Epoch: 148/150 | Train Time: 253.627 [s] | Train Loss: 0.176962 | N sphere 001 | Valid AUC 78.027% |
+2020-09-21 14:31:32,404 | INFO | ----| Epoch: 149/150 | Train Time: 253.811 [s] | Train Loss: 0.183645 | N sphere 001 | Valid AUC 77.542% |
+2020-09-21 14:35:45,698 | INFO | ----| Epoch: 150/150 | Train Time: 253.294 [s] | Train Loss: 0.179746 | N sphere 001 | Valid AUC 78.339% |
+2020-09-21 14:35:46,176 | INFO | ---- Checkpoint Saved.
+2020-09-21 14:35:46,176 | INFO | ---- Setting the hyperspheres radii as the 95.0% quantiles of normal sample distances.
+2020-09-21 14:37:20,927 | INFO | ---- 1 radii successufully defined.
+2020-09-21 14:37:20,927 | INFO | ---- Finished Training DMSAD in 38016.781 [s]
+2020-09-21 14:37:20,932 | INFO | --- Validation
+2020-09-21 14:37:20,934 | INFO | Start Evaluating the DMSAD.
+2020-09-21 14:38:50,520 | INFO | Evaluation Time : 89.56489729881287
+2020-09-21 14:38:50,521 | INFO | Evaluation AUC : 77.963%
+2020-09-21 14:38:50,521 | INFO | Finished Evaluating the DMSAD.
+2020-09-21 14:38:50,527 | INFO | --- Test
+2020-09-21 14:38:50,528 | INFO | Start Evaluating the DMSAD.
+2020-09-21 14:40:18,950 | INFO | Evaluation Time : 88.42179155349731
+2020-09-21 14:40:18,950 | INFO | Evaluation AUC : 78.063%
+2020-09-21 14:40:18,950 | INFO | Finished Evaluating the DMSAD.
+2020-09-21 14:40:19,007 | INFO | model saved at ../../../Outputs/SupContr_DMSAD_20_09/model/DMSAD_1.pt
+2020-09-21 14:40:19,660 | INFO | Results saved at ../../../Outputs/SupContr_DMSAD_20_09/results/results_1.json

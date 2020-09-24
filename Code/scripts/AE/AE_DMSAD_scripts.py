@@ -27,7 +27,7 @@ def main(config_path):
     cfg.load_config(config_path)
 
     # Get path to output
-    OUTPUT_PATH = cfg.settings['PATH']['OUTPUT'] + cfg.settings['Experiment_Name'] + datetime.today().strftime('%Y_%m_%d_%Hh%M')+'/'
+    OUTPUT_PATH = cfg.settings['PATH']['OUTPUT'] + cfg.settings['Experiment_Name'] + '/'#+ datetime.today().strftime('%Y_%m_%d_%Hh%M')+'/'
     # make output dir
     if not os.path.isdir(OUTPUT_PATH+'models/'): os.makedirs(OUTPUT_PATH+'model/', exist_ok=True)
     if not os.path.isdir(OUTPUT_PATH+'results/'): os.makedirs(OUTPUT_PATH+'results/', exist_ok=True)
@@ -128,8 +128,8 @@ def main(config_path):
 
         # Load model if required
         if cfg.settings['AE']['model_path_to_load']:
-            ae_DMSAD.load_repr_net(cfg.settings['AE']['model_path_to_load'], map_location=cfg.settings['device'])
-            logger.info(f"AE Model Loaded from {cfg.settings['AE']['model_path_to_load']}" + "\n")
+            ae_DMSAD.load_ae_net(cfg.settings['AE']['model_path_to_load'][seed_i], map_location=cfg.settings['device'])
+            logger.info(f"AE Model Loaded from {cfg.settings['AE']['model_path_to_load'][seed_i]}" + "\n")
 
         # print Train parameters
         for key, value in cfg.settings['AE'].items():
@@ -192,7 +192,8 @@ def main(config_path):
                           lr_milestone=cfg.settings['DMSAD']['lr_milestone'],
                           n_job_dataloader=cfg.settings['DMSAD']['num_worker'],
                           device=cfg.settings['device'],
-                          print_batch_progress=cfg.settings['print_batch_progress'])
+                          print_batch_progress=cfg.settings['print_batch_progress'],
+                          checkpoint_path=OUTPUT_PATH + f'DMSAD_checkpoint_{seed_i+1}.pt')
         logger.info('--- Validation')
         ae_DMSAD.evaluate_AD(valid_dataset_AD, batch_size=cfg.settings['DMSAD']['batch_size'],
                           n_job_dataloader=cfg.settings['DMSAD']['num_worker'],

@@ -8,8 +8,6 @@
   "device": "cuda",
   "n_thread": 0,
   "seeds": [
-    1,
-    11,
     111,
     1111
   ],
